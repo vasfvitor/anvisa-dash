@@ -25,6 +25,19 @@ interface Banco {
 
 let banco: Promise<Banco> | null = null;
 
+export interface Progresso {
+  tabela: string;
+  recebidos: number;
+  total: number;
+}
+const ouvintes = new Set<(p: Progresso) => void>();
+
+/** Avisa o andamento dos downloads (para a barra de carregamento). Devolve a função que desinscreve. */
+export function aoProgresso(fn: (p: Progresso) => void): () => void {
+  ouvintes.add(fn);
+  return () => ouvintes.delete(fn);
+}
+
 async function abrir(): Promise<Banco> {
   const todos = duckdb.getJsDelivrBundles();
   const bundle = await duckdb.selectBundle({ mvp: todos.mvp, eh: todos.eh });
@@ -58,10 +71,32 @@ export async function iniciar(): Promise<Manifest> {
 // tabelas já carregadas, por build; um build novo carrega de novo
 let carregadas = new Map<string, Promise<void>>();
 
-async function obter(u: string, cache: RequestCache): Promise<Uint8Array> {
+async function obter(u: string, cache: RequestCache, tabela: string, total: number): Promise<Uint8Array> {
   const res = await fetch(u, { cache });
   if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status} em ${u}`), { status: res.status });
-  return new Uint8Array(await res.arrayBuffer());
+  if (!res.body || !total) return new Uint8Array(await res.arrayBuffer());
+  // lê em pedaços para informar o progresso; o total vem do manifest porque o Content-Length é o
+  // do corpo comprimido (o Pages manda gzip) e o stream entrega os bytes já descomprimidos
+  const buf = new Uint8Array(total);
+  let recebidos = 0;
+  let extra: Uint8Array[] | null = null;
+  const leitor = res.body.getReader();
+  for (;;) {
+    const { done, value } = await leitor.read();
+    if (done) break;
+    if (extra || recebidos + value.length > total) (extra ??= [buf.slice(0, recebidos)]).push(value);
+    else buf.set(value, recebidos);
+    recebidos += value.length;
+    for (const fn of ouvintes) fn({ tabela, recebidos: Math.min(recebidos, total), total });
+  }
+  if (extra) {
+    // maior que o manifest diz: devolve inteiro para a validação recusar e baixar de novo
+    const tudo = new Uint8Array(recebidos);
+    let pos = 0;
+    for (const p of extra) (tudo.set(p, pos), (pos += p.length));
+    return tudo;
+  }
+  return recebidos === total ? buf : buf.slice(0, recebidos);
 }
 
 /** Tamanho do manifest e "PAR1" no fim: um Parquet truncado não passa. */
@@ -73,12 +108,12 @@ function inteiro(buf: Uint8Array, bytes: number | undefined): boolean {
 async function baixar(b: Banco, nome: string): Promise<void> {
   const u = tabelaUrl(MANIFEST_URL, b.manifest, nome);
   const bytes = b.manifest.tables[nome]?.bytes;
-  let buf = await obter(u, "default");
+  let buf = await obter(u, "default", nome, bytes ?? 0);
   // Uma resposta parcial em cache (de uma visita à versão que lia por Range) faz o Chrome devolver
   // 200 com só aqueles bytes: o Pages manda gzip na resposta inteira e identidade na parcial, e o
   // cache mistura as duas (reproduzido em 2026-10-06: Range bytes=0-0, depois fetch → 200 com 1 byte).
   // Nesse caso baixa de novo ignorando o cache, o que também conserta a entrada.
-  if (!inteiro(buf, bytes)) buf = await obter(u, "reload");
+  if (!inteiro(buf, bytes)) buf = await obter(u, "reload", nome, bytes ?? 0);
   if (!inteiro(buf, bytes)) throw new Error(`arquivo incompleto: ${buf.length} de ${bytes} bytes em ${u}`);
   // nome do buffer com o build: um build novo não sobrescreve o que consultas em andamento leem
   const arquivo = `${b.manifest.build_id}_${nome}.parquet`;
@@ -110,6 +145,12 @@ export async function carregar(nome: string): Promise<void> {
     carregadas.set(chave, p);
   }
   return p;
+}
+
+/** Build dos dados em uso agora (muda se um deploy acontecer no meio da sessão). */
+export async function buildAtual(): Promise<string> {
+  if (!banco) await iniciar();
+  return (await banco!).manifest.build_id;
 }
 
 /** Consulta preparada sobre tabelas já carregadas; valores do usuário sempre como parâmetros. */

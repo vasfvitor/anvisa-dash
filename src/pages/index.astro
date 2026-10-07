@@ -4,8 +4,14 @@ import Base from "../layouts/Base.astro";
 ---
 
 <Base title="Alimentos e suplementos na ANVISA">
-  <h1>Alimentos e suplementos na ANVISA</h1>
-  <p class="lead">Busque por nº do processo, CNPJ, nome do produto, marca ou empresa.</p>
+  <!-- só aparece na tela inicial; a ilha marca a tela em body[data-tela] -->
+  <div class="hero">
+    <h1>Este suplemento é regular? Tem glúten, lactose, alergênicos?</h1>
+    <p class="lead">
+      Consulte qualquer alimento ou suplemento regularizado na ANVISA pela marca, pelo nome, pela empresa, pelo CNPJ
+      ou pelo número do processo.
+    </p>
+  </div>
   <!-- DuckDB-WASM não roda no servidor: a ilha só existe no navegador -->
   <BuscaApp client:only="vue">
     <p slot="fallback" class="estado">Carregando a busca…</p>

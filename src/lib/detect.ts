@@ -6,7 +6,8 @@
 // qualquer outro número só de dígitos procura em processo e registro, e um CNPJ sem resultado é
 // tentado de novo como processo (ver useBusca).
 
-export type Modo = "cnpj" | "numero" | "texto";
+// marca: escolhida numa sugestão (casa a marca inteira); todos: sem termo, só filtros (navegar por categoria)
+export type Modo = "cnpj" | "numero" | "texto" | "marca" | "todos";
 
 export interface Consulta {
   modo: Modo;
@@ -18,6 +19,8 @@ export const MODO_ROTULO: Record<Modo, string> = {
   cnpj: "CNPJ",
   numero: "Nº do processo ou registro",
   texto: "Nome, marca ou empresa",
+  marca: "Marca",
+  todos: "Todos os produtos",
 };
 
 export function soDigitos(s: string): string {

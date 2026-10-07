@@ -15,6 +15,9 @@
   --ok-bg: light-dark(#e3f5e6, #173a24);
   --off: light-dark(#8a1c1c, #ffb4b4);
   --off-bg: light-dark(#fde8e8, #4a1d1d);
+  --warn: light-dark(#8a5a00, #f0c060);
+  --warn-bg: light-dark(#fff3d6, #3d2f10);
+  --mark: light-dark(#fff1a8, #5c4d12);
   --toggle-glyph: "☾";
 }
 @media (prefers-color-scheme: dark) {
@@ -70,35 +73,156 @@ input, select, button { font: inherit; color: var(--fg); }
 .btn:hover { background: var(--chip-bg); }
 .btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
-/* busca */
-.busca { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
-.busca .field { flex: 1 1 20rem; font-size: 1.05rem; }
-.lida { font-size: 0.85rem; color: var(--muted); margin: 0.35rem 0 0; min-height: 1.3em; }
-.filtros { display: flex; gap: 0.75rem 1.25rem; flex-wrap: wrap; align-items: center; margin: 0.9rem 0 0.5rem; font-size: 0.9rem; }
-.filtros label { display: inline-flex; gap: 0.4rem; align-items: center; }
-.filtros select { max-width: 18rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+mark { background: var(--mark); color: inherit; border-radius: 0.15em; padding: 0 0.05em; }
+kbd { font: inherit; font-size: 0.8em; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 0.3rem; padding: 0 0.35em; background: var(--card); }
+button.link { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; }
 .estado { margin: 1rem 0; color: var(--muted); }
 .estado.erro { color: var(--off); }
-.contagem { margin: 1rem 0 0.25rem; color: var(--muted); font-size: 0.9rem; }
+.fonte { margin-top: 2.5rem; }
 
-/* produto e apresentações */
-.produto h3 { margin: 0; font-size: 1.05rem; }
-.produto .meta { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.88rem; color: var(--muted); }
-.produto .meta b { color: var(--fg); font-weight: 500; }
-.apresentacoes { list-style: none; padding: 0; margin: 0.6rem 0 0; border-top: 1px solid var(--line); }
-.apresentacoes > li { border-bottom: 1px solid var(--line); }
-.apresentacoes > li:last-child { border-bottom: 0; }
-.apresentacoes summary { cursor: pointer; padding: 0.45rem 0; display: flex; gap: 0.5rem 1rem; flex-wrap: wrap; align-items: baseline; font-size: 0.92rem; }
-.apresentacoes summary::marker { color: var(--muted); }
-.detalhe { padding: 0.25rem 0 0.9rem 1.1rem; font-size: 0.9rem; }
-.detalhe dl { display: grid; grid-template-columns: minmax(8rem, 13rem) 1fr; gap: 0.3rem 1rem; margin: 0; }
-.detalhe dt { color: var(--muted); }
-.detalhe dd { margin: 0; overflow-wrap: anywhere; }
-.detalhe ul { margin: 0; padding-left: 1.1rem; }
+/* tela: o cabeçalho de apresentação só na inicial */
+.hero h1 { font-size: clamp(1.45rem, 4vw, 2rem); max-width: 34rem; }
+.hero .lead { color: var(--muted); margin: 0.5rem 0 1.25rem; }
+body[data-tela="busca"] .hero, body[data-tela="produto"] .hero { display: none; }
+
+/* caixa de busca e sugestões */
+.busca { display: flex; gap: 0.5rem; align-items: stretch; }
+.busca-campo { position: relative; flex: 1 1 auto; min-width: 0; }
+.busca .field { width: 100%; font-size: 1.1rem; padding: 0.7rem 0.9rem; border-radius: 0.7rem; }
+.busca .btn { border-radius: 0.7rem; padding: 0 1.1rem; }
+.lida { font-size: 0.85rem; color: var(--muted); margin: 0.4rem 0 0; min-height: 1.3em; }
+.sugestoes { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 0.3rem); margin: 0; padding: 0.3rem; list-style: none;
+  background: var(--card); border: 1px solid var(--line); border-radius: 0.7rem; box-shadow: 0 10px 30px rgb(0 0 0 / 0.14); }
+.sugestoes li { display: grid; grid-template-columns: 4.6rem 1fr auto; gap: 0.6rem; align-items: baseline; padding: 0.5rem 0.6rem; border-radius: 0.45rem; cursor: pointer; }
+.sugestoes li.ativa { background: var(--chip-bg); }
+.sugestao-tipo { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.sugestao-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sugestao-n { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+
+/* carregamento */
+.carregamento { margin: 0.9rem 0; font-size: 0.9rem; }
+.carregamento p { margin: 0.4rem 0 0; }
+.barra { height: 0.35rem; background: var(--chip-bg); border-radius: 1rem; overflow: hidden; }
+.barra span { display: block; height: 100%; background: var(--accent); transition: width 0.2s; }
+.barra.indeterminada span { width: 35% !important; animation: vaivem 1.2s ease-in-out infinite; }
+@keyframes vaivem { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
+@media (prefers-reduced-motion: reduce) { .barra.indeterminada span { animation: none; width: 100% !important; opacity: 0.4; } }
+
+/* chips (facetas e categorias) */
+.chip { display: inline-flex; gap: 0.35rem; align-items: baseline; border: 1px solid var(--line); background: var(--card); border-radius: 2rem;
+  padding: 0.25rem 0.7rem; font-size: 0.85rem; cursor: pointer; }
+.chip:hover { background: var(--chip-bg); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.chip[aria-pressed="true"] .chip-n { color: inherit; opacity: 0.85; }
+.chip:disabled { opacity: 0.45; cursor: default; }
+.chip-n { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.8em; }
+.chip.mais { border-style: dashed; }
+.facetas { display: grid; gap: 0.45rem; margin: 1rem 0 0.5rem; }
+.faceta { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.faceta-nome { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); min-width: 5.2rem; }
+
+/* resultados */
+.resultado-titulo { font-size: 1.05rem; margin: 1.1rem 0 0.6rem; }
+.lista { display: grid; gap: 0.7rem; transition: opacity 0.15s; }
+.lista.esmaecida { opacity: 0.55; }
+.mais { text-align: center; margin: 1.25rem 0; }
+.vazio p { margin: 0.4rem 0; }
+
+/* cartão de produto: a faixa à esquerda diz a situação */
+.cartao { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: 0.7rem; transition: border-color 0.15s, box-shadow 0.15s; }
+.cartao.inativo { border-left-color: var(--line); }
+.cartao:hover { box-shadow: 0 4px 18px rgb(0 0 0 / 0.07); border-color: var(--muted); }
+.cartao.inativo:hover { border-left-color: var(--muted); }
+.cartao-link { display: block; padding: 0.85rem 1rem; color: inherit; text-decoration: none; }
+.cartao-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 0.6rem; }
+.cartao-topo { display: flex; gap: 0.75rem; align-items: flex-start; justify-content: space-between; }
+.cartao h3 { margin: 0; font-size: 1.08rem; line-height: 1.3; overflow-wrap: anywhere; }
+.mais-marcas { color: var(--muted); font-weight: 400; font-size: 0.85rem; }
+.cartao-nome { margin: 0.15rem 0 0; }
+.cartao-empresa { margin: 0.2rem 0 0; font-size: 0.88rem; color: var(--muted); }
+.cartao-rodape { display: flex; gap: 0.4rem 1rem; flex-wrap: wrap; align-items: baseline; margin: 0.6rem 0 0; font-size: 0.82rem; color: var(--muted); }
+.cartao-rodape .seta { margin-left: auto; color: var(--accent); font-size: 1rem; transition: transform 0.15s; }
+.cartao:hover .seta { transform: translateX(3px); }
+.situacao { flex: none; font-size: 0.75rem; font-weight: 600; border-radius: 2rem; padding: 0.1rem 0.55rem; white-space: nowrap; }
+.situacao::before { content: "● "; }
+.situacao.ok { background: var(--ok-bg); color: var(--ok); }
+.situacao.off { background: var(--chip-bg); color: var(--muted); }
+.situacao.grande { font-size: 0.85rem; padding: 0.2rem 0.75rem; }
+.aviso-curto { margin: 0.5rem 0 0; font-size: 0.82rem; color: var(--off); font-weight: 600; }
+
+/* selos de glúten, lactose e alergênicos */
+.alergia.compacta { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.55rem; }
+.selo { font-size: 0.78rem; border-radius: 0.35rem; padding: 0.1rem 0.45rem; background: var(--chip-bg); color: var(--chip-fg); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.selo.ok { background: var(--ok-bg); color: var(--ok); }
+.selo.perigo { background: var(--off-bg); color: var(--off); }
+.selo.atencao { background: var(--warn-bg); color: var(--warn); }
+.selo.grande { font-size: 0.95rem; padding: 0.3rem 0.75rem; border-radius: 0.5rem; font-weight: 600; }
+.alergia.completa .selos { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+.alergia.completa dl { display: grid; grid-template-columns: minmax(7rem, 10rem) 1fr; gap: 0.45rem 1rem; margin: 0; }
+.alergia.completa dt { font-weight: 600; }
+.alergia.completa dt.perigo { color: var(--off); }
+.alergia.completa dt.atencao { color: var(--warn); }
+.alergia.completa dt.ok { color: var(--ok); }
+.alergia.completa dd { margin: 0; }
+
+/* página inicial */
+.exemplos { margin: 1rem 0 0; color: var(--muted); font-size: 0.92rem; }
+.numeros { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin: 1.5rem 0 0; }
+.numeros div { background: var(--card); border: 1px solid var(--line); border-radius: 0.7rem; padding: 0.7rem 0.9rem; display: flex; flex-direction: column-reverse; }
+.numeros dd { margin: 0; font-size: 1.45rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.numeros dt { color: var(--muted); font-size: 0.82rem; }
+.categorias { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.o-que { padding-left: 1.1rem; max-width: 44rem; }
+.o-que li { margin: 0.35rem 0; }
+
+/* página do produto */
+.produto-nav { display: flex; gap: 0.75rem; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 1rem 0; }
+.produto-acoes { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.produto-acoes .btn { text-decoration: none; color: var(--fg); font-size: 0.88rem; }
+.produto-cabecalho { border-left: 5px solid var(--ok); padding: 0.2rem 0 0.2rem 1rem; margin-bottom: 1.25rem; }
+.produto-cabecalho.inativo { border-left-color: var(--line); }
+.produto-cabecalho h1 { font-size: clamp(1.5rem, 4.5vw, 2.1rem); overflow-wrap: anywhere; }
+.outras-marcas { margin: 0.2rem 0 0; color: var(--muted); font-size: 0.88rem; }
+.produto-nome { margin: 0.35rem 0 0; font-size: 1.08rem; }
+.produto-status { display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem; align-items: center; margin: 0.75rem 0 0; font-size: 0.92rem; }
+.produto-empresa { margin: 0.5rem 0 0; font-size: 0.92rem; }
+.aviso { border: 1px solid var(--line); background: var(--chip-bg); border-radius: 0.6rem; padding: 0.75rem 1rem; margin: 0 0 1.25rem; }
+.aviso.perigo { border-color: var(--off); background: var(--off-bg); color: var(--off); }
+.secao { background: var(--card); border: 1px solid var(--line); border-radius: 0.7rem; padding: 1rem 1.15rem; margin: 0 0 0.9rem; }
+.secao h2 { margin: 0 0 0.75rem; font-size: 1.05rem; }
+.secao.tecnico { background: transparent; }
+.ficha { display: grid; grid-template-columns: minmax(8rem, 13rem) 1fr; gap: 0.45rem 1rem; margin: 0; }
+.ficha dt { color: var(--muted); }
+.ficha dd { margin: 0; overflow-wrap: anywhere; }
+.ingredientes { margin: 0; line-height: 1.65; max-width: 70ch; }
+.alegacoes { margin: 0; padding-left: 1.1rem; }
+.alegacoes li { margin: 0.25rem 0; }
+.empresas { margin: 0; padding: 0; list-style: none; }
+.empresas li + li { margin-top: 0.3rem; }
+.apresentacoes-tabela td, .apresentacoes-tabela th { white-space: nowrap; }
+.apresentacoes-tabela .linha-longa td { white-space: normal; border-bottom-style: dashed; }
+.linha-longa summary { cursor: pointer; color: var(--accent); font-size: 0.88rem; }
+.linha-longa .ficha { margin-top: 0.5rem; }
+.copiar { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0 0.2rem; font-size: 0.95em; }
+.copiar:hover { color: var(--accent); }
+
 @media (max-width: 40rem) {
-  .detalhe dl { grid-template-columns: 1fr; }
-  .detalhe dd { margin-bottom: 0.4rem; }
+  .busca .btn { padding: 0 0.8rem; }
+  .numeros { grid-template-columns: 1fr; }
+  .numeros div { flex-direction: row-reverse; justify-content: flex-end; align-items: baseline; gap: 0.6rem; }
+  .numeros dd { font-size: 1.15rem; }
+  .ficha, .alergia.completa dl { grid-template-columns: 1fr; gap: 0.1rem; }
+  .ficha dd, .alergia.completa dd { margin-bottom: 0.55rem; }
+  /* facetas: uma linha rolável por dimensão, para os resultados aparecerem logo */
+  .faceta { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -1rem; padding: 0 1rem; }
+  .faceta::-webkit-scrollbar { display: none; }
+  .faceta .chip { flex: none; }
+  .faceta-nome { min-width: auto; flex: none; }
+  header.site .inner { flex-wrap: nowrap; gap: 0.6rem; }
+  header.site nav a { margin-right: 0.6rem; }
+  .sugestoes li { grid-template-columns: 1fr auto; }
+  .sugestao-tipo { display: none; }
   table { font-size: 0.9rem; }
   th, td { padding: 0.4rem 0.4rem; }
 }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

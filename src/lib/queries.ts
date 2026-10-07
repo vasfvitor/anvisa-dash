@@ -1,16 +1,24 @@
-// SQL da busca. Valores do usuário entram só como parâmetros; o WHERE é montado com fragmentos fixos.
-// Nos dados, nome, marcas, empresa, processo e situação são iguais em todas as apresentações de um
-// produto, então a busca agrupa por co_seq_produto e devolve o produto pronto numa consulta só.
+// SQL do app. Valores do usuário entram só como parâmetros; o WHERE é montado com fragmentos fixos.
+//
+// Depois do download, três tabelas derivadas são criadas uma vez por build, em memória:
+// - produtos: uma linha por co_seq_produto (nome, marcas, empresa, processo e situação são iguais em
+//   todas as apresentações), com colunas de busca já normalizadas;
+// - resumo: alergênicos e intolerâncias de cada produto, da tabela de detalhes (chega depois: a busca
+//   funciona sem ela e mostra o resumo quando ela fica pronta);
+// - sugestoes: marcas e empresas com a contagem de produtos, para sugerir enquanto a pessoa digita.
 import { TABELA, TABELA_DETALHE } from "./config";
 import type { Consulta } from "./detect";
-import { consultar, type Valor } from "./db";
+import { buildAtual, carregar, consultar, type Valor } from "./db";
+import { normalizar } from "./texto";
 
-export const POR_PAGINA = 50;
+export const POR_PAGINA = 30;
+
+export type Situacao = "ativo" | "inativo" | "todos";
 
 export interface Filtros {
   categoria: string;
   tipo: string;
-  inativos: boolean;
+  situacao: Situacao;
 }
 
 export interface Produto {
@@ -27,13 +35,20 @@ export interface Produto {
   ds_situacao_assunto_doc: string | null;
   ds_alegacao_funcional: string | null;
   dt_regularizacao: string | null;
+  dt_publicacao: string | null;
+  dt_situacao: string | null;
+  dt_inicio_analise: string | null;
   dt_vencimento_registro: string | null;
   n_apresentacoes: number;
+  /** JSON de string[]: os valores distintos entre as apresentações; null antes do resumo ficar pronto */
+  alergenicos_json: string | null;
+  intolerancias_json: string | null;
   total: number;
 }
 
 export interface Apresentacao {
   co_seq_apresentacao_produto: number;
+  nu_registro: string | null;
   nu_apresentacao_produto: string | null;
   validade: string | null;
   ds_forma_fisica: string | null;
@@ -47,43 +62,38 @@ export interface Apresentacao {
   tabela_nutricional: string | null;
   intolerancias: string | null;
   alergenicos: string | null;
+  /** false para as poucas apresentações que a ANVISA ainda não publicou no arquivo de detalhes */
+  tem_detalhe: boolean;
 }
 
 // datas saem como texto sem fuso: o tipo temporal do Arrow muda de unidade conforme a versão
-const TS = (c: string) => `strftime(any_value(${c}), '%Y-%m-%dT%H:%M:%S') AS ${c}`;
+const TS = (expr: string, nome: string) => `strftime(${expr}, '%Y-%m-%dT%H:%M:%S') AS ${nome}`;
 
-function onde(q: Consulta, f: Filtros): { sql: string; params: Valor[] } {
-  const partes: string[] = [];
-  const params: Valor[] = [];
-  if (q.modo === "cnpj") {
-    partes.push("nu_cnpj_empresa = ?");
-    params.push(q.valor);
-  } else if (q.modo === "numero") {
-    // processo (6 a 17 dígitos), registro do produto (9) ou da apresentação (13)
-    partes.push("(nu_processo = ? OR nu_registro_notificacao_produto = ? OR nu_registro = ?)");
-    params.push(q.valor, q.valor, q.valor);
-  } else {
-    // contains() em vez de ILIKE: sem curingas, então % e _ digitados não precisam de escape
-    partes.push(
-      "contains(lower(strip_accents(concat_ws(' ', no_produto, marcas, no_razao_social_empresa))), lower(strip_accents(?)))",
-    );
-    params.push(q.valor);
+// ---------------------------------------------------------------------------------------------
+// tabelas derivadas
+
+const derivadas = new Map<string, Promise<void>>();
+let resumoPronto = false;
+
+async function derivar(nome: string, deps: () => Promise<void>, sql: string): Promise<void> {
+  const chave = `${await buildAtual()}/${nome}`;
+  let p = derivadas.get(chave);
+  if (!p) {
+    p = (async () => {
+      await deps();
+      await consultar([], sql);
+    })();
+    p.catch(() => derivadas.delete(chave));
+    derivadas.set(chave, p);
   }
-  if (!f.inativos) partes.push("situacao_registro = 'Ativo'");
-  if (f.categoria) {
-    partes.push("ds_categoria_produto = ?");
-    params.push(f.categoria);
-  }
-  if (f.tipo) {
-    partes.push("tipo_regularizacao = ?");
-    params.push(f.tipo);
-  }
-  return { sql: partes.join(" AND "), params };
+  return p;
 }
 
-export async function buscarProdutos(q: Consulta, f: Filtros, pagina = 0): Promise<Produto[]> {
-  const w = onde(q, f);
-  const sql = `
+function produtos(): Promise<void> {
+  return derivar(
+    "produtos",
+    () => carregar(TABELA),
+    `CREATE OR REPLACE TABLE produtos AS
     SELECT co_seq_produto,
       any_value(no_produto) AS no_produto,
       any_value(marcas) AS marcas,
@@ -96,43 +106,253 @@ export async function buscarProdutos(q: Consulta, f: Filtros, pagina = 0): Promi
       any_value(situacao_registro) AS situacao_registro,
       any_value(ds_situacao_assunto_doc) AS ds_situacao_assunto_doc,
       any_value(ds_alegacao_funcional) AS ds_alegacao_funcional,
-      ${TS("dt_regularizacao")},
+      ${TS("min(dt_regularizacao)", "dt_regularizacao")},
+      ${TS("max(dt_publicacao)", "dt_publicacao")},
+      ${TS("max(dt_situacao)", "dt_situacao")},
+      ${TS("min(dt_inicio_analise)", "dt_inicio_analise")},
       strftime(any_value(dt_vencimento_registro), '%Y-%m-%d') AS dt_vencimento_registro,
       count(*)::INTEGER AS n_apresentacoes,
-      (count(*) OVER ())::INTEGER AS total
+      -- só para busca e ordenação
+      min(dt_regularizacao) AS ordem_data,
+      list(nu_registro) FILTER (WHERE nu_registro IS NOT NULL) AS registros,
+      lower(strip_accents(concat_ws(' ', any_value(no_produto), any_value(marcas), any_value(no_razao_social_empresa)))) AS busca,
+      lower(strip_accents(any_value(no_produto))) AS busca_nome,
+      -- ";marca a;marca b;": casa marca inteira com ';x;' e começo de marca com ';x'
+      ';' || array_to_string(list_transform(string_split(coalesce(any_value(marcas), ''), ';'),
+        x -> lower(strip_accents(trim(x)))), ';') || ';' AS busca_marcas
     FROM "${TABELA}"
-    WHERE ${w.sql}
-    GROUP BY co_seq_produto
-    ORDER BY any_value(situacao_registro), any_value(dt_regularizacao) DESC NULLS LAST, co_seq_produto
-    LIMIT ${POR_PAGINA} OFFSET ?`;
-  return (await consultar([TABELA], sql, [...w.params, pagina * POR_PAGINA])) as unknown as Produto[];
+    GROUP BY co_seq_produto`,
+  );
 }
 
-/** Apresentações de um produto com o detalhe (co_produto é o co_seq_produto da tabela principal). */
-export async function buscarApresentacoes(p: Produto): Promise<Apresentacao[]> {
-  const sql = `
-    SELECT * EXCLUDE (dt_carga_etl, co_produto, nu_registro)
+async function resumo(): Promise<void> {
+  await derivar(
+    "resumo",
+    () => carregar(TABELA_DETALHE),
+    `CREATE OR REPLACE TABLE resumo AS
+    SELECT co_produto AS co_seq_produto,
+      to_json(list(DISTINCT alergenicos) FILTER (WHERE alergenicos <> ''))::VARCHAR AS alergenicos_json,
+      to_json(list(DISTINCT intolerancias) FILTER (WHERE intolerancias <> ''))::VARCHAR AS intolerancias_json
     FROM "${TABELA_DETALHE}"
-    WHERE co_produto = ?
-    ORDER BY TRY_CAST(nu_apresentacao_produto AS INTEGER) NULLS LAST, co_seq_apresentacao_produto`;
-  return (await consultar([TABELA_DETALHE], sql, [p.co_seq_produto])) as unknown as Apresentacao[];
+    GROUP BY co_produto`,
+  );
+  resumoPronto = true;
 }
 
-export interface Categoria {
-  nome: string;
-  ativos: number;
-  total: number;
+function sugestoes(): Promise<void> {
+  return derivar(
+    "sugestoes",
+    produtos,
+    `CREATE OR REPLACE TABLE sugestoes AS
+    WITH m AS (
+      SELECT trim(unnest(string_split(marcas, ';'))) AS rotulo, situacao_registro, co_seq_produto
+      FROM produtos WHERE marcas IS NOT NULL
+    )
+    SELECT 'marca' AS tipo, mode(rotulo) AS rotulo, lower(strip_accents(rotulo)) AS chave,
+      NULL::VARCHAR AS nu_cnpj_empresa,
+      count(DISTINCT co_seq_produto)::INTEGER AS n,
+      (count(DISTINCT co_seq_produto) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER AS ativos
+    FROM m WHERE rotulo <> '' GROUP BY chave
+    UNION ALL
+    SELECT 'empresa', any_value(no_razao_social_empresa), lower(strip_accents(any_value(no_razao_social_empresa))),
+      nu_cnpj_empresa, count(*)::INTEGER, (count(*) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER
+    FROM produtos GROUP BY nu_cnpj_empresa`,
+  );
 }
 
-/** Para o filtro: produtos (não linhas) por categoria, ativos e no total. */
-export async function categorias(): Promise<Categoria[]> {
+/**
+ * Baixa e prepara tudo: primeiro o necessário para buscar, depois (sem bloquear) o resumo de
+ * alergênicos e as sugestões. `aoResumo` avisa quando o resumo fica pronto, para refazer a lista.
+ */
+export async function preparar(aoResumo?: () => void): Promise<void> {
+  await produtos();
+  void sugestoes().catch(() => {});
+  void resumo().then(aoResumo, () => {});
+}
+
+// ---------------------------------------------------------------------------------------------
+// busca
+
+/** Termo como a coluna de busca guarda: sem acento, minúsculo. */
+function termo(q: Consulta): string {
+  return normalizar(q.valor.trim());
+}
+
+function predicado(q: Consulta): { sql: string; params: Valor[] } {
+  switch (q.modo) {
+    case "cnpj":
+      return { sql: "nu_cnpj_empresa = ?", params: [q.valor] };
+    case "numero":
+      // processo (6 a 17 dígitos), registro do produto (9) ou da apresentação (13)
+      return {
+        sql: "(nu_processo = ? OR nu_registro_notificacao_produto = ? OR list_contains(registros, ?))",
+        params: [q.valor, q.valor, q.valor],
+      };
+    case "marca":
+      return { sql: "contains(busca_marcas, ';' || ? || ';')", params: [termo(q)] };
+    case "texto":
+      // contains() em vez de ILIKE: sem curingas, então % e _ digitados não precisam de escape
+      return { sql: "contains(busca, ?)", params: [termo(q)] };
+    case "todos":
+      return { sql: "true", params: [] };
+  }
+}
+
+type Dimensao = "situacao" | "tipo" | "categoria";
+
+/** WHERE com o termo e os filtros, menos o de `sem` (cada faceta conta ignorando o próprio filtro). */
+function onde(q: Consulta, f: Filtros, sem?: Dimensao): { sql: string; params: Valor[] } {
+  const p = predicado(q);
+  const partes = [p.sql];
+  const params = [...p.params];
+  if (sem !== "situacao" && f.situacao !== "todos") {
+    partes.push("situacao_registro = ?");
+    params.push(f.situacao === "ativo" ? "Ativo" : "Inativo");
+  }
+  if (sem !== "categoria" && f.categoria) {
+    partes.push("ds_categoria_produto = ?");
+    params.push(f.categoria);
+  }
+  if (sem !== "tipo" && f.tipo) {
+    partes.push("tipo_regularizacao = ?");
+    params.push(f.tipo);
+  }
+  return { sql: partes.join(" AND "), params };
+}
+
+const COLUNAS = `co_seq_produto, no_produto, marcas, no_razao_social_empresa, nu_cnpj_empresa, nu_processo,
+  nu_registro_notificacao_produto, ds_categoria_produto, tipo_regularizacao, situacao_registro,
+  ds_situacao_assunto_doc, ds_alegacao_funcional, dt_regularizacao, dt_publicacao, dt_situacao,
+  dt_inicio_analise, dt_vencimento_registro, n_apresentacoes`;
+
+function comResumo(): string {
+  return resumoPronto
+    ? "LEFT JOIN resumo USING (co_seq_produto)"
+    : "CROSS JOIN (SELECT NULL::VARCHAR AS alergenicos_json, NULL::VARCHAR AS intolerancias_json)";
+}
+
+export async function buscarProdutos(q: Consulta, f: Filtros, pagina = 0): Promise<Produto[]> {
+  await produtos();
+  const w = onde(q, f);
+  const params = [...w.params];
+  // texto: marca exata, depois marca que começa com o termo, depois nome, depois o resto (empresa)
+  let relevancia = "0";
+  if (q.modo === "texto") {
+    const t = termo(q);
+    relevancia = `CASE WHEN contains(busca_marcas, ';' || ? || ';') THEN 0
+      WHEN contains(busca_marcas, ';' || ?) THEN 1 WHEN contains(busca_nome, ?) THEN 2 ELSE 3 END`;
+    params.unshift(t, t, t);
+  }
   const sql = `
-    SELECT ds_categoria_produto AS nome,
-      (count(DISTINCT co_seq_produto) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER AS ativos,
-      count(DISTINCT co_seq_produto)::INTEGER AS total
-    FROM "${TABELA}"
-    WHERE ds_categoria_produto IS NOT NULL
-    GROUP BY 1
-    ORDER BY ativos DESC, total DESC, nome`;
-  return (await consultar([TABELA], sql)) as unknown as Categoria[];
+    SELECT ${COLUNAS}, alergenicos_json, intolerancias_json, (count(*) OVER ())::INTEGER AS total
+    FROM (SELECT *, ${relevancia} AS relevancia FROM produtos) p
+    ${comResumo()}
+    WHERE ${w.sql}
+    ORDER BY relevancia, situacao_registro, ordem_data DESC NULLS LAST, co_seq_produto
+    LIMIT ${POR_PAGINA} OFFSET ?`;
+  return (await consultar([], sql, [...params, pagina * POR_PAGINA])) as unknown as Produto[];
+}
+
+export interface ValorFaceta {
+  valor: string;
+  n: number;
+}
+export type Facetas = Record<Dimensao, ValorFaceta[]>;
+
+/** Contagem de produtos por situação, tipo e categoria no resultado atual. */
+export async function facetas(q: Consulta, f: Filtros): Promise<Facetas> {
+  await produtos();
+  const partes: string[] = [];
+  const params: Valor[] = [];
+  const colunas: Record<Dimensao, string> = {
+    situacao: "situacao_registro",
+    tipo: "tipo_regularizacao",
+    categoria: "ds_categoria_produto",
+  };
+  for (const [dim, col] of Object.entries(colunas) as [Dimensao, string][]) {
+    const w = onde(q, f, dim);
+    partes.push(
+      `SELECT '${dim}' AS dim, ${col} AS valor, count(*)::INTEGER AS n FROM produtos WHERE ${w.sql} AND ${col} IS NOT NULL GROUP BY ${col}`,
+    );
+    params.push(...w.params);
+  }
+  const linhas = (await consultar([], `${partes.join(" UNION ALL ")} ORDER BY n DESC, valor`, params)) as {
+    dim: Dimensao;
+    valor: string;
+    n: number;
+  }[];
+  const r: Facetas = { situacao: [], tipo: [], categoria: [] };
+  for (const l of linhas) r[l.dim].push({ valor: l.valor, n: l.n });
+  return r;
+}
+
+// ---------------------------------------------------------------------------------------------
+// sugestões, produto, números gerais
+
+export interface Sugestao {
+  tipo: "marca" | "empresa";
+  rotulo: string;
+  nu_cnpj_empresa: string | null;
+  n: number;
+  ativos: number;
+}
+
+/** Marcas e empresas que contêm o termo; as que começam com ele e as com produtos ativos primeiro. */
+export async function sugerir(texto: string, limite = 8): Promise<Sugestao[]> {
+  const t = normalizar(texto.trim());
+  if (t.length < 2) return [];
+  await sugestoes();
+  const sql = `
+    SELECT tipo, rotulo, nu_cnpj_empresa, n, ativos FROM sugestoes
+    WHERE contains(chave, ?)
+    ORDER BY NOT starts_with(chave, ?), ativos = 0, ativos DESC, n DESC, length(rotulo), rotulo
+    LIMIT ${Math.trunc(limite)}`;
+  return (await consultar([], sql, [t, t])) as unknown as Sugestao[];
+}
+
+export async function produtoPorId(id: number): Promise<Produto | null> {
+  await produtos();
+  const sql = `SELECT ${COLUNAS}, alergenicos_json, intolerancias_json, 1 AS total
+    FROM produtos ${comResumo()} WHERE co_seq_produto = ?`;
+  const [p] = (await consultar([], sql, [id])) as unknown as Produto[];
+  return p ?? null;
+}
+
+/** Apresentações de um produto com o detalhe (co_produto do detalhe é o co_seq_produto). */
+export async function buscarApresentacoes(id: number): Promise<Apresentacao[]> {
+  const sql = `
+    SELECT a.co_seq_apresentacao_produto, a.nu_registro, r.nu_apresentacao_produto, r.validade,
+      r.ds_forma_fisica, r.situacao_apresentacao, r.material_embalagens, r.tipo_embalagens,
+      r.empresas_envasadoras, r.empresas_internacionais, r.grupos_populacionais, r.vias_administracao,
+      r.tabela_nutricional, r.intolerancias, r.alergenicos, r.co_seq_apresentacao_produto IS NOT NULL AS tem_detalhe
+    FROM "${TABELA}" a LEFT JOIN "${TABELA_DETALHE}" r USING (co_seq_apresentacao_produto)
+    WHERE a.co_seq_produto = ?
+    ORDER BY TRY_CAST(r.nu_apresentacao_produto AS INTEGER) NULLS LAST, a.co_seq_apresentacao_produto`;
+  return (await consultar([TABELA, TABELA_DETALHE], sql, [id])) as unknown as Apresentacao[];
+}
+
+export interface Numeros {
+  produtos: number;
+  ativos: number;
+  empresas: number;
+}
+
+export async function numeros(): Promise<Numeros> {
+  await produtos();
+  const [n] = (await consultar(
+    [],
+    `SELECT count(*)::INTEGER AS produtos, (count(*) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER AS ativos,
+      count(DISTINCT nu_cnpj_empresa)::INTEGER AS empresas FROM produtos`,
+  )) as unknown as Numeros[];
+  return n!;
+}
+
+/** Categorias com produtos ativos, para explorar sem digitar nada. */
+export async function categoriasAtivas(): Promise<ValorFaceta[]> {
+  await produtos();
+  return (await consultar(
+    [],
+    `SELECT ds_categoria_produto AS valor, count(*)::INTEGER AS n FROM produtos
+     WHERE situacao_registro = 'Ativo' AND ds_categoria_produto IS NOT NULL GROUP BY 1 ORDER BY n DESC, valor`,
+  )) as unknown as ValorFaceta[];
 }
