@@ -1,0 +1,58 @@
+---
+import Base from "../layouts/Base.astro";
+import { MANIFEST_URL } from "../lib/config";
+import { fmtData, url } from "../lib/format";
+import { manifestDoBuild } from "../lib/manifest";
+
+const m = await manifestDoBuild(MANIFEST_URL);
+const fontes = Object.entries(m.tables);
+---
+
+<Base title="Sobre" description="De onde vêm os dados, quando são atualizados e como a consulta funciona.">
+  <h1>Sobre</h1>
+  <p class="lead">
+    Consulta independente de alimentos regularizados na ANVISA, como suplementos alimentares e demais alimentos
+    registrados ou notificados. Você pode buscar por nº do processo, CNPJ, nome, marca, empresa e categoria.
+  </p>
+
+  <h2>De onde vêm os dados</h2>
+  <p>Os dados são os arquivos abertos publicados pela ANVISA em <a href="https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/">dados.anvisa.gov.br</a>:</p>
+  <ul>
+    {
+      fontes.map(([nome, t]) => (
+        <li>
+          <a href={t.source.url}>{t.source.name}</a>
+          {t.source.loaded_at && <>, dados de {fmtData(t.source.loaded_at)}</>} (tabela <code>{nome}</code>)
+        </li>
+      ))
+    }
+  </ul>
+  <p>
+    A ANVISA atualiza esses arquivos nos dias úteis, por volta das 12h30 (horário de Brasília). Às 18h um processo
+    automático converte os arquivos para Parquet e os publica com um <a href={MANIFEST_URL}>manifest</a>. A estrutura
+    está no <a href={url("/dicionario/")}>dicionário de dados</a>.
+  </p>
+
+  <h2>Como a busca funciona</h2>
+  <p>
+    Não há servidor. A busca roda no seu navegador com o <a href="https://duckdb.org/docs/api/wasm/overview">DuckDB-WASM</a>,
+    que lê só as partes necessárias dos arquivos Parquet. Na primeira visita o navegador baixa cerca de 5 MB do
+    motor; cada busca lê de algumas centenas de KB a pouco mais de 1 MB de dados, e o que já foi lido fica guardado
+    durante a visita.
+  </p>
+  <ul>
+    <li>
+      14 dígitos buscam por <strong>CNPJ</strong>. Outros números buscam por <strong>nº do processo</strong> (17 dígitos
+      nos atuais, 13 na maioria dos antigos) ou <strong>registro</strong> (9 dígitos no produto, 13 na apresentação).
+      Pontuação é ignorada.
+    </li>
+    <li>Qualquer outro texto procura no nome do produto, nas marcas e na razão social, sem diferenciar acentos.</li>
+    <li>Por padrão só aparecem registros ativos. Marque “incluir inativos” para ver o histórico.</li>
+  </ul>
+
+  <h2>Aviso</h2>
+  <p>
+    Este site não tem vínculo com a ANVISA. As informações são reproduzidas como publicadas nos dados abertos e
+    podem estar defasadas ou incompletas. Para qualquer decisão, confira a consulta oficial da ANVISA.
+  </p>
+</Base>

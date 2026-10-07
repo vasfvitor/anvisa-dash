@@ -1,0 +1,66 @@
+---
+import Base from "../layouts/Base.astro";
+import { COLUNA_DESCRICAO, TABELA_DESCRICAO } from "../lib/colunas";
+import { MANIFEST_URL } from "../lib/config";
+import { fmtBytes, fmtData, fmtInt } from "../lib/format";
+import { manifestDoBuild, tabelaUrl } from "../lib/manifest";
+
+// gerado a cada build a partir do manifest: tabela ou coluna nova aparece aqui sem mudar código
+const m = await manifestDoBuild(MANIFEST_URL);
+const tabelas = Object.entries(m.tables);
+---
+
+<Base title="Dicionário de dados" description="Tabelas e colunas dos dados abertos de alimentos da ANVISA em Parquet.">
+  <h1>Dicionário de dados</h1>
+  <p class="lead">
+    O site consulta arquivos Parquet republicados diariamente a partir dos dados abertos da ANVISA. Esta página
+    descreve o build <code>{m.build_id}</code>, gerado em {fmtData(m.built_at)}.
+  </p>
+  <p class="note">
+    Manifest: <a href={MANIFEST_URL}>{MANIFEST_URL}</a>. Os caminhos dos arquivos mudam a cada build; leia
+    sempre o manifest primeiro.
+  </p>
+
+  <nav class="badges" aria-label="Tabelas">
+    {tabelas.map(([nome]) => <a class="badge" href={`#${nome}`}>{nome}</a>)}
+  </nav>
+
+  {
+    tabelas.map(([nome, t]) => (
+      <section id={nome}>
+        <h2>
+          <code>{nome}</code> <span class="sub">{fmtInt(t.rows)} linhas · {fmtBytes(t.bytes)}</span>
+        </h2>
+        {TABELA_DESCRICAO[nome] && <p>{TABELA_DESCRICAO[nome]}</p>}
+        <p class="note">
+          Origem: <a href={t.source.url}>{t.source.name}</a>
+          {t.source.loaded_at && <>, dados de {fmtData(t.source.loaded_at)}</>}.
+          {t.sort?.length ? <> Ordenado por <code>{t.sort.join(", ")}</code>.</> : null}{" "}
+          <a href={tabelaUrl(MANIFEST_URL, m, nome)}>Baixar Parquet</a>.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Coluna</th><th>Tipo</th><th>Origem</th><th>Descrição</th></tr>
+            </thead>
+            <tbody>
+              {t.columns.map((c) => (
+                <tr>
+                  <td><code>{c.name}</code></td>
+                  <td><code>{c.type}</code></td>
+                  <td class="muted"><code>{c.source}</code></td>
+                  <td>
+                    {COLUNA_DESCRICAO[nome]?.[c.name] ?? ""}
+                    {(t.nulls_added?.[c.name] ?? 0) > 0 && (
+                      <span class="note"> {fmtInt(t.nulls_added![c.name]!)} valor(es) inválido(s) na origem viraram nulo.</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    ))
+  }
+</Base>

@@ -1,0 +1,39 @@
+{
+  "name": "anvisa-dash",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check && vue-tsc --noEmit",
+    "test": "vitest run",
+    "astro": "astro",
+    "dados:local": "node scripts/dados-local.mjs"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.4",
+    "@astrojs/vue": "^7.0.3",
+    "@duckdb/duckdb-wasm": "1.33.1-dev57.0",
+    "astro": "^7.3.6",
+    "vue": "^3.5.43"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.3",
+    "vue-tsc": "^3.3.12"
+  },
+  "packageManager": "pnpm@10.22.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
+  }
+}

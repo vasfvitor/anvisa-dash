@@ -1,0 +1,73 @@
+name: Publicar site
+
+# A busca lê o manifest ao vivo e não depende de rebuild. O cron diário existe para o dicionário e o
+# "sobre", que são gerados no build a partir do manifest: roda depois do pipeline de dados
+# (anvisa-api, 21:00 UTC) para pegar colunas e datas novas.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "30 22 * * *" # 19h30 em Brasília
+  workflow_dispatch:
+
+# Menor privilégio: nada por padrão; cada job pede só o escopo que usa.
+permissions: {}
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # só lê o repositório
+      pages: write # publica no GitHub Pages
+      id-token: write # OIDC exigido por deploy-pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false # este job não empurra nada
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      # Depois do pnpm: `cache: pnpm` precisa do pnpm no PATH.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm test
+
+      - name: Configurar Pages
+        id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      # check e build leem o manifest de produção (PUBLIC_MANIFEST_URL vazio usa o padrão de config.ts)
+      - run: pnpm check
+
+      - name: Build
+        env:
+          # configure-pages já sabe origem e subcaminho (inclusive domínio próprio);
+          # o fallback mantém o caminho de projeto se os outputs vierem vazios.
+          SITE_URL: ${{ steps.pages.outputs.origin || format('https://{0}.github.io', github.repository_owner) }}
+          SITE_BASE: ${{ steps.pages.outputs.base_path || format('/{0}', github.event.repository.name) }}
+        run: pnpm build
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist
+
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

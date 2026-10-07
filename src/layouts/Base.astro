@@ -1,0 +1,76 @@
+---
+import { MANIFEST_URL, TABELA } from "../lib/config";
+import { fmtData, url } from "../lib/format";
+import { manifestDoBuild } from "../lib/manifest";
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description?: string;
+}
+const {
+  title,
+  description = "Consulta de alimentos e suplementos regularizados na ANVISA por nº do processo, CNPJ, nome, marca e categoria.",
+} = Astro.props;
+
+// rodapé com a data dos dados do último build; a página de busca mostra a data do manifest ao vivo
+const fonte = (await manifestDoBuild(MANIFEST_URL)).tables[TABELA]?.source;
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · anvisa-dash</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href={url("/favicon.svg")} type="image/svg+xml" />
+    <link rel="sitemap" href={url("/sitemap-index.xml")} />
+    <script is:inline>
+      // aplica o tema salvo antes da primeira pintura, para não piscar (por isso inline)
+      try {
+        const t = localStorage.getItem("theme");
+        if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#conteudo">Ir para o conteúdo</a>
+    <header class="site">
+      <div class="inner">
+        <a class="brand" href={url("/")}>anvisa-dash</a>
+        <nav>
+          <a href={url("/")}>Busca</a>
+          <a href={url("/dicionario/")}>Dicionário</a>
+          <a href={url("/sobre/")}>Sobre</a>
+        </nav>
+        <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Tema claro/escuro"></button>
+      </div>
+    </header>
+    <main id="conteudo">
+      <slot />
+    </main>
+    <footer class="site">
+      Dados abertos da ANVISA{fonte?.loaded_at && <> de {fmtData(fonte.loaded_at)}</>}
+      {fonte && <> (<a href={fonte.url}>{fonte.name}</a>)</>}.
+      Ferramenta independente, sem vínculo com a ANVISA. Confira sempre a consulta oficial.
+    </footer>
+    <script>
+      // empacotado pelo Astro e compartilhado entre as páginas
+      document.getElementById("theme-toggle")?.addEventListener("click", () => {
+        const root = document.documentElement;
+        const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const current = root.dataset.theme || (systemDark ? "dark" : "light");
+        const next = current === "dark" ? "light" : "dark";
+        root.dataset.theme = next;
+        try {
+          // se o escolhido coincide com o do sistema, volta a seguir o sistema
+          if ((next === "dark") === systemDark) {
+            localStorage.removeItem("theme");
+            delete root.dataset.theme;
+          } else localStorage.setItem("theme", next);
+        } catch {}
+      });
+    </script>
+  </body>
+</html>
