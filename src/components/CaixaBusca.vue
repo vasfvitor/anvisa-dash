@@ -2,13 +2,18 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue";
 import { detectar, MODO_ROTULO, type Consulta } from "../lib/detect";
 import { fmtCnpj, fmtProcesso, plural } from "../lib/format";
-import { sugerir, type Sugestao } from "../lib/queries";
+import type { Sugestao } from "../lib/fontes/comum";
 import { legivel } from "../lib/texto";
 import Destaque from "./Destaque.vue";
 import Icone from "./Icone.vue";
 
 const entrada = defineModel<string>({ required: true });
-const props = defineProps<{ consulta: Consulta | null; pronto: boolean }>();
+const props = defineProps<{
+  consulta: Consulta | null;
+  pronto: boolean;
+  placeholder: string;
+  sugerir: (texto: string) => Promise<Sugestao[]>;
+}>();
 const emit = defineEmits<{ confirmar: []; marca: [rotulo: string]; empresa: [cnpj: string] }>();
 
 const campo = ref<HTMLInputElement | null>(null);
@@ -31,7 +36,7 @@ watch([entrada, () => props.pronto], () => {
   }
   espera = setTimeout(async () => {
     const minha = ++vez;
-    const r = await sugerir(t).catch(() => [] as Sugestao[]);
+    const r = await props.sugerir(t).catch(() => [] as Sugestao[]);
     if (minha !== vez) return;
     lista.value = r;
     ativa.value = -1;
@@ -89,7 +94,7 @@ function lida(c: Consulta): string {
   if (c.modo === "cnpj") return `${MODO_ROTULO.cnpj} ${fmtCnpj(c.valor)}`;
   if (c.modo === "numero") return `${MODO_ROTULO.numero} ${fmtProcesso(c.valor)}`;
   if (c.modo === "marca") return `${MODO_ROTULO.marca} “${c.valor}”`;
-  if (c.modo === "todos") return "Navegando pela categoria escolhida";
+  if (c.modo === "todos") return "Navegando pelo filtro escolhido";
   return MODO_ROTULO.texto;
 }
 </script>
@@ -108,7 +113,7 @@ function lida(c: Consulta): string {
         autocomplete="off"
         spellcheck="false"
         enterkeyhint="search"
-        placeholder="Marca, produto ou CNPJ"
+        :placeholder="placeholder"
         role="combobox"
         aria-autocomplete="list"
         aria-controls="busca-sugestoes"

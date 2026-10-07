@@ -5,14 +5,14 @@ import { consenso, empresas, vazio } from "../lib/apresentacoes";
 import { fatiar, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas, plural } from "../lib/format";
 import { tituloPagina } from "../lib/marca";
 import { ativo as estaAtivo, indeferido as foiIndeferido, marcaPrincipal } from "../lib/produto";
-import { buscarApresentacoes, produtoPorId, type Apresentacao, type Produto } from "../lib/queries";
+import { alimentos, buscarApresentacoes, type Apresentacao, type Produto } from "../lib/fontes/alimentos";
 import { legivel } from "../lib/texto";
 import { useCopia } from "./composables/useCopia";
 import Copiar from "./Copiar.vue";
 import Icone from "./Icone.vue";
 import ResumoAlergia from "./ResumoAlergia.vue";
 
-const props = defineProps<{ id: number }>();
+const props = defineProps<{ id: string }>();
 const emit = defineEmits<{ voltar: []; empresa: [cnpj: string] }>();
 
 const p = shallowRef<Produto | null>(null);
@@ -20,7 +20,7 @@ const aps = shallowRef<Apresentacao[] | null>(null);
 const carregando = ref(true);
 const erro = ref("");
 const todasMarcas = ref(false);
-const { copiado: compartilhado, copiar } = useCopia();
+const { copiado: compartilhado, compartilhar } = useCopia();
 let vez = 0;
 
 async function carregar(): Promise<void> {
@@ -29,13 +29,13 @@ async function carregar(): Promise<void> {
   erro.value = "";
   aps.value = null;
   try {
-    const produto = await produtoPorId(props.id);
+    const produto = await alimentos.porId(props.id);
     if (minha !== vez) return;
     p.value = produto;
     carregando.value = false;
     // o detalhe pode exigir baixar a segunda tabela: o topo aparece antes
     if (produto) {
-      const lista = await buscarApresentacoes(props.id);
+      const lista = await buscarApresentacoes(Number(props.id));
       if (minha === vez) aps.value = lista;
     }
   } catch (e) {
@@ -136,15 +136,6 @@ const datas = computed(() =>
 const linkAnvisa = computed(() =>
   p.value ? `https://consultas.anvisa.gov.br/#/alimentos/${p.value.nu_processo}/?numeroProcesso=${p.value.nu_processo}` : "",
 );
-
-async function compartilhar(): Promise<void> {
-  if (!navigator.share) return copiar(location.href);
-  try {
-    await navigator.share({ title: document.title, url: location.href });
-  } catch {
-    // compartilhamento cancelado
-  }
-}
 </script>
 
 <template>

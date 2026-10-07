@@ -1,26 +1,28 @@
-// SQL do app. Valores do usuário entram só como parâmetros; o WHERE é montado com fragmentos fixos.
-//
-// Depois do download, três tabelas derivadas são criadas uma vez por build, em memória:
+// Corredor 1, alimentos e suplementos. Depois do download, três tabelas derivadas por build:
 // - produtos: uma linha por co_seq_produto (nome, marcas, empresa, processo e situação são iguais em
-//   todas as apresentações), com colunas de busca já normalizadas;
+//   todas as apresentações), com colunas de busca já normalizadas e `grupo` = categoria;
 // - resumo: alergênicos e intolerâncias de cada produto, da tabela de detalhes (chega depois: a busca
 //   não espera por ela; os cartões pedem o resumo dos produtos listados com resumosDe);
 // - sugestoes: marcas e empresas com a contagem de produtos, para sugerir enquanto a pessoa digita.
-import { TABELA, TABELA_DETALHE } from "./config";
-import type { Consulta } from "./detect";
-import { deJson, resumirAlergia, type ResumoAlergia } from "./alergia";
-import { buildAtual, carregar, consultar, type Valor } from "./db";
-import { normalizar } from "./texto";
-
-export const POR_PAGINA = 30;
-
-export type Situacao = "ativo" | "inativo" | "todos";
-
-export interface Filtros {
-  categoria: string;
-  tipo: string;
-  situacao: Situacao;
-}
+import { deJson, resumirAlergia, type ResumoAlergia } from "../alergia";
+import { TABELA, TABELA_DETALHE } from "../config";
+import { carregar, consultar } from "../db";
+import type { Consulta } from "../detect";
+import {
+  contarFacetas,
+  contarNumeros,
+  derivar,
+  gruposAtivos,
+  onde,
+  POR_PAGINA,
+  sugerirEm,
+  termo,
+  TS,
+  type Facetas,
+  type Filtros,
+  type Fonte,
+  type Trecho,
+} from "./comum";
 
 export interface Produto {
   co_seq_produto: number;
@@ -64,27 +66,8 @@ export interface Apresentacao {
   tem_detalhe: boolean;
 }
 
-// datas saem como texto sem fuso: o tipo temporal do Arrow muda de unidade conforme a versão
-const TS = (expr: string, nome: string) => `strftime(${expr}, '%Y-%m-%dT%H:%M:%S') AS ${nome}`;
-
 // ---------------------------------------------------------------------------------------------
 // tabelas derivadas
-
-const derivadas = new Map<string, Promise<void>>();
-
-async function derivar(nome: string, deps: () => Promise<void>, sql: string): Promise<void> {
-  const chave = `${await buildAtual()}/${nome}`;
-  let p = derivadas.get(chave);
-  if (!p) {
-    p = (async () => {
-      await deps();
-      await consultar([], sql);
-    })();
-    p.catch(() => derivadas.delete(chave));
-    derivadas.set(chave, p);
-  }
-  return p;
-}
 
 function produtos(): Promise<void> {
   return derivar(
@@ -99,6 +82,7 @@ function produtos(): Promise<void> {
       any_value(nu_processo) AS nu_processo,
       any_value(nu_registro_notificacao_produto) AS nu_registro_notificacao_produto,
       any_value(ds_categoria_produto) AS ds_categoria_produto,
+      any_value(ds_categoria_produto) AS grupo,
       any_value(tipo_regularizacao) AS tipo_regularizacao,
       any_value(situacao_registro) AS situacao_registro,
       any_value(ds_situacao_assunto_doc) AS ds_situacao_assunto_doc,
@@ -156,25 +140,10 @@ function sugestoes(): Promise<void> {
   );
 }
 
-/**
- * Prepara o necessário para buscar e já começa, sem esperar, a baixar a tabela de detalhes do resumo
- * de alergênicos. As sugestões são montadas no primeiro uso, para não disputar o worker com a
- * primeira busca de um link compartilhado.
- */
-export async function preparar(): Promise<void> {
-  await produtos();
-  void resumo().catch(() => {});
-}
-
 // ---------------------------------------------------------------------------------------------
 // busca
 
-/** Termo como a coluna de busca guarda: sem acento, minúsculo. */
-function termo(q: Consulta): string {
-  return normalizar(q.valor.trim());
-}
-
-function predicado(q: Consulta): { sql: string; params: Valor[] } {
+function predicado(q: Consulta): Trecho {
   switch (q.modo) {
     case "cnpj":
       // 400 processos antigos também têm 14 dígitos
@@ -195,36 +164,14 @@ function predicado(q: Consulta): { sql: string; params: Valor[] } {
   }
 }
 
-type Dimensao = "situacao" | "tipo" | "categoria";
-
-/** WHERE com o termo e os filtros, menos o de `sem` (cada faceta conta ignorando o próprio filtro). */
-function onde(q: Consulta, f: Filtros, sem?: Dimensao): { sql: string; params: Valor[] } {
-  const p = predicado(q);
-  const partes = [p.sql];
-  const params = [...p.params];
-  if (sem !== "situacao" && f.situacao !== "todos") {
-    partes.push("situacao_registro = ?");
-    params.push(f.situacao === "ativo" ? "Ativo" : "Inativo");
-  }
-  if (sem !== "categoria" && f.categoria) {
-    partes.push("ds_categoria_produto = ?");
-    params.push(f.categoria);
-  }
-  if (sem !== "tipo" && f.tipo) {
-    partes.push("tipo_regularizacao = ?");
-    params.push(f.tipo);
-  }
-  return { sql: partes.join(" AND "), params };
-}
-
 const COLUNAS = `co_seq_produto, no_produto, marcas, no_razao_social_empresa, nu_cnpj_empresa, nu_processo,
   nu_registro_notificacao_produto, ds_categoria_produto, tipo_regularizacao, situacao_registro,
   ds_situacao_assunto_doc, ds_alegacao_funcional, dt_regularizacao, dt_publicacao, dt_situacao,
   dt_inicio_analise, dt_vencimento_registro, n_apresentacoes`;
 
-export async function buscarProdutos(q: Consulta, f: Filtros, pagina = 0): Promise<Produto[]> {
+async function buscar(q: Consulta, f: Filtros, pagina = 0): Promise<Produto[]> {
   await produtos();
-  const w = onde(q, f);
+  const w = onde(predicado(q), f);
   const params = [...w.params];
   // texto: marca exata, depois marca que começa com o termo, depois nome, depois o resto (empresa)
   let relevancia = "0";
@@ -243,67 +190,15 @@ export async function buscarProdutos(q: Consulta, f: Filtros, pagina = 0): Promi
   return (await consultar([], sql, [...params, pagina * POR_PAGINA])) as unknown as Produto[];
 }
 
-export interface ValorFaceta {
-  valor: string;
-  n: number;
-}
-export type Facetas = Record<Dimensao, ValorFaceta[]>;
-
-/** Contagem de produtos por situação, tipo e categoria no resultado atual. */
-export async function facetas(q: Consulta, f: Filtros): Promise<Facetas> {
+async function facetas(q: Consulta, f: Filtros): Promise<Facetas> {
   await produtos();
-  const partes: string[] = [];
-  const params: Valor[] = [];
-  const colunas: Record<Dimensao, string> = {
-    situacao: "situacao_registro",
-    tipo: "tipo_regularizacao",
-    categoria: "ds_categoria_produto",
-  };
-  for (const [dim, col] of Object.entries(colunas) as [Dimensao, string][]) {
-    const w = onde(q, f, dim);
-    partes.push(
-      `SELECT '${dim}' AS dim, ${col} AS valor, count(*)::INTEGER AS n FROM produtos WHERE ${w.sql} AND ${col} IS NOT NULL GROUP BY ${col}`,
-    );
-    params.push(...w.params);
-  }
-  const linhas = (await consultar([], `${partes.join(" UNION ALL ")} ORDER BY n DESC, valor`, params)) as {
-    dim: Dimensao;
-    valor: string;
-    n: number;
-  }[];
-  const r: Facetas = { situacao: [], tipo: [], categoria: [] };
-  for (const l of linhas) r[l.dim].push({ valor: l.valor, n: l.n });
-  return r;
+  return contarFacetas("produtos", predicado(q), f);
 }
 
-// ---------------------------------------------------------------------------------------------
-// sugestões, produto, números gerais
-
-export interface Sugestao {
-  tipo: "marca" | "empresa";
-  rotulo: string;
-  nu_cnpj_empresa: string | null;
-  n: number;
-  ativos: number;
-}
-
-/** Marcas e empresas que contêm o termo; as que começam com ele e as com produtos ativos primeiro. */
-export async function sugerir(texto: string, limite = 8): Promise<Sugestao[]> {
-  const t = normalizar(texto.trim());
-  if (t.length < 2) return [];
-  await sugestoes();
-  const sql = `
-    SELECT tipo, rotulo, nu_cnpj_empresa, n, ativos FROM sugestoes
-    WHERE contains(chave, ?)
-    ORDER BY NOT starts_with(chave, ?), ativos DESC, n DESC, length(rotulo), rotulo
-    LIMIT ${Math.trunc(limite)}`;
-  return (await consultar([], sql, [t, t])) as unknown as Sugestao[];
-}
-
-export async function produtoPorId(id: number): Promise<Produto | null> {
+async function porId(id: string): Promise<Produto | null> {
   await produtos();
   const sql = `SELECT ${COLUNAS}, 1 AS total FROM produtos WHERE co_seq_produto = ?`;
-  const [p] = (await consultar([], sql, [id])) as unknown as Produto[];
+  const [p] = (await consultar([], sql, [Number(id)])) as unknown as Produto[];
   return p ?? null;
 }
 
@@ -311,9 +206,9 @@ export async function produtoPorId(id: number): Promise<Produto | null> {
  * Resumo de alergênicos dos produtos pedidos. Espera a tabela de detalhes (baixada em segundo plano
  * desde o início) e só consulta os ids da tela, em vez de juntar o resumo em toda busca.
  */
-export async function resumosDe(ids: number[]): Promise<Map<number, ResumoAlergia>> {
+async function resumosDe(ids: string[]): Promise<Map<string, ResumoAlergia>> {
   // ids vêm dos resultados do próprio app, não do usuário: entram como literais depois de validados
-  const validos = ids.filter(Number.isSafeInteger);
+  const validos = ids.map(Number).filter(Number.isSafeInteger);
   if (!validos.length) return new Map();
   await resumo();
   const linhas = (await consultar(
@@ -321,7 +216,7 @@ export async function resumosDe(ids: number[]): Promise<Map<number, ResumoAlergi
     `SELECT co_seq_produto, alergenicos_json, intolerancias_json FROM resumo WHERE co_seq_produto IN (${validos.join(",")})`,
   )) as { co_seq_produto: number; alergenicos_json: string | null; intolerancias_json: string | null }[];
   return new Map(
-    linhas.map((l) => [l.co_seq_produto, resumirAlergia(deJson(l.alergenicos_json), deJson(l.intolerancias_json))]),
+    linhas.map((l) => [String(l.co_seq_produto), resumirAlergia(deJson(l.alergenicos_json), deJson(l.intolerancias_json))]),
   );
 }
 
@@ -338,28 +233,31 @@ export async function buscarApresentacoes(id: number): Promise<Apresentacao[]> {
   return (await consultar([TABELA, TABELA_DETALHE], sql, [id])) as unknown as Apresentacao[];
 }
 
-export interface Numeros {
-  produtos: number;
-  ativos: number;
-  empresas: number;
-}
-
-export async function numeros(): Promise<Numeros> {
-  await produtos();
-  const [n] = (await consultar(
-    [],
-    `SELECT count(*)::INTEGER AS produtos, (count(*) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER AS ativos,
-      count(DISTINCT nu_cnpj_empresa)::INTEGER AS empresas FROM produtos`,
-  )) as unknown as Numeros[];
-  return n!;
-}
-
-/** Categorias com produtos ativos, para explorar sem digitar nada. */
-export async function categoriasAtivas(): Promise<ValorFaceta[]> {
-  await produtos();
-  return (await consultar(
-    [],
-    `SELECT ds_categoria_produto AS valor, count(*)::INTEGER AS n FROM produtos
-     WHERE situacao_registro = 'Ativo' AND ds_categoria_produto IS NOT NULL GROUP BY 1 ORDER BY n DESC, valor`,
-  )) as unknown as ValorFaceta[];
-}
+export const alimentos: Fonte<Produto> = {
+  /**
+   * Prepara o necessário para buscar e já começa, sem esperar, a baixar a tabela de detalhes do
+   * resumo de alergênicos. As sugestões são montadas no primeiro uso, para não disputar o worker com
+   * a primeira busca de um link compartilhado.
+   */
+  async preparar() {
+    await produtos();
+    void resumo().catch(() => {});
+  },
+  buscar,
+  facetas,
+  async sugerir(texto) {
+    await sugestoes();
+    return sugerirEm("sugestoes", texto);
+  },
+  porId,
+  async numeros() {
+    await produtos();
+    return contarNumeros("produtos");
+  },
+  async grupos() {
+    await produtos();
+    return gruposAtivos("produtos");
+  },
+  idDe: (p) => String(p.co_seq_produto),
+  complementar: resumosDe,
+};

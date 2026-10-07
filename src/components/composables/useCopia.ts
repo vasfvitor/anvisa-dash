@@ -17,5 +17,15 @@ export function useCopia(ms = 1600) {
     espera = setTimeout(() => (copiado.value = false), ms);
   }
 
-  return { copiado, copiar };
+  /** Compartilhamento do sistema quando existe (celular); senão copia o link da página. */
+  async function compartilhar(): Promise<void> {
+    if (!navigator.share) return copiar(location.href);
+    try {
+      await navigator.share({ title: document.title, url: location.href });
+    } catch {
+      // compartilhamento cancelado
+    }
+  }
+
+  return { copiado, copiar, compartilhar };
 }

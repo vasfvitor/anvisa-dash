@@ -3,26 +3,27 @@ import { computed } from "vue";
 import type { ResumoAlergia as Resumo } from "../lib/alergia";
 import { fmtData, plural } from "../lib/format";
 import { ativo, indeferido, marcasParaBusca } from "../lib/produto";
-import type { Produto } from "../lib/queries";
+import type { Produto } from "../lib/fontes/alimentos";
 import { legivel } from "../lib/texto";
 import { cliqueInterno, montarUrl } from "./composables/useUrlState";
 import Destaque from "./Destaque.vue";
 import Icone from "./Icone.vue";
 import ResumoAlergia from "./ResumoAlergia.vue";
 
-const props = defineProps<{ p: Produto; termo?: string | null; resumo?: Resumo }>();
-const emit = defineEmits<{ abrir: [id: number] }>();
+// extra: o resumo de alergênicos, que chega depois da lista
+const props = defineProps<{ p: Produto; termo?: string | null; extra?: Resumo }>();
+const emit = defineEmits<{ abrir: [id: string] }>();
 
 const listaMarcas = computed(() => marcasParaBusca(props.p, props.termo));
 const titulo = computed(() => listaMarcas.value.slice(0, 2).join(" · ") || legivel(props.p.no_produto));
 const outrasMarcas = computed(() => Math.max(0, listaMarcas.value.length - 2));
 const subtitulo = computed(() => (listaMarcas.value.length ? legivel(props.p.no_produto) : ""));
-const href = computed(() => montarUrl({ produto: props.p.co_seq_produto }));
+const href = computed(() => montarUrl({ produto: String(props.p.co_seq_produto) }));
 
 function abrir(ev: MouseEvent): void {
   if (!cliqueInterno(ev)) return;
   ev.preventDefault();
-  emit("abrir", props.p.co_seq_produto);
+  emit("abrir", String(props.p.co_seq_produto));
 }
 </script>
 
@@ -41,7 +42,7 @@ function abrir(ev: MouseEvent): void {
         <Destaque :texto="legivel(p.no_razao_social_empresa, 'nome')" :termo="termo" />
         <template v-if="p.ds_categoria_produto"> · {{ legivel(p.ds_categoria_produto) }}</template>
       </p>
-      <ResumoAlergia v-if="resumo" :r="resumo" compacto />
+      <ResumoAlergia v-if="extra" :r="extra" compacto />
       <p v-if="indeferido(p)" class="aviso-curto"><Icone nome="alerta" /> Petição indeferida pela ANVISA</p>
       <p class="cartao-rodape">
         <span>{{ p.tipo_regularizacao }}<template v-if="p.dt_regularizacao"> em {{ fmtData(p.dt_regularizacao) }}</template></span>

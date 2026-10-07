@@ -1,35 +1,30 @@
 <script setup lang="ts">
 import { computed, onMounted, shallowRef } from "vue";
+import type { Corredor } from "../lib/corredores";
+import type { Fonte, Item, Numeros, ValorFaceta } from "../lib/fontes/comum";
 import { fmtInt } from "../lib/format";
-import { categoriasAtivas, numeros, type Numeros, type ValorFaceta } from "../lib/queries";
 import { legivel } from "../lib/texto";
 import Icone from "./Icone.vue";
 
-const emit = defineEmits<{ exemplo: [valor: string]; categoria: [valor: string] }>();
+const props = defineProps<{ corredor: Corredor; fonte: Fonte<Item> }>();
+const emit = defineEmits<{ exemplo: [valor: string]; grupo: [valor: string] }>();
 
-const EXEMPLOS = [
-  { valor: "whey", texto: "whey" },
-  { valor: "colágeno", texto: "colágeno" },
-  { valor: "creatina", texto: "creatina" },
-  { valor: "01615814000101", texto: "01.615.814/0001-01", dica: "CNPJ" },
-  { valor: "25351.453332/2024-10", texto: "25351.453332/2024-10", dica: "processo" },
-];
-// só esta tela usa os números gerais e as categorias: consulta ao aparecer, não na partida do app
+// só esta tela usa os números gerais e os grupos: consulta ao aparecer, não na partida do app
 const totais = shallowRef<Numeros | null>(null);
-const categorias = shallowRef<ValorFaceta[]>([]);
+const grupos = shallowRef<ValorFaceta[]>([]);
 onMounted(() => {
-  numeros().then((n) => (totais.value = n), () => {});
-  categoriasAtivas().then((c) => (categorias.value = c), () => {});
+  props.fonte.numeros().then((n) => (totais.value = n), () => {});
+  props.fonte.grupos().then((c) => (grupos.value = c), () => {});
 });
-const principais = computed(() => categorias.value.slice(0, 12));
+const principais = computed(() => grupos.value.slice(0, 12));
 </script>
 
 <template>
   <section class="inicio">
     <p class="exemplos">
       Experimente:
-      <template v-for="(x, i) in EXEMPLOS" :key="x.valor">
-        <a href="#" @click.prevent="emit('exemplo', x.valor)">{{ x.texto }}</a><span v-if="x.dica" class="muted"> ({{ x.dica }})</span>{{ i < EXEMPLOS.length - 1 ? ", " : "" }}
+      <template v-for="(x, i) in corredor.exemplos" :key="x.valor">
+        <a href="#" @click.prevent="emit('exemplo', x.valor)">{{ x.texto }}</a><span v-if="x.dica" class="muted"> ({{ x.dica }})</span>{{ i < corredor.exemplos.length - 1 ? ", " : "" }}
       </template>
     </p>
 
@@ -40,9 +35,9 @@ const principais = computed(() => categorias.value.slice(0, 12));
     </dl>
 
     <template v-if="principais.length">
-      <h2>Explorar por categoria</h2>
+      <h2>Explorar por {{ corredor.grupo.toLowerCase() }}</h2>
       <div class="categorias">
-        <button v-for="c in principais" :key="c.valor" type="button" class="chip" @click="emit('categoria', c.valor)">
+        <button v-for="c in principais" :key="c.valor" type="button" class="chip" @click="emit('grupo', c.valor)">
           {{ legivel(c.valor) }} <span class="chip-n">{{ fmtInt(c.n) }}</span>
         </button>
       </div>
@@ -50,10 +45,9 @@ const principais = computed(() => categorias.value.slice(0, 12));
 
     <h2>O que dá para saber aqui</h2>
     <ul class="o-que">
-      <li><Icone nome="certo" /><div><strong>Se está regular</strong><span>Ativo ou inativo na ANVISA, registrado ou notificado, e desde quando.</span></div></li>
-      <li><Icone nome="trigo" /><div><strong>Se serve para você</strong><span>Glúten, lactose, alergênicos que contém ou pode conter, ingredientes e público indicado.</span></div></li>
-      <li><Icone nome="fabrica" /><div><strong>Quem fabrica</strong><span>A empresa responsável, quem envasa e os fabricantes no exterior.</span></div></li>
-      <li><Icone nome="documento" /><div><strong>Os números oficiais</strong><span>Processo, registro ou notificação, para conferir na consulta da ANVISA.</span></div></li>
+      <li v-for="o in corredor.oQue" :key="o.titulo">
+        <Icone :nome="o.icone" /><div><strong>{{ o.titulo }}</strong><span>{{ o.texto }}</span></div>
+      </li>
     </ul>
   </section>
 </template>

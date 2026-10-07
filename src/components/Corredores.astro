@@ -1,0 +1,33 @@
+---
+// As placas dos corredores no cabeçalho. São links de verdade (funcionam sem JavaScript e nas
+// páginas de dados e sobre); na busca, a ilha intercepta o clique e troca de corredor sem recarregar.
+import { CORREDORES, rotaDo } from "../lib/corredores";
+import Icone from "./Icone.astro";
+
+interface Props {
+  atual?: string;
+}
+const { atual } = Astro.props;
+---
+
+<nav class="corredores" aria-label="Corredores">
+  {
+    CORREDORES.map((c) => (
+      <a
+        class="placa"
+        href={rotaDo(c)}
+        data-corredor-link={c.id}
+        data-placa={c.id}
+        aria-current={atual === c.id ? "page" : undefined}
+        title={`Corredor ${c.numero}: ${c.nome}`}
+      >
+        <span class="placa-num">{c.numero}</span>
+        <Icone nome={c.icone} />
+        <span class="placa-nome">
+          <span class="longo">{c.nome}</span>
+          <span class="curto">{c.curto}</span>
+        </span>
+      </a>
+    ))
+  }
+</nav>

@@ -1,50 +1,62 @@
 /* contém. — linguagem visual de rótulo de embalagem: papel, tinta, linhas grossas como as da tabela
-   nutricional, números em mono como lote e validade, e um laranja de cápsula para o que chama atenção.
-   Tema: cada token é escrito uma vez com light-dark(); o que muda entre temas é só o color-scheme,
-   definido pelo sistema (prefers-color-scheme) ou pelo alternador (data-theme). */
+   nutricional, números em mono como lote e validade, e uma cor de destaque para o que chama atenção.
+   Cada fonte de dados é um "corredor" com as próprias cores e o próprio fundo, em [data-corredor];
+   a troca de corredor faz o papel que o modo escuro fazia (que saiu). */
 :root {
   color-scheme: light;
-  --bg: light-dark(#f6f1e6, #16140f);
-  --fg: light-dark(#1d1b16, #f1eadb);
-  --muted: light-dark(#6b655a, #a69e8e);
-  --line: light-dark(#e2dac9, #322d24);
-  --card: light-dark(#fffdf8, #1f1c16);
-  --accent: light-dark(#0f6b57, #5fd4ab);
-  --accent-fg: light-dark(#f6f1e6, #16140f);
-  --pop: light-dark(#f2602f, #ff8a5c);
-  --pop-suave: light-dark(#ffe3d6, #4a2416);
-  --chip-bg: light-dark(#efe8da, #2a261e);
-  --chip-fg: light-dark(#3a352c, #e3dccc);
-  --ok: light-dark(#17643f, #82dba6);
-  --ok-bg: light-dark(#dcf1e3, #173a26);
-  --off: light-dark(#a3261d, #ff9c8f);
-  --off-bg: light-dark(#fbe2dd, #4a1d18);
-  --warn: light-dark(#875600, #f0c060);
-  --warn-bg: light-dark(#fdefcb, #3d2f10);
-  --mark: light-dark(#ffe66d, #6b5a12);
-  --dot: light-dark(rgb(29 27 22 / 0.075), rgb(241 234 219 / 0.06));
-  --sombra: light-dark(#1d1b16, #000);
-  --toggle-glyph: "☾";
+  --fg: #1d1b16;
+  --muted: #6b655a;
+  --card: #fffdf8;
+  --chip-fg: #3a352c;
+  --ok: #17643f;
+  --ok-bg: #dcf1e3;
+  --off: #a3261d;
+  --off-bg: #fbe2dd;
+  --warn: #875600;
+  --warn-bg: #fdefcb;
+  --sombra: #1d1b16;
 
   --fonte-titulo: "Fraunces Variable", Georgia, "Times New Roman", serif;
   --fonte-texto: "Figtree Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
   --fonte-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
   --raio: 16px;
   --mola: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* corredor 1, alimentos e suplementos (padrão, também nas páginas sem corredor): papel quente,
+     laranja de cápsula, verde de folha, fundo pontilhado */
+  --bg: #f6f1e6;
+  --line: #e2dac9;
+  --chip-bg: #efe8da;
+  --accent: #0f6b57;
+  --accent-fg: #f6f1e6;
+  --pop: #f2602f;
+  --pop-suave: #ffe3d6;
+  --mark: #ffe66d;
+  --padrao: radial-gradient(rgb(29 27 22 / 0.075) 1.1px, transparent 1.5px);
+  --padrao-tam: 22px 22px;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { color-scheme: dark; --toggle-glyph: "☀"; }
+/* corredor 2, saneantes: papel frio, azul-cobalto, verde-água e bolhas no fundo */
+[data-corredor="saneantes"] {
+  --bg: #eef3f4;
+  --line: #d3dfe3;
+  --chip-bg: #e1eaee;
+  --accent: #0e8f8f;
+  --accent-fg: #f4f9fa;
+  --pop: #2563eb;
+  --pop-suave: #dbe7ff;
+  --mark: #bdf0e6;
+  --padrao: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='132' height='132'%3E%3Cg fill='none' stroke='%232563eb' stroke-opacity='.13' stroke-width='1.5'%3E%3Ccircle cx='22' cy='26' r='10'/%3E%3Ccircle cx='86' cy='16' r='4.5'/%3E%3Ccircle cx='104' cy='76' r='14'/%3E%3Ccircle cx='44' cy='96' r='6'/%3E%3Ccircle cx='66' cy='56' r='2.5'/%3E%3Ccircle cx='12' cy='76' r='3.5'/%3E%3Ccircle cx='118' cy='122' r='3'/%3E%3C/g%3E%3C/svg%3E");
+  --padrao-tam: 132px 132px;
 }
-:root[data-theme="dark"] { color-scheme: dark; --toggle-glyph: "☀"; }
 
 /* ---------------------------------------------------------------- base */
 * { box-sizing: border-box; }
 html { font: 16.5px/1.55 var(--fonte-texto); -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; color: var(--fg); background-color: var(--bg);
-  /* papel pontilhado, como o verso de uma etiqueta */
-  background-image: radial-gradient(var(--dot) 1.1px, transparent 1.5px);
-  background-size: 22px 22px;
+  /* fundo do corredor: pontilhado (verso de etiqueta) ou bolhas */
+  background-image: var(--padrao);
+  background-size: var(--padrao-tam);
   min-height: 100vh; display: flex; flex-direction: column;
 }
 main { width: 100%; max-width: 62rem; margin: 0 auto; padding: 1.25rem 1rem 4rem; flex: 1; }
@@ -75,22 +87,51 @@ kbd { font-family: var(--fonte-mono); font-size: 0.78em; border: 1px solid var(-
 .logo-e { position: relative; display: inline-block; }
 /* o acento do é é uma cápsula: metade laranja, metade tinta */
 .logo-capsula { position: absolute; left: 0.2em; top: -0.02em; width: 0.4em; height: 0.16em; border-radius: 1em;
-  background: linear-gradient(90deg, var(--pop) 52%, var(--fg) 52%); transform: rotate(-38deg); transform-origin: 30% 50%; }
+  background: linear-gradient(90deg, var(--pop) 52%, var(--fg) 52%); transform: rotate(-38deg); transform-origin: 30% 50%;
+  transition: width 0.45s var(--mola), height 0.45s var(--mola), border-radius 0.45s, transform 0.45s var(--mola), left 0.45s, top 0.45s; }
+/* nos saneantes o acento vira uma gota (quadrado com uma ponta, girado para a ponta ficar em cima) */
+[data-corredor="saneantes"] .logo-capsula { left: 0.24em; top: 0.02em; width: 0.19em; height: 0.19em; border-radius: 0 50% 50% 50%;
+  background: var(--pop); transform: rotate(45deg); }
 .logo:hover .logo-capsula, .logo:focus-visible .logo-capsula { animation: balanco 0.7s var(--mola); }
 .logo-ponto { color: var(--pop); }
 @keyframes balanco { 0% { transform: rotate(-38deg); } 30% { transform: rotate(-8deg) translateY(-0.08em); } 60% { transform: rotate(-55deg); } 100% { transform: rotate(-38deg); } }
 
 header.site { position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1.5px solid var(--fg); }
-header.site .inner { max-width: 62rem; margin: 0 auto; padding: 0.7rem 1rem; display: flex; gap: 1.25rem; align-items: center; }
-header.site nav { display: flex; gap: 1.1rem; }
-header.site nav a { color: var(--fg); text-decoration: none; font-weight: 600; font-size: 0.95rem; padding: 0.15rem 0; border-bottom: 2.5px solid transparent; }
-header.site nav a:hover { border-bottom-color: var(--line); }
-header.site nav a[aria-current="page"] { border-bottom-color: var(--pop); }
-.theme-toggle { margin-left: auto; width: 2.2rem; height: 2.2rem; border: 1.5px solid var(--fg); background: var(--card); color: var(--fg);
-  border-radius: 50%; cursor: pointer; font: inherit; font-size: 0.95rem; line-height: 1; transition: transform 0.4s var(--mola); }
-.theme-toggle::before { content: var(--toggle-glyph); }
-.theme-toggle:hover { transform: rotate(-25deg); }
+header.site .inner { max-width: 62rem; margin: 0 auto; padding: 0.85rem 1rem 0.7rem; display: flex; gap: 1.25rem; align-items: center; }
+header.site .nav-site { display: flex; gap: 1.1rem; margin-left: auto; }
+header.site .nav-site a { color: var(--fg); text-decoration: none; font-weight: 600; font-size: 0.95rem; padding: 0.15rem 0; border-bottom: 2.5px solid transparent; }
+header.site .nav-site a:hover { border-bottom-color: var(--line); }
+header.site .nav-site a[aria-current="page"] { border-bottom-color: var(--pop); }
+
+/* placas dos corredores: cada uma com a cor do próprio corredor, penduradas por duas cordinhas */
+.corredores { display: flex; gap: 0.6rem; }
+.placa { position: relative; display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.3rem 0.8rem 0.3rem 0.35rem;
+  border: 2px solid var(--fg); border-radius: 12px; background: var(--card); color: var(--fg); text-decoration: none;
+  font-weight: 750; font-size: 0.9rem; line-height: 1.1; white-space: nowrap;
+  transition: transform 0.18s var(--mola), box-shadow 0.18s, background 0.18s, color 0.18s; }
+.placa[data-placa="alimentos"] { --cor: #f2602f; --cor-suave: #ffe3d6; }
+.placa[data-placa="saneantes"] { --cor: #2563eb; --cor-suave: #dbe7ff; }
+.placa::before, .placa::after { content: ""; position: absolute; top: -0.85rem; width: 2px; height: 0.75rem; background: var(--fg); }
+.placa::before { left: 22%; }
+.placa::after { right: 22%; }
+.placa-num { display: grid; place-items: center; width: 1.65rem; height: 1.65rem; border-radius: 50%; background: var(--cor); color: #fff;
+  font-family: var(--fonte-mono); font-size: 0.82rem; transition: background 0.18s, color 0.18s; }
+.placa .icone { color: var(--cor); width: 1.15rem; height: 1.15rem; transition: color 0.18s; }
+.placa .curto { display: none; }
+.placa:hover { background: var(--cor-suave); transform: translate(-2px, -2px) rotate(-1.5deg); box-shadow: 3px 3px 0 var(--sombra); }
+.placa[aria-current="page"] { background: var(--cor); color: #fff; box-shadow: 3px 3px 0 var(--sombra); }
+.placa[aria-current="page"]:hover { transform: translate(-2px, -2px); }
+.placa[aria-current="page"] .placa-num { background: #fff; color: var(--cor); }
+.placa[aria-current="page"] .icone { color: #fff; }
+
+/* troca de corredor: a página nova aparece num círculo que cresce a partir do clique */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-new(root) { animation: inundar 0.7s cubic-bezier(0.65, 0, 0.35, 1); }
+@keyframes inundar {
+  from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 0)); }
+  to { clip-path: circle(var(--vt-r, 150%) at var(--vt-x, 50%) var(--vt-y, 0)); }
+}
 
 /* ---------------------------------------------------------------- rodapé: a "tabela" do rótulo */
 footer.site { padding: 2.5rem 1rem 3rem; }
@@ -129,7 +170,8 @@ th { font-weight: 800; font-size: 0.72rem; text-transform: uppercase; letter-spa
 a.badge:hover { background: var(--fg); color: var(--bg); }
 
 /* ---------------------------------------------------------------- abertura (só na tela inicial) */
-[data-tela="busca"] .hero, [data-tela="produto"] .hero { display: none; }
+/* !important: vence a regra por corredor que a página gera para mostrar a abertura certa */
+[data-tela="busca"] .hero[data-hero], [data-tela="produto"] .hero[data-hero] { display: none !important; }
 .hero { position: relative; padding: 2.2rem 0 1.4rem; }
 .hero-selo { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0 0 0.9rem; padding: 0.2rem 0.75rem 0.2rem 0.55rem;
   border: 1.5px solid var(--fg); border-radius: 2rem; background: var(--card); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -160,8 +202,7 @@ a.badge:hover { background: var(--fg); color: var(--bg); }
 .carimbo { position: absolute; top: 38%; right: 12%; width: 7.5rem; height: 7.5rem; animation: girar 28s linear infinite; }
 .carimbo text { font-family: var(--fonte-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; fill: var(--fg); }
 .carimbo-borda { fill: var(--card); stroke: var(--fg); stroke-width: 1.5; stroke-dasharray: 2 3; }
-.carimbo-capsula-a { fill: var(--pop); }
-.carimbo-capsula-b { fill: var(--fg); }
+.carimbo-icone { fill: none; stroke: var(--pop); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 @keyframes girar { to { transform: rotate(360deg); } }
 @media (max-width: 52rem) {
   .hero-deco { width: 42%; opacity: 0.9; }
@@ -264,6 +305,7 @@ a.badge:hover { background: var(--fg); color: var(--bg); }
 .situacao.ok { background: var(--ok-bg); color: var(--ok); }
 .situacao.off { background: var(--chip-bg); color: var(--muted); }
 .situacao.grande { font-size: 0.8rem; padding: 0.3rem 0.85rem 0.3rem 0.6rem; }
+.selos-validade { margin-bottom: 0.6rem; }
 .aviso-curto { display: flex; align-items: center; gap: 0.35rem; margin: 0.55rem 0 0; font-size: 0.82rem; color: var(--off); font-weight: 700; }
 
 /* selos de glúten, lactose e alergênicos */
@@ -351,8 +393,13 @@ a.badge:hover { background: var(--fg); color: var(--bg); }
 @media (max-width: 40rem) {
   html { font-size: 16px; }
   main { padding-top: 0.75rem; }
-  header.site .inner { gap: 0.8rem; padding: 0.6rem 1rem; }
-  header.site nav { gap: 0.75rem; }
+  header.site .inner { gap: 0.6rem 0.8rem; padding: 0.6rem 1rem 0.7rem; flex-wrap: wrap; }
+  header.site .nav-site { gap: 0.75rem; }
+  .corredores { order: 3; width: 100%; }
+  .placa { flex: 1; justify-content: center; }
+  .placa::before, .placa::after { display: none; }
+  .placa .longo { display: none; }
+  .placa .curto { display: inline; }
   .logo { font-size: 1.4rem; }
   .busca .btn { padding: 0 0.85rem; }
   .busca .btn span { display: none; }

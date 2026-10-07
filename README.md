@@ -1,7 +1,7 @@
 # contém.
 
-Consulta de alimentos e suplementos regularizados na ANVISA por nº do processo, CNPJ, registro,
-nome, marca, empresa e categoria. Site estático (Astro + uma ilha Vue). A busca roda no navegador
+Consulta de produtos regularizados na ANVISA (alimentos e suplementos; saneantes) por nº do processo,
+CNPJ, registro, nome, marca, empresa e categoria. Site estático (Astro + uma ilha Vue). A busca roda no navegador
 com DuckDB-WASM sobre os Parquet que o repo [`anvisa`](https://github.com/vasfvitor/anvisa-api)
 publica diariamente. Não há backend.
 
@@ -29,6 +29,20 @@ Coisas medidas que o código assume (build de 2026-10-06):
 - Nome, marcas, empresa, processo e situação são iguais em todas as apresentações de um produto. A
   busca agrupa por `co_seq_produto` numa consulta só.
 - 94 apresentações ativas (recentes) ainda não têm linha em `alimentos_resultado`. A interface avisa.
+
+## Corredores
+
+Cada fonte de dados é um corredor: `/` (alimentos e suplementos) e `/saneantes/`. Para criar outro:
+
+1. uma entrada em `src/lib/corredores.ts` (nome, número, rota, tabela, textos, exemplos, ícones);
+2. um módulo em `src/lib/fontes/` que implementa `Fonte` (`comum.ts`) e entra em `fontes/index.ts`;
+3. um cartão e uma página em `src/components/corredores.ts`;
+4. as cores em `[data-corredor="…"]` e na placa em `src/styles/global.css`.
+
+A página é gerada por `src/pages/[...corredor].astro`. A troca de corredor não recarrega: a ilha
+intercepta o clique na placa, troca `html[data-corredor]` numa View Transition (círculo a partir do
+clique) e leva o termo da busca. Um DuckDB só atende todos os corredores; cada tabela é baixada na
+primeira vez que o corredor abre.
 
 ## Desenvolvimento
 

@@ -1,6 +1,6 @@
 // Leituras de um produto usadas tanto no cartão da lista quanto na página do produto.
 import { marcas } from "./format";
-import type { Produto } from "./queries";
+import type { Produto } from "./fontes/alimentos";
 import { legivel, normalizar } from "./texto";
 
 export const ativo = (p: Produto): boolean => p.situacao_registro === "Ativo";

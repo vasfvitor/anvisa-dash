@@ -2,9 +2,11 @@
 import "@fontsource-variable/fraunces/soft.css";
 import "@fontsource-variable/figtree";
 import "@fontsource-variable/jetbrains-mono";
+import Corredores from "../components/Corredores.astro";
 import Icone from "../components/Icone.astro";
 import Logo from "../components/Logo.astro";
 import { MANIFEST_URL, TABELA } from "../lib/config";
+import { CORREDORES } from "../lib/corredores";
 import { fmtData, url } from "../lib/format";
 import { manifestDoBuild } from "../lib/manifest";
 import { SLOGAN, tituloPagina } from "../lib/marca";
@@ -13,9 +15,12 @@ import "../styles/global.css";
 interface Props {
   title: string;
   description?: string;
+  /** corredor desta página (busca); dados e sobre não têm */
+  corredor?: string;
 }
 const {
   title,
+  corredor,
   description = "Consulte alimentos e suplementos regularizados na ANVISA pela marca, nome, empresa, CNPJ ou nº do processo: situação, glúten, lactose, alergênicos e ingredientes.",
 } = Astro.props;
 
@@ -23,6 +28,9 @@ const {
 const fonte = (await manifestDoBuild(MANIFEST_URL)).tables[TABELA]?.source;
 const atual = Astro.url.pathname.replace(/\/+$/, "/");
 const ativo = (p: string) => (atual === url(p) ? "page" : undefined);
+// para o script inline marcar o corredor pela URL antes da primeira pintura
+const slugs = CORREDORES.map((c) => [c.slug, c.id]);
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 ---
 
 <!doctype html>
@@ -32,19 +40,18 @@ const ativo = (p: string) => (atual === url(p) ? "page" : undefined);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{tituloPagina(title)}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#f7f2e8" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#16140f" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f6f1e6" />
     <link rel="icon" href={url("/favicon.svg")} type="image/svg+xml" />
     <link rel="sitemap" href={url("/sitemap-index.xml")} />
-    <script is:inline>
-      // aplica o tema salvo e marca a tela antes da primeira pintura, para não piscar (por isso inline)
-      try {
-        const t = localStorage.getItem("theme");
-        if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
-      } catch {}
-      // tela da busca pela URL, antes da ilha montar: em link de busca ou produto o hero nem aparece
+    <script is:inline define:vars={{ slugs, base }}>
+      // marca corredor e tela pela URL antes da primeira pintura (por isso inline): a página já abre com
+      // as cores do corredor e, em link de busca ou produto, sem a abertura piscando
+      const h = document.documentElement;
+      const resto = location.pathname.startsWith(base) ? location.pathname.slice(base.length) : location.pathname;
+      const seg = resto.split("/").filter(Boolean)[0] || "";
+      h.dataset.corredor = (slugs.find(([s]) => s === seg) || slugs[0])[1];
       const q = new URLSearchParams(location.search);
-      document.documentElement.dataset.tela = q.has("p") ? "produto" : ["q", "marca", "cat"].some((k) => q.has(k)) ? "busca" : "inicio";
+      h.dataset.tela = q.has("p") ? "produto" : ["q", "marca", "cat"].some((k) => q.has(k)) ? "busca" : "inicio";
     </script>
   </head>
   <body>
@@ -52,12 +59,11 @@ const ativo = (p: string) => (atual === url(p) ? "page" : undefined);
     <header class="site">
       <div class="inner">
         <Logo />
-        <nav aria-label="Principal">
-          <a href={url("/")} aria-current={ativo("/")}>Busca</a>
+        <Corredores atual={corredor} />
+        <nav class="nav-site" aria-label="Sobre o site">
           <a href={url("/dicionario/")} aria-current={ativo("/dicionario/")}>Dados</a>
           <a href={url("/sobre/")} aria-current={ativo("/sobre/")}>Sobre</a>
         </nav>
-        <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Tema claro/escuro"></button>
       </div>
     </header>
     <main id="conteudo">
@@ -85,22 +91,5 @@ const ativo = (p: string) => (atual === url(p) ? "page" : undefined);
         </dl>
       </div>
     </footer>
-    <script>
-      // empacotado pelo Astro e compartilhado entre as páginas
-      document.getElementById("theme-toggle")?.addEventListener("click", () => {
-        const root = document.documentElement;
-        const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        const current = root.dataset.theme || (systemDark ? "dark" : "light");
-        const next = current === "dark" ? "light" : "dark";
-        root.dataset.theme = next;
-        try {
-          // se o escolhido coincide com o do sistema, volta a seguir o sistema
-          if ((next === "dark") === systemDark) {
-            localStorage.removeItem("theme");
-            delete root.dataset.theme;
-          } else localStorage.setItem("theme", next);
-        } catch {}
-      });
-    </script>
   </body>
 </html>
