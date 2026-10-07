@@ -224,6 +224,7 @@ const titulo = computed(() => {
     :consulta="b.consulta.value"
     :pronto="pronto"
     :placeholder="corredor.placeholder"
+    :rotulo-texto="corredor.rotuloTexto"
     :sugerir="fonte.sugerir"
     @confirmar="confirmar"
     @marca="(m) => buscarPor(m, true)"

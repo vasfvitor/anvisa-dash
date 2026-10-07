@@ -51,8 +51,8 @@ function tabela(): Promise<void> {
       strftime(dt_vencimento_produto, '%Y-%m-%d') AS dt_vencimento,
       CASE WHEN dt_vencimento_produto IS NULL THEN 'Sem data'
         WHEN dt_vencimento_produto < current_date THEN 'Vencida' ELSE 'Em dia' END AS grupo,
-      -- só para busca e ordenação
-      dt_vencimento_produto AS ordem_data,
+      -- só para busca e ordenação; vencimento depois de 2100 (há até 3033) não sobe para o topo
+      CASE WHEN year(dt_vencimento_produto) <= 2100 THEN dt_vencimento_produto END AS ordem_data,
       lower(strip_accents(concat_ws(' ', no_produto, no_razao_social_empresa))) AS busca,
       lower(strip_accents(no_produto)) AS busca_nome
     FROM "${TABELA}"

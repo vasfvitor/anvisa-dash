@@ -16,7 +16,9 @@
   --warn-bg: #fdefcb;
   --sombra: #1d1b16;
 
-  --fonte-titulo: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  /* a marca fica sempre na Fraunces; os títulos mudam de letra com o corredor */
+  --fonte-marca: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --fonte-titulo: var(--fonte-marca);
   --fonte-texto: "Figtree Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
   --fonte-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
   --raio: 16px;
@@ -82,7 +84,7 @@ kbd { font-family: var(--fonte-mono); font-size: 0.78em; border: 1px solid var(-
 .icone.mini { width: 0.95em; height: 0.95em; color: var(--pop); }
 
 /* ---------------------------------------------------------------- logo e cabeçalho */
-.logo { font-family: var(--fonte-titulo); font-variation-settings: "SOFT" 100; font-weight: 800; font-size: 1.6rem; letter-spacing: -0.03em;
+.logo { font-family: var(--fonte-marca); font-variation-settings: "SOFT" 100; font-weight: 800; font-size: 1.6rem; letter-spacing: -0.03em;
   color: var(--fg); text-decoration: none; line-height: 1; white-space: nowrap; }
 .logo-e { position: relative; display: inline-block; }
 /* o acento do é é uma cápsula: metade laranja, metade tinta */
@@ -397,6 +399,59 @@ a.badge:hover { background: var(--fg); color: var(--bg); }
 .copiar { display: inline-grid; place-items: center; vertical-align: middle; border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0.1rem 0.25rem; border-radius: 6px; }
 .copiar:hover { color: var(--pop); background: var(--pop-suave); }
 .copiar .icone { width: 0.95rem; height: 0.95rem; }
+
+/* ---------------------------------------------------------------- corredor 2: frasco de limpeza
+   Tudo no mesmo lugar, outro caráter. Alimentos é rótulo de papel: serifa macia, tinta quente, linhas e
+   sombra dura. Limpeza é frasco de plástico: letra sem serifa pesada, tinta azul-marinho, cantos de
+   pílula, brilho por cima e sombra macia azulada, sem contorno de tinta. */
+[data-corredor="saneantes"] {
+  --fg: #0f2236;
+  --muted: #546575;
+  --card: #fbfdfe;
+  --chip-fg: #22384d;
+  --sombra: #0f2236;
+  --fonte-titulo: var(--fonte-texto);
+  --raio: 22px;
+  --macia: 0 14px 30px -16px rgb(37 99 235 / 0.5), 0 2px 6px -2px rgb(15 34 54 / 0.12);
+  --macia-alta: 0 22px 40px -18px rgb(37 99 235 / 0.6), 0 3px 8px -3px rgb(15 34 54 / 0.16);
+  --brilho: linear-gradient(180deg, #fff 0%, rgb(255 255 255 / 0) 55%);
+}
+[data-corredor="saneantes"] :is(h1, h2, h3) { letter-spacing: -0.035em; }
+[data-corredor="saneantes"] .hero h1 { font-weight: 850; letter-spacing: -0.045em; }
+/* o destaque vira um adesivo de oferta colado na embalagem */
+[data-corredor="saneantes"] .hero h1 em { font-style: normal; font-weight: 850; color: #fff; background: var(--accent); display: inline-block;
+  padding: 0 0.16em 0.04em; border-radius: 0.24em; transform: rotate(-2.5deg); box-shadow: var(--macia); }
+/* o sublinhado vira uma fila de bolhas escorrendo */
+[data-corredor="saneantes"] .sublinhado path { stroke-width: 7; stroke-dasharray: 0.1 13; stroke-dashoffset: 0; animation: escorrer 1.6s linear infinite; }
+@keyframes escorrer { to { stroke-dashoffset: -13.1; } }
+[data-corredor="saneantes"] .hero-selo { border-color: transparent; background: var(--pop-suave); color: var(--pop); }
+[data-corredor="saneantes"] .deco { border: 0; box-shadow: var(--macia), inset 0 -4px 8px rgb(15 34 54 / 0.08);
+  background-image: radial-gradient(circle at 32% 26%, rgb(255 255 255 / 0.85) 0 14%, transparent 15%); animation-name: bolha; }
+@keyframes bolha { from { transform: translateY(6px) scale(0.97); } to { transform: translateY(-10px) scale(1.03); } }
+[data-corredor="saneantes"] .carimbo-borda { stroke-dasharray: none; stroke: var(--pop); }
+
+/* superfícies: pílulas e cartões de plástico, com brilho e sombra macia no lugar da tinta */
+[data-corredor="saneantes"] .busca .field { border-color: transparent; border-radius: 999px; background: var(--brilho), var(--card); box-shadow: var(--macia); }
+[data-corredor="saneantes"] .busca .field:focus { transform: none; box-shadow: 0 0 0 4px var(--pop-suave), var(--macia-alta); }
+[data-corredor="saneantes"] .busca .btn { border-radius: 999px; border-color: transparent; background: linear-gradient(180deg, #4a82f0, var(--pop)); color: #fff; box-shadow: var(--macia); }
+[data-corredor="saneantes"] .busca .btn:hover { transform: translateY(-2px); box-shadow: var(--macia-alta); }
+[data-corredor="saneantes"] .sugestoes { border: 0; border-radius: 22px; box-shadow: var(--macia-alta); }
+[data-corredor="saneantes"] .busca-esqueleto span { border-radius: 999px; }
+[data-corredor="saneantes"] .btn { border-radius: 999px; border-color: var(--line); background: var(--brilho), var(--card); }
+[data-corredor="saneantes"] .btn:hover { transform: translateY(-2px); border-color: var(--pop); box-shadow: var(--macia); }
+[data-corredor="saneantes"] .chip[aria-pressed="true"] { background: var(--pop); border-color: var(--pop); color: #fff; }
+[data-corredor="saneantes"] :is(.cartao, .numeros div, .o-que li, .secao:not(.tecnico), .carregamento, .vazio) {
+  border-color: transparent; background: var(--brilho), var(--card); box-shadow: var(--macia); }
+[data-corredor="saneantes"] .cartao::before { inset: 0.9rem auto 0.9rem 0.55rem; width: 5px; border-radius: 9px; }
+[data-corredor="saneantes"] .cartao:hover, [data-corredor="saneantes"] .cartao:not(.inativo):hover { transform: translateY(-3px); border-color: transparent; box-shadow: var(--macia-alta); }
+[data-corredor="saneantes"] .cartao-rodape { border-top-style: solid; }
+[data-corredor="saneantes"] .numeros div .icone { color: var(--pop-suave); }
+[data-corredor="saneantes"] .produto-cabecalho { border: 0; border-radius: 28px; background: var(--brilho), var(--card); box-shadow: var(--macia-alta); }
+[data-corredor="saneantes"] .produto-cabecalho.inativo { box-shadow: var(--macia); }
+[data-corredor="saneantes"] .produto-cabecalho::after { border: 0; background: radial-gradient(circle at 40% 60%, var(--pop-suave), transparent 70%); }
+[data-corredor="saneantes"] .secao h2 { border-bottom-width: 2px; border-bottom-color: var(--line); }
+[data-corredor="saneantes"] .secao.tecnico { border-color: var(--line); }
+[data-corredor="saneantes"] .aviso { border-color: transparent; box-shadow: var(--macia); }
 
 /* ---------------------------------------------------------------- celular */
 @media (max-width: 40rem) {

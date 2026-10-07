@@ -12,6 +12,8 @@ const props = defineProps<{
   consulta: Consulta | null;
   pronto: boolean;
   placeholder: string;
+  /** o que a busca por texto procura neste corredor (sem marcas na limpeza) */
+  rotuloTexto?: string;
   sugerir: (texto: string) => Promise<Sugestao[]>;
 }>();
 const emit = defineEmits<{ confirmar: []; marca: [rotulo: string]; empresa: [cnpj: string] }>();
@@ -95,7 +97,7 @@ function lida(c: Consulta): string {
   if (c.modo === "numero") return `${MODO_ROTULO.numero} ${fmtProcesso(c.valor)}`;
   if (c.modo === "marca") return `${MODO_ROTULO.marca} “${c.valor}”`;
   if (c.modo === "todos") return "Navegando pelo filtro escolhido";
-  return MODO_ROTULO.texto;
+  return props.rotuloTexto ?? MODO_ROTULO.texto;
 }
 </script>
 

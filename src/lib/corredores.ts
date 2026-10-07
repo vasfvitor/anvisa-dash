@@ -32,6 +32,8 @@ export interface Corredor {
   descricao: string;
   hero: { selo: string; linha1: Frase; linha2: Frase; lead: string; carimbo: string };
   placeholder: string;
+  /** o que a busca por texto procura, quando não é o padrão (nome, marca ou empresa) */
+  rotuloTexto?: string;
   exemplos: { valor: string; texto: string; dica?: string }[];
   /** buscas prontas para explorar sem digitar; sem elas, a abertura oferece os valores da terceira faceta */
   atalhos?: string[];
@@ -106,6 +108,7 @@ export const CORREDORES: Corredor[] = [
       carimbo: "fora do alcance das crianças ·",
     },
     placeholder: "Produto, empresa ou CNPJ",
+    rotuloTexto: "Nome do produto ou empresa",
     exemplos: [
       { valor: "ypê", texto: "ypê" },
       { valor: "bombril", texto: "bombril" },
