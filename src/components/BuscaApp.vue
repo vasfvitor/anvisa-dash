@@ -248,7 +248,7 @@ const titulo = computed(() => {
     </svg>
     <p>
       <strong v-if="motor.status.value === 'iniciando'">Abrindo o corredor {{ corredor.numero }}…</strong>
-      <strong v-else>Enchendo o pote: {{ Math.round(motor.progresso.value * 100) }}% de {{ fmtBytes(motor.tamanho.value) }}</strong>
+      <strong v-else>Enchendo {{ corredor.recipiente }}: {{ Math.round(motor.progresso.value * 100) }}% de {{ fmtBytes(motor.tamanho.value) }}</strong>
       <span class="muted">Os dados de {{ corredor.nome.toLowerCase() }} vêm da ANVISA só na primeira visita; depois ficam guardados no navegador.</span>
     </p>
   </div>
@@ -272,18 +272,18 @@ const titulo = computed(() => {
     <template v-else-if="b.buscada.value">
       <h2 class="resultado-titulo" aria-live="polite">
         <template v-if="b.total.value">{{ titulo }}</template>
-        <template v-else-if="!b.carregando.value">Nada encontrado em {{ corredor.nome.toLowerCase() }}</template>
+        <template v-else-if="!b.carregando.value">Nenhum {{ corredor.item[0] }} encontrado</template>
       </h2>
       <div v-if="!b.total.value && !b.carregando.value" class="vazio">
         <Icone nome="pote" />
         <p v-if="filtros.situacao === 'ativo'">
-          Só estão sendo mostrados os ativos.
-          <a href="#" @click.prevent="filtros.situacao = 'todos'">Incluir os inativos</a>
+          Só aparecem os liberados agora.
+          <a href="#" @click.prevent="filtros.situacao = 'todos'">Incluir os encerrados</a>
         </p>
         <p v-if="filtros.grupo || filtros.tipo">
           <a href="#" @click.prevent="Object.assign(filtros, { grupo: '', tipo: '' })">Limpar os filtros</a>
         </p>
-        <p class="note">Dica: busque por parte do nome, sem acento se preferir, ou cole o CNPJ ou o nº do processo.</p>
+        <p class="note">{{ corredor.dica }}</p>
       </div>
       <div class="lista" :class="{ esmaecida: b.carregando.value }">
         <component

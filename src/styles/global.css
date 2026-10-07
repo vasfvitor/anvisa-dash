@@ -124,6 +124,15 @@ header.site .nav-site a[aria-current="page"] { border-bottom-color: var(--pop); 
 .placa[aria-current="page"]:hover { transform: translate(-2px, -2px); }
 .placa[aria-current="page"] .placa-num { background: #fff; color: var(--cor); }
 .placa[aria-current="page"] .icone { color: #fff; }
+/* o nome técnico, como etiqueta de preço que aparece pendurada embaixo da placa */
+.placa-tec { position: absolute; top: calc(100% + 0.45rem); left: 50%; z-index: 2; padding: 0.2rem 0.55rem;
+  border-radius: 6px; background: var(--fg); color: var(--bg); font: 600 0.72rem/1.2 var(--fonte-mono);
+  pointer-events: none; opacity: 0; transform: translate(-50%, -0.3rem) rotate(0deg);
+  transition: opacity 0.15s, transform 0.25s var(--mola); }
+.placa-tec em { font-style: normal; color: var(--cor-suave); }
+.placa-tec::before { content: ""; position: absolute; top: -4px; left: 50%; width: 8px; height: 8px; margin-left: -4px;
+  background: var(--fg); transform: rotate(45deg); }
+.placa:is(:hover, :focus-visible) .placa-tec { opacity: 1; transform: translate(-50%, 0) rotate(-2deg); }
 
 /* troca de corredor: a página nova aparece num círculo que cresce a partir do clique */
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
@@ -400,6 +409,7 @@ a.badge:hover { background: var(--fg); color: var(--bg); }
   .placa::before, .placa::after { display: none; }
   .placa .longo { display: none; }
   .placa .curto { display: inline; }
+  .placa-tec { display: none; }
   .logo { font-size: 1.4rem; }
   .busca .btn { padding: 0 0.85rem; }
   .busca .btn span { display: none; }

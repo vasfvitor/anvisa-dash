@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import type { Saneante } from "../lib/fontes/saneantes";
 import { fmtProcesso } from "../lib/format";
+import { situacaoDe, TIPOS } from "../lib/situacao";
 import { legivel } from "../lib/texto";
 import { validade } from "../lib/validade";
 import { cliqueInterno, montarUrl } from "./composables/useUrlState";
@@ -27,11 +28,11 @@ function abrir(ev: MouseEvent): void {
     <a class="cartao-link" :href="href" @click="abrir">
       <div class="cartao-topo">
         <h3><Destaque :texto="legivel(p.no_produto, 'nome')" :termo="termo" /></h3>
-        <span class="situacao" :class="ativo ? 'ok' : 'off'">{{ ativo ? "Ativo" : "Inativo" }}</span>
+        <span class="situacao" :class="ativo ? 'ok' : 'off'" :title="situacaoDe(ativo).dica">{{ situacaoDe(ativo).curto }}</span>
       </div>
       <p class="cartao-empresa"><Destaque :texto="legivel(p.no_razao_social_empresa, 'nome')" :termo="termo" /></p>
       <div class="alergia compacta">
-        <span class="selo">{{ p.tipo_regularizacao }}</span>
+        <span class="selo" :title="TIPOS">{{ p.tipo_regularizacao }}</span>
         <span class="selo" :class="val.classe === 'neutro' ? '' : val.classe"><Icone nome="gota" />{{ val.curto }}</span>
       </div>
       <p class="cartao-rodape">

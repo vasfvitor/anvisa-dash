@@ -41,9 +41,9 @@ describe("campos multivalorados", () => {
 describe("validade de saneante", async () => {
   const { validade } = await import("../src/lib/validade");
   it("vigente, vencido, sem data e data estranha", () => {
-    expect(validade("Vigente", "2036-04-04")).toMatchObject({ classe: "ok", curto: "Vigente até 04/2036", estranha: false });
-    expect(validade("Vencido", "2019-10-22")).toMatchObject({ classe: "perigo", curto: "Vencido em 10/2019" });
-    expect(validade("Sem data", null)).toMatchObject({ classe: "neutro", curto: "Sem vencimento informado" });
-    expect(validade("Vigente", "3033-04-30").estranha).toBe(true);
+    expect(validade("Em dia", "2036-04-04")).toMatchObject({ classe: "ok", curto: "Liberado até 04/2036", estranha: false });
+    expect(validade("Vencida", "2019-10-22")).toMatchObject({ classe: "perigo", curto: "Liberação venceu em 10/2019" });
+    expect(validade("Sem data", null)).toMatchObject({ classe: "neutro", curto: "Sem data de vencimento" });
+    expect(validade("Em dia", "3033-04-30").estranha).toBe(true);
   });
 });

@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { fmtInt } from "../lib/format";
 import type { Facetas, Filtros, Situacao } from "../lib/fontes/comum";
+import { SITUACAO, TIPOS } from "../lib/situacao";
 import { legivel } from "../lib/texto";
 
 const filtros = defineModel<Filtros>({ required: true });
@@ -13,8 +14,8 @@ const situacoes = computed<{ valor: Situacao; rotulo: string; n: number }[]>(() 
   const ativos = n("situacao", "Ativo");
   const inativos = n("situacao", "Inativo");
   return [
-    { valor: "ativo", rotulo: "Ativos", n: ativos },
-    { valor: "inativo", rotulo: "Inativos", n: inativos },
+    { valor: "ativo", rotulo: SITUACAO.ativo.faceta, n: ativos },
+    { valor: "inativo", rotulo: SITUACAO.inativo.faceta, n: inativos },
     { valor: "todos", rotulo: "Todos", n: ativos + inativos },
   ];
 });
@@ -51,7 +52,7 @@ function alternar<K extends "grupo" | "tipo">(campo: K, valor: string): void {
       </button>
     </div>
     <div v-if="contagens.tipo.length" class="faceta" role="group" aria-label="Tipo de regularização">
-      <span class="faceta-nome">Tipo</span>
+      <span class="faceta-nome" :title="TIPOS">Tipo</span>
       <button
         v-for="t in contagens.tipo"
         :key="t.valor"

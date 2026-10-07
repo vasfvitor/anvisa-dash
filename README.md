@@ -1,6 +1,6 @@
 # contém.
 
-Consulta de produtos regularizados na ANVISA (alimentos e suplementos; saneantes) por nº do processo,
+Consulta de produtos regularizados na ANVISA (alimentos e suplementos; produtos de limpeza, os saneantes) por nº do processo,
 CNPJ, registro, nome, marca, empresa e categoria. Site estático (Astro + uma ilha Vue). A busca roda no navegador
 com DuckDB-WASM sobre os Parquet que o repo [`anvisa`](https://github.com/vasfvitor/anvisa-api)
 publica diariamente. Não há backend.
@@ -32,7 +32,9 @@ Coisas medidas que o código assume (build de 2026-10-06):
 
 ## Corredores
 
-Cada fonte de dados é um corredor: `/` (alimentos e suplementos) e `/saneantes/`. Para criar outro:
+Cada fonte de dados é um corredor: `/` (alimentos e suplementos) e `/limpeza/` (saneantes; `/saneantes/`
+redireciona para lá). Os textos falam a língua de quem compra (liberado, encerrado, limpeza); o termo técnico
+fica no hover e nos dados técnicos. Para criar outro:
 
 1. uma entrada em `src/lib/corredores.ts` (nome, número, rota, tabela, textos, exemplos, ícones);
 2. um módulo em `src/lib/fontes/` que implementa `Fonte` (`comum.ts`) e entra em `fontes/index.ts`;

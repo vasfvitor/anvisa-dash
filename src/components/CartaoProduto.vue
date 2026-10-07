@@ -4,6 +4,7 @@ import type { ResumoAlergia as Resumo } from "../lib/alergia";
 import { fmtData, plural } from "../lib/format";
 import { ativo, indeferido, marcasParaBusca } from "../lib/produto";
 import type { Produto } from "../lib/fontes/alimentos";
+import { situacaoDe } from "../lib/situacao";
 import { legivel } from "../lib/texto";
 import { cliqueInterno, montarUrl } from "./composables/useUrlState";
 import Destaque from "./Destaque.vue";
@@ -35,7 +36,7 @@ function abrir(ev: MouseEvent): void {
           <Destaque :texto="titulo" :termo="termo" />
           <span v-if="outrasMarcas" class="mais-marcas"> +{{ outrasMarcas }}</span>
         </h3>
-        <span class="situacao" :class="ativo(p) ? 'ok' : 'off'">{{ ativo(p) ? "Ativo" : "Inativo" }}</span>
+        <span class="situacao" :class="ativo(p) ? 'ok' : 'off'" :title="situacaoDe(ativo(p)).dica">{{ situacaoDe(ativo(p)).curto }}</span>
       </div>
       <p v-if="subtitulo" class="cartao-nome"><Destaque :texto="subtitulo" :termo="termo" /></p>
       <p class="cartao-empresa">

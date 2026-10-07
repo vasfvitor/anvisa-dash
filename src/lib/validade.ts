@@ -1,4 +1,4 @@
-// Como mostrar a validade de um saneante. O grupo (Vigente, Vencido, Sem data) vem do SQL, calculado
+// Como mostrar a validade da liberação de um saneante. O grupo (Em dia, Vencida, Sem data) vem do SQL, calculado
 // com a data do dia, para o selo bater com a faceta.
 import { fmtData, fmtMesAno, toDate } from "./format";
 
@@ -13,11 +13,11 @@ export interface Validade {
 export function validade(grupo: string, dt: string | null): Validade {
   const d = toDate(dt);
   if (!d) {
-    return { classe: "neutro", curto: "Sem vencimento informado", longo: "A ANVISA não informa a data de vencimento deste produto.", estranha: false };
+    return { classe: "neutro", curto: "Sem data de vencimento", longo: "A ANVISA não informa até quando a liberação deste produto vale.", estranha: false };
   }
   const estranha = d.getUTCFullYear() > 2100;
-  if (grupo === "Vencido") {
-    return { classe: "perigo", curto: `Vencido em ${fmtMesAno(dt)}`, longo: `A regularização venceu em ${fmtData(dt)}.`, estranha };
+  if (grupo === "Vencida") {
+    return { classe: "perigo", curto: `Liberação venceu em ${fmtMesAno(dt)}`, longo: `A liberação na ANVISA venceu em ${fmtData(dt)}.`, estranha };
   }
-  return { classe: "ok", curto: `Vigente até ${fmtMesAno(dt)}`, longo: `A regularização vale até ${fmtData(dt)}.`, estranha };
+  return { classe: "ok", curto: `Liberado até ${fmtMesAno(dt)}`, longo: `A liberação na ANVISA vale até ${fmtData(dt)}.`, estranha };
 }

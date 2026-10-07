@@ -14,7 +14,7 @@ const totais = shallowRef<Numeros | null>(null);
 const grupos = shallowRef<ValorFaceta[]>([]);
 onMounted(() => {
   props.fonte.numeros().then((n) => (totais.value = n), () => {});
-  props.fonte.grupos().then((c) => (grupos.value = c), () => {});
+  if (!props.corredor.atalhos) props.fonte.grupos().then((c) => (grupos.value = c), () => {});
 });
 const principais = computed(() => grupos.value.slice(0, 12));
 </script>
@@ -29,12 +29,18 @@ const principais = computed(() => grupos.value.slice(0, 12));
     </p>
 
     <dl v-if="totais" class="numeros">
-      <div><Icone nome="certo" /><dt>produtos ativos</dt><dd>{{ fmtInt(totais.ativos) }}</dd></div>
-      <div><Icone nome="caixas" /><dt>produtos no histórico</dt><dd>{{ fmtInt(totais.produtos) }}</dd></div>
+      <div><Icone nome="certo" /><dt>liberados hoje</dt><dd>{{ fmtInt(totais.ativos) }}</dd></div>
+      <div><Icone nome="caixas" /><dt>já passaram pela ANVISA</dt><dd>{{ fmtInt(totais.produtos) }}</dd></div>
       <div><Icone nome="fabrica" /><dt>empresas</dt><dd>{{ fmtInt(totais.empresas) }}</dd></div>
     </dl>
 
-    <template v-if="principais.length">
+    <template v-if="corredor.atalhos">
+      <h2>O que você procura?</h2>
+      <div class="categorias">
+        <button v-for="t in corredor.atalhos" :key="t" type="button" class="chip" @click="emit('exemplo', t)">{{ t }}</button>
+      </div>
+    </template>
+    <template v-else-if="principais.length">
       <h2>Explorar por {{ corredor.grupo.toLowerCase() }}</h2>
       <div class="categorias">
         <button v-for="c in principais" :key="c.valor" type="button" class="chip" @click="emit('grupo', c.valor)">

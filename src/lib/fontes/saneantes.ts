@@ -34,7 +34,7 @@ export interface Saneante {
   tipo_regularizacao: "Registrado" | "Notificado";
   /** AAAA-MM-DD, como publicado (há anos até 3033) */
   dt_vencimento: string | null;
-  /** Vigente, Vencido ou Sem data */
+  /** Em dia, Vencida ou Sem data (a validade da liberação) */
   grupo: string;
   total: number;
 }
@@ -50,7 +50,7 @@ function tabela(): Promise<void> {
       CASE WHEN is_registrado THEN 'Registrado' ELSE 'Notificado' END AS tipo_regularizacao,
       strftime(dt_vencimento_produto, '%Y-%m-%d') AS dt_vencimento,
       CASE WHEN dt_vencimento_produto IS NULL THEN 'Sem data'
-        WHEN dt_vencimento_produto < current_date THEN 'Vencido' ELSE 'Vigente' END AS grupo,
+        WHEN dt_vencimento_produto < current_date THEN 'Vencida' ELSE 'Em dia' END AS grupo,
       -- só para busca e ordenação
       dt_vencimento_produto AS ordem_data,
       lower(strip_accents(concat_ws(' ', no_produto, no_razao_social_empresa))) AS busca,

@@ -6,6 +6,7 @@ import { fatiar, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas, plural } from
 import { tituloPagina } from "../lib/marca";
 import { ativo as estaAtivo, indeferido as foiIndeferido, marcaPrincipal } from "../lib/produto";
 import { alimentos, buscarApresentacoes, type Apresentacao, type Produto } from "../lib/fontes/alimentos";
+import { situacaoDe } from "../lib/situacao";
 import { legivel } from "../lib/texto";
 import { useCopia } from "./composables/useCopia";
 import Copiar from "./Copiar.vue";
@@ -160,7 +161,7 @@ const linkAnvisa = computed(() =>
     <article v-else>
       <header class="produto-cabecalho" :class="{ inativo: !ativo }">
         <div class="produto-status">
-          <span class="situacao grande" :class="ativo ? 'ok' : 'off'">{{ ativo ? "Ativo na ANVISA" : "Inativo na ANVISA" }}</span>
+          <span class="situacao grande" :class="ativo ? 'ok' : 'off'" :title="situacaoDe(ativo).dica">{{ situacaoDe(ativo).longo }}</span>
           <span class="mono">
             {{ p.tipo_regularizacao }}<template v-if="p.dt_regularizacao"> em {{ fmtData(p.dt_regularizacao) }}</template>
             <template v-if="!notificado && p.dt_vencimento_registro"> · válido até {{ fmtMesAno(p.dt_vencimento_registro) }}</template>
@@ -193,8 +194,8 @@ const linkAnvisa = computed(() =>
       </div>
       <div v-else-if="!ativo" class="aviso" role="note">
         <Icone nome="alerta" />
-        <div><strong>Regularização inativa.</strong> Este registro não está mais em vigor na ANVISA. Ele aparece aqui como
-        histórico; procure a versão ativa do produto pela marca ou pela empresa.</div>
+        <div><strong>Liberação encerrada.</strong> A ANVISA não lista mais este produto como liberado (regularização
+        inativa). Ele aparece aqui como histórico; se ainda está à venda, procure a versão atual pela marca ou pela empresa.</div>
       </div>
 
       <section v-if="resumo?.temDados || (resumo && ativo)" class="secao">
@@ -316,6 +317,8 @@ const linkAnvisa = computed(() =>
           </template>
           <dt>Empresa</dt>
           <dd>{{ p.no_razao_social_empresa }} · {{ fmtCnpj(p.nu_cnpj_empresa) }} <Copiar :valor="p.nu_cnpj_empresa" rotulo="CNPJ" /></dd>
+          <dt>Situação</dt>
+          <dd>{{ ativo ? "Ativo" : "Inativo" }} <span class="note">(regularização {{ ativo ? "ativa" : "inativa" }} na ANVISA)</span></dd>
           <dt>Tipo</dt>
           <dd>
             {{ p.tipo_regularizacao }}

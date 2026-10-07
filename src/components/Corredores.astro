@@ -19,7 +19,7 @@ const { atual } = Astro.props;
         data-corredor-link={c.id}
         data-placa={c.id}
         aria-current={atual === c.id ? "page" : undefined}
-        title={`Corredor ${c.numero}: ${c.nome}`}
+        title={`Corredor ${c.numero}: ${c.nome}${c.tecnico ? ` (na ANVISA, ${c.tecnico})` : ""}`}
       >
         <span class="placa-num">{c.numero}</span>
         <Icone nome={c.icone} />
@@ -27,6 +27,11 @@ const { atual } = Astro.props;
           <span class="longo">{c.nome}</span>
           <span class="curto">{c.curto}</span>
         </span>
+        {c.tecnico && (
+          <span class="placa-tec" aria-hidden="true">
+            na ANVISA: <em>{c.tecnico}</em>
+          </span>
+        )}
       </a>
     ))
   }

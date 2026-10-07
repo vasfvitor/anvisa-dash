@@ -19,6 +19,8 @@ export interface Corredor {
   nome: string;
   /** nome curto para a placa no celular */
   curto: string;
+  /** como a ANVISA chama o corredor, quando o nome do dia a dia é outro (aparece no hover da placa) */
+  tecnico?: string;
   /** segmento da URL; vazio é a raiz do site */
   slug: string;
   /** tabela principal no manifest (a do download com barra de progresso) */
@@ -31,11 +33,17 @@ export interface Corredor {
   hero: { selo: string; linha1: Frase; linha2: Frase; lead: string; carimbo: string };
   placeholder: string;
   exemplos: { valor: string; texto: string; dica?: string }[];
+  /** buscas prontas para explorar sem digitar; sem elas, a abertura oferece os valores da terceira faceta */
+  atalhos?: string[];
   /** terceira faceta (além de situação e tipo): categoria nos alimentos, validade nos saneantes */
   grupo: string;
   /** como chamar um item da lista: [singular, plural] */
   item: [string, string];
   oQue: { icone: string; titulo: string; texto: string }[];
+  /** dica quando a busca não acha nada */
+  dica: string;
+  /** o que enche no carregamento ("o pote", "o balde") */
+  recipiente: string;
 }
 
 export const CORREDORES: Corredor[] = [
@@ -53,9 +61,9 @@ export const CORREDORES: Corredor[] = [
       "Consulte alimentos e suplementos regularizados na ANVISA pela marca, nome, empresa, CNPJ ou nº do processo: situação, glúten, lactose, alergênicos e ingredientes.",
     hero: {
       selo: "leia o rótulo antes de levar",
-      linha1: { antes: "Este produto é ", destaque: "regular", depois: "?" },
+      linha1: { antes: "Está ", destaque: "liberado", depois: "?" },
       linha2: { antes: "O que ele ", destaque: "contém", depois: "?" },
-      lead: "Alimentos e suplementos regularizados na ANVISA. Busque pela marca, pelo nome, pela empresa, pelo CNPJ ou pelo número do processo.",
+      lead: "Suplementos e alimentos que passam pela ANVISA. Busque pela marca, pelo nome, pela empresa ou pelo número que vem no rótulo.",
       carimbo: "dados abertos · leia o rótulo ·",
     },
     placeholder: "Marca, produto ou CNPJ",
@@ -69,47 +77,56 @@ export const CORREDORES: Corredor[] = [
     grupo: "Categoria",
     item: ["produto", "produtos"],
     oQue: [
-      { icone: "certo", titulo: "Se está regular", texto: "Ativo ou inativo na ANVISA, registrado ou notificado, e desde quando." },
+      { icone: "certo", titulo: "Se está liberado", texto: "Se a ANVISA conhece o produto, se a liberação continua valendo e desde quando." },
       { icone: "trigo", titulo: "Se serve para você", texto: "Glúten, lactose, alergênicos que contém ou pode conter, ingredientes e público indicado." },
       { icone: "fabrica", titulo: "Quem fabrica", texto: "A empresa responsável, quem envasa e os fabricantes no exterior." },
-      { icone: "documento", titulo: "Os números oficiais", texto: "Processo, registro ou notificação, para conferir na consulta da ANVISA." },
+      { icone: "documento", titulo: "Os números do rótulo", texto: "Processo, registro ou notificação, para conferir na consulta da ANVISA." },
     ],
+    dica: "Nem todo alimento passa pela ANVISA: arroz, pão e biscoito comum, por exemplo, não precisam de registro. Tente a marca, a empresa ou o número do rótulo.",
+    recipiente: "o pote",
   },
   {
     id: "saneantes",
     numero: 2,
-    nome: "Saneantes",
-    curto: "Saneantes",
-    slug: "saneantes",
+    nome: "Produtos de limpeza",
+    curto: "Limpeza",
+    tecnico: "saneantes",
+    slug: "limpeza",
     tabela: "saneantes",
     icone: "borrifador",
     deco: ["borrifador", "bolhas", "gota", "certo", "bolhas", "documento", "gota", "brilho", "etiqueta"],
-    titulo: "Saneantes: regular e na validade?",
+    titulo: "Seu produto de limpeza é liberado?",
     descricao:
-      "Consulte saneantes (desinfetantes, detergentes, alvejantes, inseticidas…) notificados ou registrados na ANVISA pelo nome, empresa, CNPJ ou nº do processo: situação e validade.",
+      "Confira se um produto de limpeza (água sanitária, desinfetante, detergente, inseticida…) está liberado pela ANVISA e até quando a liberação vale. Busque pelo nome, pela empresa, pelo CNPJ ou pelo número do rótulo.",
     hero: {
-      selo: "confira antes de usar em casa",
-      linha1: { antes: "Este saneante é ", destaque: "regular", depois: "?" },
-      linha2: { antes: "Ainda está ", destaque: "válido", depois: "?" },
-      lead: "Desinfetantes, detergentes, alvejantes, inseticidas e outros produtos de limpeza notificados ou registrados na ANVISA. Busque pelo nome, pela empresa, pelo CNPJ ou pelo número do processo.",
-      carimbo: "dados abertos · confira a validade ·",
+      selo: "antes de usar em casa",
+      linha1: { antes: "Liberado ou ", destaque: "clandestino", depois: "?" },
+      linha2: { antes: "Ainda está ", destaque: "valendo", depois: "?" },
+      lead: "Água sanitária, detergente, desinfetante, inseticida: produto de limpeza também precisa passar pela ANVISA. Busque pelo nome, pela empresa ou pelo número que vem no rótulo.",
+      carimbo: "fora do alcance das crianças ·",
     },
     placeholder: "Produto, empresa ou CNPJ",
     exemplos: [
-      { valor: "água sanitária", texto: "água sanitária" },
-      { valor: "desinfetante", texto: "desinfetante" },
+      { valor: "ypê", texto: "ypê" },
+      { valor: "bombril", texto: "bombril" },
       { valor: "raid", texto: "raid" },
       { valor: "33122466000704", texto: "33.122.466/0007-04", dica: "CNPJ" },
       { valor: "25351.128477/2011-95", texto: "25351.128477/2011-95", dica: "processo" },
     ],
-    grupo: "Validade",
-    item: ["saneante", "saneantes"],
-    oQue: [
-      { icone: "certo", titulo: "Se está regular", texto: "Ativo ou inativo na ANVISA, registrado ou notificado." },
-      { icone: "gota", titulo: "Se ainda vale", texto: "A data de vencimento da regularização e se ela já passou." },
-      { icone: "fabrica", titulo: "Quem responde por ele", texto: "A empresa detentora, com CNPJ, e os outros saneantes dela." },
-      { icone: "documento", titulo: "Os números oficiais", texto: "Processo, registro e expediente, para conferir na ANVISA." },
+    atalhos: [
+      "água sanitária", "detergente", "desinfetante", "amaciante", "sabão", "lava roupa",
+      "alvejante", "multiuso", "limpa vidro", "tira manchas", "inseticida", "cloro",
     ],
+    grupo: "Validade",
+    item: ["produto de limpeza", "produtos de limpeza"],
+    oQue: [
+      { icone: "certo", titulo: "Se está liberado", texto: "Se a ANVISA conhece o produto e se a liberação continua valendo." },
+      { icone: "gota", titulo: "Até quando vale", texto: "A data em que a liberação vence, e se ela já passou." },
+      { icone: "fabrica", titulo: "Quem responde por ele", texto: "A empresa, com CNPJ, e os outros produtos de limpeza dela." },
+      { icone: "documento", titulo: "Os números do rótulo", texto: "Processo, registro e expediente, para conferir na ANVISA." },
+    ],
+    dica: "Todo produto de limpeza vendido no Brasil precisa estar registrado ou notificado na ANVISA, e o rótulo diz qual. Tente o nome da empresa ou o número do rótulo; se não achar de jeito nenhum, desconfie.",
+    recipiente: "o balde",
   },
 ];
 

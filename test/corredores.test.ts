@@ -4,8 +4,8 @@ import { CORREDORES, corredorDaUrl, corredorPorId, rotaDo } from "../src/lib/cor
 describe("corredores", () => {
   it("o caminho escolhe o corredor; desconhecido cai no padrão", () => {
     expect(corredorDaUrl("/").id).toBe("alimentos");
-    expect(corredorDaUrl("/saneantes/").id).toBe("saneantes");
-    expect(corredorDaUrl("/saneantes").id).toBe("saneantes");
+    expect(corredorDaUrl("/limpeza/").id).toBe("saneantes");
+    expect(corredorDaUrl("/limpeza").id).toBe("saneantes");
     expect(corredorDaUrl("/dicionario/").id).toBe("alimentos");
   });
   it("rota e id de cada corredor batem com o caminho", () => {

@@ -1,0 +1,22 @@
+---
+// /saneantes/ foi o primeiro endereço do corredor 2; os links compartilhados seguem para /limpeza/
+import { url } from "../lib/format";
+const destino = url("/limpeza/");
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>Produtos de limpeza · contém.</title>
+    <link rel="canonical" href={destino} />
+    <script is:inline define:vars={{ destino }}>
+      location.replace(destino + location.search + location.hash);
+    </script>
+    <meta http-equiv="refresh" content={`0;url=${destino}`} />
+  </head>
+  <body>
+    <a href={destino}>Produtos de limpeza</a>
+  </body>
+</html>
