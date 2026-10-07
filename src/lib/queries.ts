@@ -3,7 +3,7 @@
 // produto, então a busca agrupa por co_seq_produto e devolve o produto pronto numa consulta só.
 import { TABELA, TABELA_DETALHE } from "./config";
 import type { Consulta } from "./detect";
-import { consultar, emMemoria, type Valor } from "./db";
+import { consultar, type Valor } from "./db";
 
 export const POR_PAGINA = 50;
 
@@ -29,8 +29,6 @@ export interface Produto {
   dt_regularizacao: string | null;
   dt_vencimento_registro: string | null;
   n_apresentacoes: number;
-  ap_min: number;
-  ap_max: number;
   total: number;
 }
 
@@ -58,12 +56,10 @@ function onde(q: Consulta, f: Filtros): { sql: string; params: Valor[] } {
   const partes: string[] = [];
   const params: Valor[] = [];
   if (q.modo === "cnpj") {
-    // o arquivo é ordenado por CNPJ e processo: igualdade aqui lê um row group só
     partes.push("nu_cnpj_empresa = ?");
     params.push(q.valor);
   } else if (q.modo === "numero") {
-    // processo (6 a 17 dígitos), registro do produto (9) ou da apresentação (13). Processo é a 2ª chave
-    // de ordenação: não poda row groups, mas lê só estas três colunas.
+    // processo (6 a 17 dígitos), registro do produto (9) ou da apresentação (13)
     partes.push("(nu_processo = ? OR nu_registro_notificacao_produto = ? OR nu_registro = ?)");
     params.push(q.valor, q.valor, q.valor);
   } else {
@@ -86,8 +82,6 @@ function onde(q: Consulta, f: Filtros): { sql: string; params: Valor[] } {
 }
 
 export async function buscarProdutos(q: Consulta, f: Filtros, pagina = 0): Promise<Produto[]> {
-  // texto varre o arquivo todo: espera a cópia em memória. CNPJ e número seguem por Range.
-  if (q.modo === "texto") await emMemoria(TABELA);
   const w = onde(q, f);
   const sql = `
     SELECT co_seq_produto,
@@ -105,35 +99,23 @@ export async function buscarProdutos(q: Consulta, f: Filtros, pagina = 0): Promi
       ${TS("dt_regularizacao")},
       strftime(any_value(dt_vencimento_registro), '%Y-%m-%d') AS dt_vencimento_registro,
       count(*)::INTEGER AS n_apresentacoes,
-      min(co_seq_apresentacao_produto) AS ap_min,
-      max(co_seq_apresentacao_produto) AS ap_max,
       (count(*) OVER ())::INTEGER AS total
     FROM "${TABELA}"
     WHERE ${w.sql}
     GROUP BY co_seq_produto
     ORDER BY any_value(situacao_registro), any_value(dt_regularizacao) DESC NULLS LAST, co_seq_produto
     LIMIT ${POR_PAGINA} OFFSET ?`;
-  return (await consultar(sql, [...w.params, pagina * POR_PAGINA])) as unknown as Produto[];
+  return (await consultar([TABELA], sql, [...w.params, pagina * POR_PAGINA])) as unknown as Produto[];
 }
 
-/**
- * Apresentações de um produto com o detalhe. O arquivo de detalhe é ordenado pelo id da apresentação
- * e os ids de um produto são próximos: o BETWEEN deixa o DuckDB pular row groups pelas estatísticas
- * do Parquet, e co_produto filtra o exato.
- */
+/** Apresentações de um produto com o detalhe (co_produto é o co_seq_produto da tabela principal). */
 export async function buscarApresentacoes(p: Produto): Promise<Apresentacao[]> {
-  // Exceção à regra dos parâmetros: com ? neste BETWEEN o duckdb-wasm não poda row groups e lê o
-  // arquivo inteiro (1,5 MB); com literais lê ~1/3. Os ids vêm do nosso próprio resultado, não do
-  // usuário, e só entram depois de validados como inteiros.
-  const ids = [p.ap_min, p.ap_max, p.co_seq_produto];
-  if (!ids.every(Number.isSafeInteger)) throw new Error("ids de apresentação inválidos");
-  const [min, max, produto] = ids;
   const sql = `
     SELECT * EXCLUDE (dt_carga_etl, co_produto, nu_registro)
     FROM "${TABELA_DETALHE}"
-    WHERE co_seq_apresentacao_produto BETWEEN ${min} AND ${max} AND co_produto = ${produto}
+    WHERE co_produto = ?
     ORDER BY TRY_CAST(nu_apresentacao_produto AS INTEGER) NULLS LAST, co_seq_apresentacao_produto`;
-  return (await consultar(sql)) as unknown as Apresentacao[];
+  return (await consultar([TABELA_DETALHE], sql, [p.co_seq_produto])) as unknown as Apresentacao[];
 }
 
 export interface Categoria {
@@ -142,9 +124,8 @@ export interface Categoria {
   total: number;
 }
 
-/** Para o filtro: produtos (não linhas) por categoria, ativos e no total. Varre o arquivo: roda sobre a cópia em memória. */
+/** Para o filtro: produtos (não linhas) por categoria, ativos e no total. */
 export async function categorias(): Promise<Categoria[]> {
-  await emMemoria(TABELA); // varre todos os row groups, como a busca por texto
   const sql = `
     SELECT ds_categoria_produto AS nome,
       (count(DISTINCT co_seq_produto) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER AS ativos,
@@ -153,5 +134,5 @@ export async function categorias(): Promise<Categoria[]> {
     WHERE ds_categoria_produto IS NOT NULL
     GROUP BY 1
     ORDER BY ativos DESC, total DESC, nome`;
-  return (await consultar(sql)) as unknown as Categoria[];
+  return (await consultar([TABELA], sql)) as unknown as Categoria[];
 }

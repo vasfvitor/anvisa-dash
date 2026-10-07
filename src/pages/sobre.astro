@@ -36,9 +36,9 @@ const fontes = Object.entries(m.tables);
   <h2>Como a busca funciona</h2>
   <p>
     Não há servidor. A busca roda no seu navegador com o <a href="https://duckdb.org/docs/api/wasm/overview">DuckDB-WASM</a>,
-    que lê só as partes necessárias dos arquivos Parquet. Na primeira visita o navegador baixa cerca de 5 MB do
-    motor; cada busca lê de algumas centenas de KB a pouco mais de 1 MB de dados, e o que já foi lido fica guardado
-    durante a visita.
+    sobre os arquivos Parquet. Na primeira visita o navegador baixa cerca de 5 MB do motor e 3,3 MB da tabela de
+    produtos; ao abrir as apresentações de um produto, mais 1,5 MB da tabela de detalhes. Depois disso todas as
+    buscas rodam no seu navegador, sem rede, e os arquivos ficam no cache.
   </p>
   <ul>
     <li>

@@ -17,16 +17,15 @@ Coisas medidas que o código assume (build de 2026-10-06):
   tamanho de um CNPJ) e há de 6 a 16. Por isso só 14 dígitos são tratados como CNPJ, e um CNPJ sem
   resultado é tentado de novo como processo. Os demais números procuram em `nu_processo`,
   `nu_registro_notificacao_produto` (registro, 9 dígitos) e `nu_registro` (apresentação, 13).
-- **duckdb-wasm 1.33.1-dev57.0 só faz HTTP Range com `forceFullHTTPReads: false` explícito**, e com
-  `reliableHeadRequests: false`, porque o GitHub Pages responde HEAD com Range usando 200. Sem a
-  primeira, baixa o arquivo inteiro a cada abertura; sem a segunda, a abertura falha no Pages
-  (`src/lib/db.ts`). `scripts/dados-local.mjs` imita esse HEAD para o erro aparecer também local.
-- **Busca por texto passa por Range mal.** Ela varre todos os row groups e, por Range, relê pedaços:
-  5,3 MB para um arquivo de 3,25 MB. Por isso `alimentos` é baixado inteiro uma vez, em segundo plano
-  (`emMemoria`), e todas as buscas seguintes rodam em memória. O detalhe (`alimentos_resultado`)
-  continua por Range: ~100 KB por produto aberto.
-- **Parâmetro `?` impede a poda de row groups no `BETWEEN` inteiro.** A consulta de detalhe usa
-  literais validados. Os ids vêm do próprio resultado, nunca do usuário.
+- **O worker do DuckDB não faz HTTP.** As tabelas são baixadas inteiras com `fetch()` na página,
+  registradas com `registerFileBuffer` e expostas como views (`src/lib/db.ts`). Com
+  duckdb-wasm 1.33.1-dev57.0, o HTTP do worker (XHR síncrono, com Range) falhou de três jeitos:
+  por padrão baixa o arquivo inteiro; o GitHub Pages responde HEAD com Range usando 200, o que
+  derruba o modo `reliableHeadRequests`; e o Firefox falha no GET com Range contra o Pages
+  ("NetworkError"), enquanto o Chrome funciona. Por Range, uma busca por texto ainda relia pedaços
+  e passava do tamanho do arquivo (5,3 MB para 3,25 MB). Os arquivos são pequenos (3,25 e 1,5 MB)
+  e os caminhos são imutáveis, então um download por build, com cache HTTP, é mais simples e mais
+  barato.
 - Nome, marcas, empresa, processo e situação são iguais em todas as apresentações de um produto. A
   busca agrupa por `co_seq_produto` numa consulta só.
 - 94 apresentações ativas (recentes) ainda não têm linha em `alimentos_resultado`. A interface avisa.
@@ -42,7 +41,8 @@ pnpm build               # dist/ estático; lê o manifest no build (dicionário
 ```
 
 Para não depender do site publicado, gere os dados localmente com o CLI do repo `anvisa` e sirva-os
-com Range e CORS, como o GitHub Pages faz. O `http.server` do Python não faz nenhum dos dois.
+com CORS, como o GitHub Pages faz (o `pnpm dev` roda noutra origem). O `http.server` do Python não
+envia CORS.
 
 ```bash
 anvisa dados build --out /tmp/dados          # ~10 s; baixa ~57 MB da ANVISA

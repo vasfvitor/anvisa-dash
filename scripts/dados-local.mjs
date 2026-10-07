@@ -1,5 +1,6 @@
-// Serve um build local do `anvisa dados build` imitando o GitHub Pages (medido em 2026-10-06), para o
-// DuckDB-WASM seguir o mesmo caminho que em produção. O http.server do Python não faz Range nem CORS.
+// Serve um build local do `anvisa dados build` imitando o GitHub Pages (medido em 2026-10-06). O site
+// em `pnpm dev` roda noutra origem, então precisa de CORS, que o http.server do Python não envia. O
+// app hoje só faz GET inteiro; Range e HEAD ficam imitados para testar leitura parcial no futuro.
 // O que o Pages faz e este servidor repete:
 // - Access-Control-Allow-Origin: *, sem Expose-Headers;
 // - GET com Range responde 206;
