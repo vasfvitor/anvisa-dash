@@ -9,6 +9,7 @@ import { useBusca } from "./composables/useBusca";
 import { useDuckDB } from "./composables/useDuckDB";
 import { gravarUrl, lerUrl, type EstadoUrl } from "./composables/useUrlState";
 import Facetas from "./Facetas.vue";
+import Icone from "./Icone.vue";
 import Inicio from "./Inicio.vue";
 import ProdutoPagina from "./ProdutoPagina.vue";
 
@@ -161,13 +162,24 @@ const titulo = computed(() => {
   />
 
   <div v-if="motor.status.value === 'iniciando' || motor.status.value === 'baixando'" class="carregamento" role="status">
-    <div class="barra" :class="{ indeterminada: motor.status.value === 'iniciando' }">
-      <span :style="{ width: `${Math.round(motor.progresso.value * 100)}%` }"></span>
-    </div>
+    <!-- um pote enchendo: o nível acompanha o download da tabela principal -->
+    <svg class="pote-carregando" :class="{ indeterminado: motor.status.value === 'iniciando' }" viewBox="0 0 64 80" aria-hidden="true">
+      <defs>
+        <clipPath id="pote-dentro"><path d="M14 20h36a4 4 0 0 1 4 4v44a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8V24a4 4 0 0 1 4-4Z" /></clipPath>
+      </defs>
+      <g clip-path="url(#pote-dentro)">
+        <g class="nivel" :style="motor.status.value === 'baixando' ? { transform: `translateY(${76 - 58 * motor.progresso.value}px)` } : undefined">
+          <path class="onda" d="M0 0q8-5 16 0t16 0 16 0 16 0 16 0 16 0V80H0Z" />
+        </g>
+      </g>
+      <rect class="tampa" x="12" y="8" width="40" height="10" rx="3" />
+      <path class="contorno" d="M14 20h36a4 4 0 0 1 4 4v44a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8V24a4 4 0 0 1 4-4Z" />
+      <rect class="etiqueta" x="17" y="40" width="30" height="15" rx="2" />
+    </svg>
     <p>
-      <template v-if="motor.status.value === 'iniciando'">Preparando o motor de consulta…</template>
-      <template v-else>Baixando os dados da ANVISA: {{ Math.round(motor.progresso.value * 100) }}% de {{ fmtBytes(motor.tamanho.value) }}</template>
-      <span class="muted"> Só na primeira visita; depois fica guardado no navegador.</span>
+      <strong v-if="motor.status.value === 'iniciando'">Preparando a consulta…</strong>
+      <strong v-else>Enchendo o pote: {{ Math.round(motor.progresso.value * 100) }}% de {{ fmtBytes(motor.tamanho.value) }}</strong>
+      <span class="muted">Os dados da ANVISA vêm só na primeira visita; depois ficam guardados no navegador.</span>
     </p>
   </div>
   <div v-else-if="motor.status.value === 'erro'" class="estado erro" role="alert">
@@ -192,6 +204,7 @@ const titulo = computed(() => {
         <template v-else-if="!b.carregando.value">Nenhum produto encontrado</template>
       </h2>
       <div v-if="!b.total.value && !b.carregando.value" class="vazio">
+        <Icone nome="pote" />
         <p v-if="filtros.situacao === 'ativo'">
           Só estão sendo mostrados produtos ativos.
           <a href="#" @click.prevent="filtros.situacao = 'todos'">Incluir os inativos</a>
@@ -202,7 +215,14 @@ const titulo = computed(() => {
         <p class="note">Dica: busque por parte do nome, sem acento se preferir, ou cole o CNPJ ou o nº do processo.</p>
       </div>
       <div class="lista" :class="{ esmaecida: b.carregando.value }">
-        <CartaoProduto v-for="p in b.produtos.value" :key="p.co_seq_produto" :p="p" :termo="termo" @abrir="abrirProduto" />
+        <CartaoProduto
+          v-for="(p, i) in b.produtos.value"
+          :key="p.co_seq_produto"
+          :p="p"
+          :termo="termo"
+          :style="{ '--i': i % 30 }"
+          @abrir="abrirProduto"
+        />
       </div>
       <p v-if="b.temMais.value" class="mais">
         <button class="btn" type="button" :disabled="b.carregando.value" @click="b.buscar(true)">

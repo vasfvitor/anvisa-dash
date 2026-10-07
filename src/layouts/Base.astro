@@ -1,7 +1,13 @@
 ---
+import "@fontsource-variable/fraunces/soft.css";
+import "@fontsource-variable/figtree";
+import "@fontsource-variable/jetbrains-mono";
+import Icone from "../components/Icone.astro";
+import Logo from "../components/Logo.astro";
 import { MANIFEST_URL, TABELA } from "../lib/config";
 import { fmtData, url } from "../lib/format";
 import { manifestDoBuild } from "../lib/manifest";
+import { NOME, SLOGAN } from "../lib/marca";
 import "../styles/global.css";
 
 interface Props {
@@ -10,11 +16,13 @@ interface Props {
 }
 const {
   title,
-  description = "Consulta de alimentos e suplementos regularizados na ANVISA por nº do processo, CNPJ, nome, marca e categoria.",
+  description = "Consulte alimentos e suplementos regularizados na ANVISA pela marca, nome, empresa, CNPJ ou nº do processo: situação, glúten, lactose, alergênicos e ingredientes.",
 } = Astro.props;
 
 // rodapé com a data dos dados do último build; a página de busca mostra a data do manifest ao vivo
 const fonte = (await manifestDoBuild(MANIFEST_URL)).tables[TABELA]?.source;
+const atual = Astro.url.pathname.replace(/\/+$/, "/");
+const ativo = (p: string) => (atual === url(p) ? "page" : undefined);
 ---
 
 <!doctype html>
@@ -22,8 +30,10 @@ const fonte = (await manifestDoBuild(MANIFEST_URL)).tables[TABELA]?.source;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title} · anvisa-dash</title>
+    <title>{title} · {NOME}.</title>
     <meta name="description" content={description} />
+    <meta name="theme-color" content="#f7f2e8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16140f" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href={url("/favicon.svg")} type="image/svg+xml" />
     <link rel="sitemap" href={url("/sitemap-index.xml")} />
     <script is:inline>
@@ -38,11 +48,11 @@ const fonte = (await manifestDoBuild(MANIFEST_URL)).tables[TABELA]?.source;
     <a class="skip" href="#conteudo">Ir para o conteúdo</a>
     <header class="site">
       <div class="inner">
-        <a class="brand" href={url("/")}>anvisa-dash</a>
-        <nav>
-          <a href={url("/")}>Busca</a>
-          <a href={url("/dicionario/")}>Dicionário</a>
-          <a href={url("/sobre/")}>Sobre</a>
+        <Logo />
+        <nav aria-label="Principal">
+          <a href={url("/")} aria-current={ativo("/")}>Busca</a>
+          <a href={url("/dicionario/")} aria-current={ativo("/dicionario/")}>Dados</a>
+          <a href={url("/sobre/")} aria-current={ativo("/sobre/")}>Sobre</a>
         </nav>
         <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Alternar tema claro/escuro" title="Tema claro/escuro"></button>
       </div>
@@ -51,9 +61,26 @@ const fonte = (await manifestDoBuild(MANIFEST_URL)).tables[TABELA]?.source;
       <slot />
     </main>
     <footer class="site">
-      Dados abertos da ANVISA{fonte?.loaded_at && <> de {fmtData(fonte.loaded_at)}</>}
-      {fonte && <> (<a href={fonte.url}>{fonte.name}</a>)</>}.
-      Ferramenta independente, sem vínculo com a ANVISA. Confira sempre a consulta oficial.
+      <div class="rotulo-rodape">
+        <p class="rotulo-titulo"><Logo /> <span>{SLOGAN}</span></p>
+        <dl>
+          <div>
+            <dt>Fonte</dt>
+            <dd>
+              Dados abertos da ANVISA{fonte?.loaded_at && <> de {fmtData(fonte.loaded_at)}</>}
+              {fonte && <> · <a href={fonte.url}>{fonte.name}</a></>}
+            </dd>
+          </div>
+          <div>
+            <dt>Atenção</dt>
+            <dd>Ferramenta independente, sem vínculo com a ANVISA. Confira sempre a consulta oficial.</dd>
+          </div>
+          <div>
+            <dt>Contém</dt>
+            <dd>Nenhum servidor: a busca roda inteira no seu navegador. <Icone nome="capsula" class="mini" /></dd>
+          </div>
+        </dl>
+      </div>
     </footer>
     <script>
       // empacotado pelo Astro e compartilhado entre as páginas

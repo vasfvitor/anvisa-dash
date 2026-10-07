@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import type { ResumoAlergia, Sinal } from "../lib/alergia";
+import Icone from "./Icone.vue";
 
 const props = defineProps<{ r: ResumoAlergia; compacto?: boolean }>();
 const verNaoContem = ref(false);
 
-function rotulo(nome: string, s: Sinal): { texto: string; classe: string } | null {
-  if (s === "sim") return { texto: `Contém ${nome}`, classe: "perigo" };
-  if (s === "nao") return { texto: `Sem ${nome}`, classe: "ok" };
-  if (s === "varia") return { texto: `${nome[0]!.toUpperCase()}${nome.slice(1)}: varia`, classe: "atencao" };
+function rotulo(nome: string, icone: string, s: Sinal): { texto: string; classe: string; icone: string } | null {
+  if (s === "sim") return { texto: `Contém ${nome}`, classe: "perigo", icone };
+  if (s === "nao") return { texto: `Sem ${nome}`, classe: "ok", icone };
+  if (s === "varia") return { texto: `${nome[0]!.toUpperCase()}${nome.slice(1)}: varia`, classe: "atencao", icone };
   return null;
 }
 const intolerancias = computed(() =>
-  [rotulo("glúten", props.r.gluten), rotulo("lactose", props.r.lactose)].filter((x) => x !== null),
+  [rotulo("glúten", "trigo", props.r.gluten), rotulo("lactose", "leite", props.r.lactose)].filter((x) => x !== null),
 );
 // no cartão a lista de alergênicos é cortada: o nome completo fica no title
 function curta(itens: string[], max = 2): string {
@@ -23,7 +24,7 @@ function curta(itens: string[], max = 2): string {
 
 <template>
   <div v-if="r.temDados && compacto" class="alergia compacta" aria-label="Glúten, lactose e alergênicos">
-    <span v-for="i in intolerancias" :key="i.texto" class="selo" :class="i.classe">{{ i.texto }}</span>
+    <span v-for="i in intolerancias" :key="i.texto" class="selo" :class="i.classe"><Icone :nome="i.icone" />{{ i.texto }}</span>
     <span v-if="r.contem.length" class="selo perigo" :title="`Contém: ${r.contem.join(', ')}`">Contém {{ curta(r.contem) }}</span>
     <span v-if="r.podeConter.length" class="selo atencao" :title="`Pode conter: ${r.podeConter.join(', ')}`">
       Pode conter {{ curta(r.podeConter, 1) }}
@@ -33,7 +34,7 @@ function curta(itens: string[], max = 2): string {
 
   <div v-else-if="r.temDados" class="alergia completa">
     <div class="selos">
-      <span v-for="i in intolerancias" :key="i.texto" class="selo grande" :class="i.classe">{{ i.texto }}</span>
+      <span v-for="i in intolerancias" :key="i.texto" class="selo grande" :class="i.classe"><Icone :nome="i.icone" />{{ i.texto }}</span>
     </div>
     <dl>
       <template v-if="r.contem.length">

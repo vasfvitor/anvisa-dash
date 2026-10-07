@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import Icone from "./Icone.vue";
 
 const props = defineProps<{ valor: string; rotulo?: string }>();
 const copiado = ref(false);
@@ -19,7 +20,7 @@ async function copiar(): Promise<void> {
 
 <template>
   <button class="copiar" type="button" :aria-label="`Copiar ${rotulo ?? valor}`" :title="`Copiar ${rotulo ?? valor}`" @click="copiar">
-    <span aria-hidden="true">{{ copiado ? "✓" : "⧉" }}</span>
+    <Icone :nome="copiado ? 'certo' : 'copiar'" />
     <span class="sr-only" aria-live="polite">{{ copiado ? "Copiado" : "" }}</span>
   </button>
 </template>

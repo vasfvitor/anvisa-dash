@@ -6,6 +6,7 @@ import type { Produto } from "../lib/queries";
 import { legivel, normalizar } from "../lib/texto";
 import { cliqueInterno, montarUrl } from "./composables/useUrlState";
 import Destaque from "./Destaque.vue";
+import Icone from "./Icone.vue";
 import ResumoAlergia from "./ResumoAlergia.vue";
 
 const props = defineProps<{ p: Produto; termo?: string | null }>();
@@ -54,11 +55,11 @@ function abrir(ev: MouseEvent): void {
         <template v-if="p.ds_categoria_produto"> · {{ legivel(p.ds_categoria_produto) }}</template>
       </p>
       <ResumoAlergia v-if="resumo" :r="resumo" compacto />
-      <p v-if="indeferido" class="aviso-curto">Petição indeferida pela ANVISA</p>
+      <p v-if="indeferido" class="aviso-curto"><Icone nome="alerta" /> Petição indeferida pela ANVISA</p>
       <p class="cartao-rodape">
         <span>{{ p.tipo_regularizacao }}<template v-if="p.dt_regularizacao"> em {{ fmtData(p.dt_regularizacao) }}</template></span>
         <span>{{ p.n_apresentacoes }} apresentaç{{ p.n_apresentacoes === 1 ? "ão" : "ões" }}</span>
-        <span class="seta" aria-hidden="true">→</span>
+        <Icone nome="seta" class="seta" />
       </p>
     </a>
   </article>

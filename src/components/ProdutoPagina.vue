@@ -4,8 +4,10 @@ import { deJson, resumirAlergia } from "../lib/alergia";
 import { consenso, empresas, vazio } from "../lib/apresentacoes";
 import { fatiar, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas } from "../lib/format";
 import { buscarApresentacoes, produtoPorId, type Apresentacao, type Produto } from "../lib/queries";
+import { NOME } from "../lib/marca";
 import { legivel } from "../lib/texto";
 import Copiar from "./Copiar.vue";
+import Icone from "./Icone.vue";
 import ResumoAlergia from "./ResumoAlergia.vue";
 
 const props = defineProps<{ id: number; versaoResumo: number }>();
@@ -43,7 +45,7 @@ const indeferido = computed(() => /indeferimento/i.test(p.value?.ds_situacao_ass
 const notificado = computed(() => p.value?.tipo_regularizacao === "Notificado");
 
 watch(titulo, (t) => {
-  if (t) document.title = `${t} · anvisa-dash`;
+  if (t) document.title = `${t} · ${NOME}.`;
 });
 const tituloOriginal = document.title;
 onBeforeUnmount(() => (document.title = tituloOriginal));
@@ -126,10 +128,12 @@ async function compartilhar(): Promise<void> {
 <template>
   <div class="produto-pagina">
     <nav class="produto-nav">
-      <button type="button" class="link" @click="emit('voltar')">← Voltar</button>
+      <button type="button" class="btn" @click="emit('voltar')"><Icone nome="volta" /> Voltar</button>
       <span class="produto-acoes" v-if="p">
-        <button type="button" class="btn" @click="compartilhar">{{ compartilhado ? "Link copiado ✓" : "Compartilhar" }}</button>
-        <a class="btn" :href="linkAnvisa" target="_blank" rel="noopener">Ver na ANVISA ↗</a>
+        <button type="button" class="btn" @click="compartilhar">
+          <Icone :nome="compartilhado ? 'certo' : 'compartilhar'" /> {{ compartilhado ? "Link copiado" : "Compartilhar" }}
+        </button>
+        <a class="btn" :href="linkAnvisa" target="_blank" rel="noopener"><Icone nome="externo" /> Ver na ANVISA</a>
       </span>
     </nav>
 
@@ -142,6 +146,13 @@ async function compartilhar(): Promise<void> {
 
     <article v-else>
       <header class="produto-cabecalho" :class="{ inativo: !ativo }">
+        <div class="produto-status">
+          <span class="situacao grande" :class="ativo ? 'ok' : 'off'">{{ ativo ? "Ativo na ANVISA" : "Inativo na ANVISA" }}</span>
+          <span class="mono">
+            {{ p.tipo_regularizacao }}<template v-if="p.dt_regularizacao"> em {{ fmtData(p.dt_regularizacao) }}</template>
+            <template v-if="!notificado && p.dt_vencimento_registro"> · válido até {{ fmtMesAno(p.dt_vencimento_registro) }}</template>
+          </span>
+        </div>
         <h1>{{ titulo }}</h1>
         <p v-if="listaMarcas.length > 1" class="outras-marcas">
           Também vendido como:
@@ -150,16 +161,11 @@ async function compartilhar(): Promise<void> {
             {{ todasMarcas ? "menos" : `e mais ${listaMarcas.length - 9}` }}
           </button>
         </p>
-        <p class="produto-nome">{{ legivel(p.no_produto) }}</p>
-        <div class="produto-status">
-          <span class="situacao grande" :class="ativo ? 'ok' : 'off'">{{ ativo ? "Ativo na ANVISA" : "Inativo na ANVISA" }}</span>
-          <span>
-            {{ p.tipo_regularizacao }}<template v-if="p.dt_regularizacao"> em {{ fmtData(p.dt_regularizacao) }}</template>
-            <template v-if="!notificado && p.dt_vencimento_registro"> · válido até {{ fmtMesAno(p.dt_vencimento_registro) }}</template>
-          </span>
-          <span v-if="p.ds_categoria_produto" class="muted">{{ legivel(p.ds_categoria_produto) }}</span>
-        </div>
+        <p class="produto-nome">
+          {{ legivel(p.no_produto) }}<span v-if="p.ds_categoria_produto" class="muted"> · {{ legivel(p.ds_categoria_produto) }}</span>
+        </p>
         <p class="produto-empresa">
+          <Icone nome="fabrica" />
           {{ legivel(p.no_razao_social_empresa, "nome") }} ·
           <a href="#" @click.prevent="emit('empresa', p.nu_cnpj_empresa)" title="Ver todos os produtos desta empresa">
             CNPJ {{ fmtCnpj(p.nu_cnpj_empresa) }}
@@ -168,30 +174,32 @@ async function compartilhar(): Promise<void> {
       </header>
 
       <div v-if="indeferido" class="aviso perigo" role="note">
-        <strong>Petição indeferida.</strong> A ANVISA publicou o indeferimento do pedido deste produto
-        (“{{ p.ds_situacao_assunto_doc }}”).
+        <Icone nome="alerta" />
+        <div><strong>Petição indeferida.</strong> A ANVISA publicou o indeferimento do pedido deste produto
+        (“{{ p.ds_situacao_assunto_doc }}”).</div>
       </div>
       <div v-else-if="!ativo" class="aviso" role="note">
-        <strong>Regularização inativa.</strong> Este registro não está mais em vigor na ANVISA. Ele aparece aqui como
-        histórico; procure a versão ativa do produto pela marca ou pela empresa.
+        <Icone nome="alerta" />
+        <div><strong>Regularização inativa.</strong> Este registro não está mais em vigor na ANVISA. Ele aparece aqui como
+        histórico; procure a versão ativa do produto pela marca ou pela empresa.</div>
       </div>
 
       <section v-if="resumo?.temDados" class="secao">
-        <h2>Glúten, lactose e alergênicos</h2>
+        <h2><Icone nome="trigo" />Glúten, lactose e alergênicos</h2>
         <ResumoAlergia :r="resumo" />
       </section>
       <section v-else-if="aps && ativo" class="secao">
-        <h2>Glúten, lactose e alergênicos</h2>
+        <h2><Icone nome="trigo" />Glúten, lactose e alergênicos</h2>
         <p class="note">Sem informação de alergênicos nos dados abertos da ANVISA para este produto.</p>
       </section>
 
       <section v-if="ingredientes" class="secao">
-        <h2>Ingredientes</h2>
+        <h2><Icone nome="folha" />Ingredientes</h2>
         <p class="ingredientes">{{ ingredientes }}</p>
         <p class="note">Como declarado à ANVISA; letras maiúsculas ajustadas para leitura.</p>
       </section>
       <section v-else-if="cons.variam.includes('tabela_nutricional')" class="secao">
-        <h2>Ingredientes</h2>
+        <h2><Icone nome="folha" />Ingredientes</h2>
         <p>
           Os ingredientes mudam conforme a apresentação (por exemplo, sabores diferentes).
           <a href="#apresentacoes">Veja os de cada uma em “Apresentações”</a>.
@@ -199,14 +207,14 @@ async function compartilhar(): Promise<void> {
       </section>
 
       <section v-if="alegacoes.length" class="secao">
-        <h2>Alegações funcionais</h2>
+        <h2><Icone nome="brilho" />Alegações funcionais</h2>
         <ul class="alegacoes">
-          <li v-for="a in alegacoes" :key="a">{{ a }}</li>
+          <li v-for="a in alegacoes" :key="a"><Icone nome="certo" /><span>{{ a }}</span></li>
         </ul>
       </section>
 
       <section v-if="usoComum.length" class="secao">
-        <h2>Uso e embalagem</h2>
+        <h2><Icone nome="colher" />Uso e embalagem</h2>
         <dl class="ficha">
           <template v-for="c in usoComum" :key="c.campo">
             <dt>{{ c.rotulo }}</dt>
@@ -216,7 +224,7 @@ async function compartilhar(): Promise<void> {
       </section>
 
       <section id="apresentacoes" class="secao">
-        <h2>Apresentações <span class="sub">{{ p.n_apresentacoes }}</span></h2>
+        <h2><Icone nome="caixas" />Apresentações <span class="sub">{{ p.n_apresentacoes }}</span></h2>
         <p v-if="!aps" class="note" role="status">Carregando apresentações…</p>
         <template v-else>
           <p v-if="aps.length > 1 && !variamCurtos.length && !variamLongos.length" class="note">
@@ -269,7 +277,7 @@ async function compartilhar(): Promise<void> {
       </section>
 
       <section v-if="envasadoras.length || exterior.length" class="secao">
-        <h2>Fabricação</h2>
+        <h2><Icone nome="fabrica" />Fabricação</h2>
         <dl class="ficha">
           <template v-if="envasadoras.length">
             <dt>Envasado por</dt>
@@ -296,7 +304,7 @@ async function compartilhar(): Promise<void> {
       </section>
 
       <section class="secao tecnico">
-        <h2>Dados técnicos</h2>
+        <h2><Icone nome="documento" />Dados técnicos</h2>
         <dl class="ficha">
           <dt>Nº do processo</dt>
           <dd>{{ fmtProcesso(p.nu_processo) }} <Copiar :valor="p.nu_processo" rotulo="nº do processo" /></dd>

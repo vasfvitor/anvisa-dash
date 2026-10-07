@@ -5,6 +5,7 @@ import { fmtCnpj, fmtInt, fmtProcesso } from "../lib/format";
 import { sugerir, type Sugestao } from "../lib/queries";
 import { legivel } from "../lib/texto";
 import Destaque from "./Destaque.vue";
+import Icone from "./Icone.vue";
 
 const entrada = defineModel<string>({ required: true });
 const props = defineProps<{ consulta: Consulta | null; pronto: boolean }>();
@@ -98,6 +99,7 @@ defineExpose({ focar: () => campo.value?.focus() });
   <form class="busca" role="search" @submit.prevent="enviar">
     <div class="busca-campo">
       <label for="busca-q" class="sr-only">Buscar produto</label>
+      <Icone nome="lupa" />
       <input
         id="busca-q"
         ref="campo"
@@ -129,9 +131,10 @@ defineExpose({ focar: () => campo.value?.focus() });
           @mousedown.prevent="escolher(s)"
           @mousemove="ativa = i"
         >
-          <span class="sugestao-tipo">{{ s.tipo === "marca" ? "Marca" : "Empresa" }}</span>
+          <span class="sugestao-tipo" :class="s.tipo"><Icone :nome="s.tipo === 'marca' ? 'etiqueta' : 'fabrica'" /></span>
           <span class="sugestao-nome">
             <Destaque :texto="s.tipo === 'empresa' ? legivel(s.rotulo, 'nome') : s.rotulo" :termo="entrada" />
+            <small>{{ s.tipo === "marca" ? "marca" : "empresa" }}</small>
           </span>
           <span class="sugestao-n">
             {{ s.ativos ? `${fmtInt(s.ativos)} ativo${s.ativos === 1 ? "" : "s"}` : `${fmtInt(s.n)} inativo${s.n === 1 ? "" : "s"}` }}
@@ -139,7 +142,7 @@ defineExpose({ focar: () => campo.value?.focus() });
         </li>
       </ul>
     </div>
-    <button class="btn primary" type="submit">Buscar</button>
+    <button class="btn primary" type="submit" aria-label="Buscar"><Icone nome="seta" /><span>Buscar</span></button>
   </form>
   <p class="lida" aria-live="polite">
     <template v-if="consulta">Buscando por: <strong>{{ lida(consulta) }}</strong></template>

@@ -1,0 +1,11 @@
+---
+// Mesmo sprite do Icone.vue, para as páginas Astro.
+import { url } from "../lib/format";
+interface Props {
+  nome: string;
+  class?: string;
+}
+const { nome, class: classe } = Astro.props;
+---
+
+<svg class:list={["icone", classe]} aria-hidden="true"><use href={url(`/icones.svg#${nome}`)} /></svg>
