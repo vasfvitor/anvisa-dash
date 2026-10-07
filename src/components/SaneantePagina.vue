@@ -35,6 +35,7 @@ async function carregar(): Promise<void> {
 watch(() => props.id, carregar, { immediate: true });
 
 const ativo = computed(() => p.value?.situacao_registro === "Ativo");
+const sit = computed(() => situacaoDe(ativo.value));
 const notificado = computed(() => p.value?.tipo_regularizacao === "Notificado");
 const val = computed(() => (p.value ? validade(p.value.grupo, p.value.dt_vencimento) : null));
 // o nome do saneante costuma trazer a marca ("RAID ELÉTRICO LÍQUIDO JOHNSON"): iniciais maiúsculas
@@ -66,7 +67,7 @@ onBeforeUnmount(() => (document.title = tituloOriginal));
     <article v-else>
       <header class="produto-cabecalho" :class="{ inativo: !ativo }">
         <div class="produto-status">
-          <span class="situacao grande" :class="ativo ? 'ok' : 'off'" :title="situacaoDe(ativo).dica">{{ situacaoDe(ativo).longo }}</span>
+          <span class="situacao grande" :class="ativo ? 'ok' : 'off'" :title="sit.dica">{{ sit.longo }}</span>
           <span class="mono">{{ p.tipo_regularizacao }} · produto de limpeza</span>
         </div>
         <h1>{{ titulo }}</h1>
@@ -114,7 +115,7 @@ onBeforeUnmount(() => (document.title = tituloOriginal));
           <dt>Categoria</dt>
           <dd>Saneante <span class="note">(o nome técnico da ANVISA para produtos de limpeza, desinfecção e controle de pragas)</span></dd>
           <dt>Situação</dt>
-          <dd>{{ ativo ? "Ativo" : "Inativo" }} <span class="note">(regularização {{ ativo ? "ativa" : "inativa" }} na ANVISA)</span></dd>
+          <dd>{{ sit.tecnico }} <span class="note">({{ sit.dica }})</span></dd>
           <dt>Tipo</dt>
           <dd>
             {{ p.tipo_regularizacao }}

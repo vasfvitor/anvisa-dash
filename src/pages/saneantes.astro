@@ -2,6 +2,7 @@
 // /saneantes/ foi o primeiro endereço do corredor 2; os links compartilhados seguem para /limpeza/
 import { url } from "../lib/format";
 const destino = url("/limpeza/");
+const canonico = new URL(destino, Astro.site).href;
 ---
 
 <!doctype html>
@@ -10,7 +11,7 @@ const destino = url("/limpeza/");
     <meta charset="utf-8" />
     <meta name="robots" content="noindex" />
     <title>Produtos de limpeza · contém.</title>
-    <link rel="canonical" href={destino} />
+    <link rel="canonical" href={canonico} />
     <script is:inline define:vars={{ destino }}>
       location.replace(destino + location.search + location.hash);
     </script>

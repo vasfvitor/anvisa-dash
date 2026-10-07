@@ -50,6 +50,7 @@ watch(() => props.id, carregar, { immediate: true });
 const listaMarcas = computed(() => marcas(p.value?.marcas));
 const titulo = computed(() => (p.value ? marcaPrincipal(p.value) : ""));
 const ativo = computed(() => !!p.value && estaAtivo(p.value));
+const sit = computed(() => situacaoDe(ativo.value));
 const indeferido = computed(() => !!p.value && foiIndeferido(p.value));
 const notificado = computed(() => p.value?.tipo_regularizacao === "Notificado");
 
@@ -161,7 +162,7 @@ const linkAnvisa = computed(() =>
     <article v-else>
       <header class="produto-cabecalho" :class="{ inativo: !ativo }">
         <div class="produto-status">
-          <span class="situacao grande" :class="ativo ? 'ok' : 'off'" :title="situacaoDe(ativo).dica">{{ situacaoDe(ativo).longo }}</span>
+          <span class="situacao grande" :class="ativo ? 'ok' : 'off'" :title="sit.dica">{{ sit.longo }}</span>
           <span class="mono">
             {{ p.tipo_regularizacao }}<template v-if="p.dt_regularizacao"> em {{ fmtData(p.dt_regularizacao) }}</template>
             <template v-if="!notificado && p.dt_vencimento_registro"> · válido até {{ fmtMesAno(p.dt_vencimento_registro) }}</template>
@@ -318,7 +319,7 @@ const linkAnvisa = computed(() =>
           <dt>Empresa</dt>
           <dd>{{ p.no_razao_social_empresa }} · {{ fmtCnpj(p.nu_cnpj_empresa) }} <Copiar :valor="p.nu_cnpj_empresa" rotulo="CNPJ" /></dd>
           <dt>Situação</dt>
-          <dd>{{ ativo ? "Ativo" : "Inativo" }} <span class="note">(regularização {{ ativo ? "ativa" : "inativa" }} na ANVISA)</span></dd>
+          <dd>{{ sit.tecnico }} <span class="note">({{ sit.dica }})</span></dd>
           <dt>Tipo</dt>
           <dd>
             {{ p.tipo_regularizacao }}

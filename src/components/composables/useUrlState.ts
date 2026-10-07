@@ -1,4 +1,4 @@
-// Estado na URL, para todo link reproduzir a mesma tela. O caminho escolhe o corredor (/ ou /saneantes/);
+// Estado na URL, para todo link reproduzir a mesma tela. O caminho escolhe o corredor (/ ou /limpeza/);
 // a query string guarda a busca:
 //   ?q=whey&cat=…&tipo=Notificado&sit=todos   busca (sit: ativo é o padrão e não aparece; cat é o grupo)
 //   ?marca=LIQUID%20I.V.                      marca escolhida numa sugestão

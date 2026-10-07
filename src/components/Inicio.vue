@@ -29,7 +29,7 @@ const principais = computed(() => grupos.value.slice(0, 12));
     </p>
 
     <dl v-if="totais" class="numeros">
-      <div><Icone nome="certo" /><dt>liberados hoje</dt><dd>{{ fmtInt(totais.ativos) }}</dd></div>
+      <div><Icone nome="certo" /><dt>liberados</dt><dd>{{ fmtInt(totais.ativos) }}</dd></div>
       <div><Icone nome="caixas" /><dt>já passaram pela ANVISA</dt><dd>{{ fmtInt(totais.produtos) }}</dd></div>
       <div><Icone nome="fabrica" /><dt>empresas</dt><dd>{{ fmtInt(totais.empresas) }}</dd></div>
     </dl>

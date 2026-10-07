@@ -13,6 +13,7 @@ const props = defineProps<{ p: Saneante; termo?: string | null }>();
 const emit = defineEmits<{ abrir: [id: string] }>();
 
 const ativo = computed(() => props.p.situacao_registro === "Ativo");
+const sit = computed(() => situacaoDe(ativo.value));
 const val = computed(() => validade(props.p.grupo, props.p.dt_vencimento));
 const href = computed(() => montarUrl({ produto: props.p.id }));
 
@@ -28,7 +29,7 @@ function abrir(ev: MouseEvent): void {
     <a class="cartao-link" :href="href" @click="abrir">
       <div class="cartao-topo">
         <h3><Destaque :texto="legivel(p.no_produto, 'nome')" :termo="termo" /></h3>
-        <span class="situacao" :class="ativo ? 'ok' : 'off'" :title="situacaoDe(ativo).dica">{{ situacaoDe(ativo).curto }}</span>
+        <span class="situacao" :class="ativo ? 'ok' : 'off'" :title="sit.dica">{{ sit.curto }}</span>
       </div>
       <p class="cartao-empresa"><Destaque :texto="legivel(p.no_razao_social_empresa, 'nome')" :termo="termo" /></p>
       <div class="alergia compacta">

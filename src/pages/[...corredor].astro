@@ -5,7 +5,7 @@ import Base from "../layouts/Base.astro";
 import { CORREDORES, type Corredor } from "../lib/corredores";
 import { url } from "../lib/format";
 
-// uma página por corredor: / é alimentos, /saneantes/ é saneantes
+// uma página por corredor: / é alimentos, /limpeza/ é saneantes
 export function getStaticPaths() {
   return CORREDORES.map((c) => ({ params: { corredor: c.slug || undefined }, props: { id: c.id } }));
 }

@@ -15,6 +15,8 @@ import ResumoAlergia from "./ResumoAlergia.vue";
 const props = defineProps<{ p: Produto; termo?: string | null; extra?: Resumo }>();
 const emit = defineEmits<{ abrir: [id: string] }>();
 
+const liberado = computed(() => ativo(props.p));
+const sit = computed(() => situacaoDe(liberado.value));
 const listaMarcas = computed(() => marcasParaBusca(props.p, props.termo));
 const titulo = computed(() => listaMarcas.value.slice(0, 2).join(" · ") || legivel(props.p.no_produto));
 const outrasMarcas = computed(() => Math.max(0, listaMarcas.value.length - 2));
@@ -29,14 +31,14 @@ function abrir(ev: MouseEvent): void {
 </script>
 
 <template>
-  <article class="cartao" :class="{ inativo: !ativo(p) }">
+  <article class="cartao" :class="{ inativo: !liberado }">
     <a class="cartao-link" :href="href" @click="abrir">
       <div class="cartao-topo">
         <h3>
           <Destaque :texto="titulo" :termo="termo" />
           <span v-if="outrasMarcas" class="mais-marcas"> +{{ outrasMarcas }}</span>
         </h3>
-        <span class="situacao" :class="ativo(p) ? 'ok' : 'off'" :title="situacaoDe(ativo(p)).dica">{{ situacaoDe(ativo(p)).curto }}</span>
+        <span class="situacao" :class="liberado ? 'ok' : 'off'" :title="sit.dica">{{ sit.curto }}</span>
       </div>
       <p v-if="subtitulo" class="cartao-nome"><Destaque :texto="subtitulo" :termo="termo" /></p>
       <p class="cartao-empresa">

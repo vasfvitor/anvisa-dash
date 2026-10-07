@@ -10,5 +10,6 @@ export default defineConfig({
   output: "static",
   trailingSlash: "always",
   build: { format: "directory" },
-  integrations: [vue(), sitemap()],
+  // /saneantes/ só redireciona para /limpeza/: fica fora do sitemap
+  integrations: [vue(), sitemap({ filter: (p) => !p.endsWith("/saneantes/") })],
 });
