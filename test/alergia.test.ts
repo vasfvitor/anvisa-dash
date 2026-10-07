@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resumirAlergia } from "../src/lib/alergia";
+import { alergenicos, intolerancias, nomeCurto, resumirAlergia } from "../src/lib/alergia";
 
 const A1 = "Contém derivado de - Leites de todas as espécies de animais mamíferos#Soja | Não contém - Amendoim#Ovos#Trigo |";
 const A2 = "Pode conter - Ovos | Não contém - Amendoim#Trigo |";
@@ -28,5 +28,24 @@ describe("resumirAlergia", () => {
   });
   it("sem dados", () => {
     expect(resumirAlergia([null], [null]).temDados).toBe(false);
+  });
+});
+
+describe("parsers", () => {
+  it("alergênicos com separador final", () => {
+    expect(alergenicos("Contém derivado de - Leite#Soja | Não contém - Amendoim#Ovos |")).toEqual([
+      { rotulo: "Contém derivado de", itens: ["Leite", "Soja"] },
+      { rotulo: "Não contém", itens: ["Amendoim", "Ovos"] },
+    ]);
+  });
+  it("intolerâncias", () => {
+    expect(intolerancias("Contém Glúten - Não | Contém Lactose - Sim")).toEqual([
+      { rotulo: "Contém Glúten", valor: "Não" },
+      { rotulo: "Contém Lactose", valor: "Sim" },
+    ]);
+  });
+  it("nome curto só para os nomes legais longos", () => {
+    expect(nomeCurto("Leites de todas as espécies de animais mamíferos")).toBe("Leite");
+    expect(nomeCurto("Soja")).toBe("Soja");
   });
 });

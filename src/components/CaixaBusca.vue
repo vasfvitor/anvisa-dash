@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue";
 import { detectar, MODO_ROTULO, type Consulta } from "../lib/detect";
-import { fmtCnpj, fmtInt, fmtProcesso } from "../lib/format";
+import { fmtCnpj, fmtProcesso, plural } from "../lib/format";
 import { sugerir, type Sugestao } from "../lib/queries";
 import { legivel } from "../lib/texto";
 import Destaque from "./Destaque.vue";
@@ -92,7 +92,6 @@ function lida(c: Consulta): string {
   if (c.modo === "todos") return "Navegando pela categoria escolhida";
   return MODO_ROTULO.texto;
 }
-defineExpose({ focar: () => campo.value?.focus() });
 </script>
 
 <template>
@@ -137,7 +136,7 @@ defineExpose({ focar: () => campo.value?.focus() });
             <small>{{ s.tipo === "marca" ? "marca" : "empresa" }}</small>
           </span>
           <span class="sugestao-n">
-            {{ s.ativos ? `${fmtInt(s.ativos)} ativo${s.ativos === 1 ? "" : "s"}` : `${fmtInt(s.n)} inativo${s.n === 1 ? "" : "s"}` }}
+            {{ s.ativos ? plural(s.ativos, "ativo") : plural(s.n, "inativo") }}
           </span>
         </li>
       </ul>

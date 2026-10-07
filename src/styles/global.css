@@ -123,14 +123,13 @@ button.link { background: none; border: 0; padding: 0; color: var(--accent); tex
 table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
 th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-weight: 800; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 3px solid var(--fg); }
-td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .table-wrap { overflow-x: auto; }
 .badges { display: inline-flex; gap: 0.35rem; flex-wrap: wrap; }
 .badge { background: var(--chip-bg); color: var(--chip-fg); border-radius: 2rem; padding: 0.1rem 0.6rem; font-size: 0.8rem; text-decoration: none; font-family: var(--fonte-mono); }
 a.badge:hover { background: var(--fg); color: var(--bg); }
 
 /* ---------------------------------------------------------------- abertura (só na tela inicial) */
-body[data-tela="busca"] .hero, body[data-tela="produto"] .hero { display: none; }
+[data-tela="busca"] .hero, [data-tela="produto"] .hero { display: none; }
 .hero { position: relative; padding: 2.2rem 0 1.4rem; }
 .hero-selo { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0 0 0.9rem; padding: 0.2rem 0.75rem 0.2rem 0.55rem;
   border: 1.5px solid var(--fg); border-radius: 2rem; background: var(--card); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -157,7 +156,6 @@ body[data-tela="busca"] .hero, body[data-tela="produto"] .hero { display: none; 
 .deco-6 { top: 82%; right: 52%; --t: 5.8s; --d: -1.5s; width: 2.4rem; height: 2.4rem; background: var(--warn-bg); color: var(--warn); }
 .deco-7 { top: 14%; right: 62%; --t: 9s; --d: -5s; width: 2.3rem; height: 2.3rem; }
 .deco-8 { top: 50%; right: 70%; --t: 6.6s; --d: -3.5s; width: 2.1rem; height: 2.1rem; background: var(--pop-suave); color: var(--pop); }
-.deco-9 { display: none; }
 @keyframes flutuar { from { transform: translateY(-6px) rotate(-6deg); } to { transform: translateY(8px) rotate(7deg); } }
 .carimbo { position: absolute; top: 38%; right: 12%; width: 7.5rem; height: 7.5rem; animation: girar 28s linear infinite; }
 .carimbo text { font-family: var(--fonte-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; fill: var(--fg); }
@@ -279,13 +277,11 @@ body[data-tela="busca"] .hero, body[data-tela="produto"] .hero { display: none; 
 .selo.grande { font-size: 1rem; padding: 0.45rem 0.85rem; border-radius: 10px; border: 1.5px solid currentColor; }
 .selo.grande .icone { width: 1.2rem; height: 1.2rem; }
 .alergia.completa .selos { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 0.9rem; }
-.alergia.completa dl { display: grid; grid-template-columns: minmax(7rem, 10rem) 1fr; gap: 0; margin: 0; }
-.alergia.completa dt, .alergia.completa dd { padding: 0.5rem 0; border-top: 1px solid var(--line); }
-.alergia.completa dt { font-weight: 800; }
+/* a lista usa .ficha; aqui só o rótulo em negrito e na cor do risco */
+.alergia.completa dt { font-weight: 800; color: var(--fg); }
 .alergia.completa dt.perigo { color: var(--off); }
 .alergia.completa dt.atencao { color: var(--warn); }
 .alergia.completa dt.ok { color: var(--ok); }
-.alergia.completa dd { margin: 0; }
 
 /* ---------------------------------------------------------------- página inicial */
 .exemplos { margin: 1rem 0 0; color: var(--muted); font-size: 0.92rem; }
@@ -365,10 +361,8 @@ body[data-tela="busca"] .hero, body[data-tela="produto"] .hero { display: none; 
   .numeros div { flex-direction: row-reverse; justify-content: flex-end; align-items: baseline; gap: 0.6rem; padding: 0.6rem 0.9rem; }
   .numeros dd { font-size: 1.5rem; }
   .o-que { grid-template-columns: 1fr; }
-  .ficha, .alergia.completa dl { grid-template-columns: 1fr; }
+  .ficha { grid-template-columns: 1fr; }
   .ficha dt { border-bottom: 0; padding-bottom: 0; font-size: 0.82rem; }
-  .alergia.completa dt { border-bottom: 0; padding-bottom: 0; }
-  .alergia.completa dd { border-top: 0; padding-top: 0.15rem; }
   /* facetas: uma linha rolável por dimensão, para os resultados aparecerem logo */
   .faceta { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -1rem; padding: 0.1rem 1rem; }
   .faceta::-webkit-scrollbar { display: none; }

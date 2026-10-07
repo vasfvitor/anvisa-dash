@@ -55,7 +55,7 @@ export function empresas(s: string | null | undefined): Empresa[] {
     } else if (partes.length === 2) {
       [nome, local] = partes as [string, string];
     }
-    const codigo = /^\d{14}$/.test(cod) ? fmtCnpj(cod) : cod;
+    const codigo = fmtCnpj(cod); // CNPJ formatado; código estrangeiro passa como veio
     const chave = `${nome}|${local}|${codigo}`;
     if (!vistas.has(chave)) vistas.set(chave, { nome, local, codigo });
   }

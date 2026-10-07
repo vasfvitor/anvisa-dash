@@ -1,25 +1,19 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { useCopia } from "./composables/useCopia";
 import Icone from "./Icone.vue";
 
 const props = defineProps<{ valor: string; rotulo?: string }>();
-const copiado = ref(false);
-let espera: ReturnType<typeof setTimeout> | undefined;
-
-async function copiar(): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(props.valor);
-    copiado.value = true;
-    clearTimeout(espera);
-    espera = setTimeout(() => (copiado.value = false), 1500);
-  } catch {
-    // sem permissão de área de transferência: o valor continua visível para copiar à mão
-  }
-}
+const { copiado, copiar } = useCopia();
 </script>
 
 <template>
-  <button class="copiar" type="button" :aria-label="`Copiar ${rotulo ?? valor}`" :title="`Copiar ${rotulo ?? valor}`" @click="copiar">
+  <button
+    class="copiar"
+    type="button"
+    :aria-label="`Copiar ${props.rotulo ?? valor}`"
+    :title="`Copiar ${props.rotulo ?? valor}`"
+    @click="copiar(valor)"
+  >
     <Icone :nome="copiado ? 'certo' : 'copiar'" />
     <span class="sr-only" aria-live="polite">{{ copiado ? "Copiado" : "" }}</span>
   </button>

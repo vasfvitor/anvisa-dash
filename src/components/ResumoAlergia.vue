@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import type { ResumoAlergia, Sinal } from "../lib/alergia";
+import { nomeCurto, type ResumoAlergia, type Sinal } from "../lib/alergia";
 import Icone from "./Icone.vue";
 
 const props = defineProps<{ r: ResumoAlergia; compacto?: boolean }>();
@@ -17,7 +17,7 @@ const intolerancias = computed(() =>
 );
 // no cartão a lista de alergênicos é cortada: o nome completo fica no title
 function curta(itens: string[], max = 2): string {
-  const nomes = itens.map((x) => x.replace(/ de todas as espécies de animais mamíferos$/, ""));
+  const nomes = itens.map(nomeCurto);
   return nomes.length <= max ? nomes.join(", ") : `${nomes.slice(0, max).join(", ")} +${nomes.length - max}`;
 }
 </script>
@@ -36,7 +36,7 @@ function curta(itens: string[], max = 2): string {
     <div class="selos">
       <span v-for="i in intolerancias" :key="i.texto" class="selo grande" :class="i.classe"><Icone :nome="i.icone" />{{ i.texto }}</span>
     </div>
-    <dl>
+    <dl class="ficha">
       <template v-if="r.contem.length">
         <dt class="perigo">Contém</dt>
         <dd>{{ r.contem.join(", ") }}</dd>

@@ -1,8 +1,17 @@
-// Busca com paginação e facetas. Respostas fora de ordem (digitação rápida) são descartadas pelo
-// número da vez.
+// Busca com paginação, facetas e o resumo de alergênicos dos produtos listados. Respostas fora de
+// ordem (digitação rápida) são descartadas pelo número da vez.
 import { computed, reactive, ref, shallowRef } from "vue";
+import type { ResumoAlergia } from "../../lib/alergia";
 import { detectar, type Consulta } from "../../lib/detect";
-import { buscarProdutos, facetas, POR_PAGINA, type Facetas, type Filtros, type Produto } from "../../lib/queries";
+import {
+  buscarProdutos,
+  facetas,
+  POR_PAGINA,
+  resumosDe,
+  type Facetas,
+  type Filtros,
+  type Produto,
+} from "../../lib/queries";
 
 const SEM_FACETAS: Facetas = { situacao: [], tipo: [], categoria: [] };
 
@@ -19,6 +28,8 @@ export function useBusca() {
   const produtos = shallowRef<Produto[]>([]);
   const total = ref(0);
   const contagens = shallowRef<Facetas>(SEM_FACETAS);
+  /** resumo de alergênicos por co_seq_produto; chega depois da lista e só acumula */
+  const resumos = shallowRef(new Map<number, ResumoAlergia>());
   const carregando = ref(false);
   const erro = ref("");
   /** consulta que gerou a lista atual */
@@ -27,9 +38,19 @@ export function useBusca() {
   let vez = 0;
   let ultima = "";
 
-  /** `forcar` refaz mesmo sem mudança (Enter, resumo novo); sem ele, a mesma busca é ignorada. */
+  /** Pede o resumo dos que ainda não têm; a tabela de detalhes pode ainda estar baixando. */
+  function completarResumos(lista: Produto[]): void {
+    const faltam = lista.map((p) => p.co_seq_produto).filter((id) => !resumos.value.has(id));
+    if (!faltam.length) return;
+    resumosDe(faltam).then(
+      (novos) => (resumos.value = new Map([...resumos.value, ...novos])),
+      () => {},
+    );
+  }
+
+  /** `forcar` refaz mesmo sem mudança (Enter); sem ele, a mesma busca é ignorada. */
   async function buscar(mais = false, forcar = false): Promise<void> {
-    const q = consulta.value;
+    const q = mais ? buscada.value : consulta.value;
     const f = { ...filtros };
     const chave = JSON.stringify([q, f]);
     if (!mais && !forcar && chave === ultima) return;
@@ -48,21 +69,17 @@ export function useBusca() {
     carregando.value = true;
     erro.value = "";
     try {
-      let usada = mais && buscada.value ? buscada.value : q;
-      let linhas = await buscarProdutos(usada, f, pagina);
-      // 14 dígitos sem CNPJ correspondente: há 400 processos antigos desse tamanho
-      if (!mais && !linhas.length && q.modo === "cnpj") {
-        const comoNumero: Consulta = { modo: "numero", valor: q.valor };
-        const outras = await buscarProdutos(comoNumero, f, 0);
-        if (outras.length) [usada, linhas] = [comoNumero, outras];
-      }
-      const cont = mais ? contagens.value : await facetas(usada, f);
+      const [linhas, cont] = await Promise.all([
+        buscarProdutos(q, f, pagina),
+        mais ? contagens.value : facetas(q, f),
+      ]);
       if (minha !== vez) return;
       produtos.value = mais ? [...produtos.value, ...linhas] : linhas;
       if (linhas.length) total.value = linhas[0]!.total;
       else if (!mais) total.value = 0;
       contagens.value = cont;
-      buscada.value = usada;
+      buscada.value = q;
+      completarResumos(linhas);
     } catch (e) {
       if (minha !== vez) return;
       ultima = ""; // deixa tentar a mesma busca de novo
@@ -74,5 +91,5 @@ export function useBusca() {
 
   const temMais = computed(() => produtos.value.length < total.value && produtos.value.length >= POR_PAGINA);
 
-  return { entrada, marca, filtros, consulta, produtos, total, contagens, carregando, erro, buscada, temMais, buscar };
+  return { entrada, marca, filtros, consulta, produtos, total, contagens, resumos, carregando, erro, buscada, temMais, buscar };
 }

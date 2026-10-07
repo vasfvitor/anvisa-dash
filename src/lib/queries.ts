@@ -4,10 +4,11 @@
 // - produtos: uma linha por co_seq_produto (nome, marcas, empresa, processo e situação são iguais em
 //   todas as apresentações), com colunas de busca já normalizadas;
 // - resumo: alergênicos e intolerâncias de cada produto, da tabela de detalhes (chega depois: a busca
-//   funciona sem ela e mostra o resumo quando ela fica pronta);
+//   não espera por ela; os cartões pedem o resumo dos produtos listados com resumosDe);
 // - sugestoes: marcas e empresas com a contagem de produtos, para sugerir enquanto a pessoa digita.
 import { TABELA, TABELA_DETALHE } from "./config";
 import type { Consulta } from "./detect";
+import { deJson, resumirAlergia, type ResumoAlergia } from "./alergia";
 import { buildAtual, carregar, consultar, type Valor } from "./db";
 import { normalizar } from "./texto";
 
@@ -40,9 +41,6 @@ export interface Produto {
   dt_inicio_analise: string | null;
   dt_vencimento_registro: string | null;
   n_apresentacoes: number;
-  /** JSON de string[]: os valores distintos entre as apresentações; null antes do resumo ficar pronto */
-  alergenicos_json: string | null;
-  intolerancias_json: string | null;
   total: number;
 }
 
@@ -73,7 +71,6 @@ const TS = (expr: string, nome: string) => `strftime(${expr}, '%Y-%m-%dT%H:%M:%S
 // tabelas derivadas
 
 const derivadas = new Map<string, Promise<void>>();
-let resumoPronto = false;
 
 async function derivar(nome: string, deps: () => Promise<void>, sql: string): Promise<void> {
   const chave = `${await buildAtual()}/${nome}`;
@@ -125,8 +122,8 @@ function produtos(): Promise<void> {
   );
 }
 
-async function resumo(): Promise<void> {
-  await derivar(
+function resumo(): Promise<void> {
+  return derivar(
     "resumo",
     () => carregar(TABELA_DETALHE),
     `CREATE OR REPLACE TABLE resumo AS
@@ -136,7 +133,6 @@ async function resumo(): Promise<void> {
     FROM "${TABELA_DETALHE}"
     GROUP BY co_produto`,
   );
-  resumoPronto = true;
 }
 
 function sugestoes(): Promise<void> {
@@ -161,13 +157,13 @@ function sugestoes(): Promise<void> {
 }
 
 /**
- * Baixa e prepara tudo: primeiro o necessário para buscar, depois (sem bloquear) o resumo de
- * alergênicos e as sugestões. `aoResumo` avisa quando o resumo fica pronto, para refazer a lista.
+ * Prepara o necessário para buscar e já começa, sem esperar, a baixar a tabela de detalhes do resumo
+ * de alergênicos. As sugestões são montadas no primeiro uso, para não disputar o worker com a
+ * primeira busca de um link compartilhado.
  */
-export async function preparar(aoResumo?: () => void): Promise<void> {
+export async function preparar(): Promise<void> {
   await produtos();
-  void sugestoes().catch(() => {});
-  void resumo().then(aoResumo, () => {});
+  void resumo().catch(() => {});
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -181,7 +177,8 @@ function termo(q: Consulta): string {
 function predicado(q: Consulta): { sql: string; params: Valor[] } {
   switch (q.modo) {
     case "cnpj":
-      return { sql: "nu_cnpj_empresa = ?", params: [q.valor] };
+      // 400 processos antigos também têm 14 dígitos
+      return { sql: "(nu_cnpj_empresa = ? OR nu_processo = ?)", params: [q.valor, q.valor] };
     case "numero":
       // processo (6 a 17 dígitos), registro do produto (9) ou da apresentação (13)
       return {
@@ -225,12 +222,6 @@ const COLUNAS = `co_seq_produto, no_produto, marcas, no_razao_social_empresa, nu
   ds_situacao_assunto_doc, ds_alegacao_funcional, dt_regularizacao, dt_publicacao, dt_situacao,
   dt_inicio_analise, dt_vencimento_registro, n_apresentacoes`;
 
-function comResumo(): string {
-  return resumoPronto
-    ? "LEFT JOIN resumo USING (co_seq_produto)"
-    : "CROSS JOIN (SELECT NULL::VARCHAR AS alergenicos_json, NULL::VARCHAR AS intolerancias_json)";
-}
-
 export async function buscarProdutos(q: Consulta, f: Filtros, pagina = 0): Promise<Produto[]> {
   await produtos();
   const w = onde(q, f);
@@ -244,9 +235,8 @@ export async function buscarProdutos(q: Consulta, f: Filtros, pagina = 0): Promi
     params.unshift(t, t, t);
   }
   const sql = `
-    SELECT ${COLUNAS}, alergenicos_json, intolerancias_json, (count(*) OVER ())::INTEGER AS total
+    SELECT ${COLUNAS}, (count(*) OVER ())::INTEGER AS total
     FROM (SELECT *, ${relevancia} AS relevancia FROM produtos) p
-    ${comResumo()}
     WHERE ${w.sql}
     ORDER BY relevancia, situacao_registro, ordem_data DESC NULLS LAST, co_seq_produto
     LIMIT ${POR_PAGINA} OFFSET ?`;
@@ -305,17 +295,34 @@ export async function sugerir(texto: string, limite = 8): Promise<Sugestao[]> {
   const sql = `
     SELECT tipo, rotulo, nu_cnpj_empresa, n, ativos FROM sugestoes
     WHERE contains(chave, ?)
-    ORDER BY NOT starts_with(chave, ?), ativos = 0, ativos DESC, n DESC, length(rotulo), rotulo
+    ORDER BY NOT starts_with(chave, ?), ativos DESC, n DESC, length(rotulo), rotulo
     LIMIT ${Math.trunc(limite)}`;
   return (await consultar([], sql, [t, t])) as unknown as Sugestao[];
 }
 
 export async function produtoPorId(id: number): Promise<Produto | null> {
   await produtos();
-  const sql = `SELECT ${COLUNAS}, alergenicos_json, intolerancias_json, 1 AS total
-    FROM produtos ${comResumo()} WHERE co_seq_produto = ?`;
+  const sql = `SELECT ${COLUNAS}, 1 AS total FROM produtos WHERE co_seq_produto = ?`;
   const [p] = (await consultar([], sql, [id])) as unknown as Produto[];
   return p ?? null;
+}
+
+/**
+ * Resumo de alergênicos dos produtos pedidos. Espera a tabela de detalhes (baixada em segundo plano
+ * desde o início) e só consulta os ids da tela, em vez de juntar o resumo em toda busca.
+ */
+export async function resumosDe(ids: number[]): Promise<Map<number, ResumoAlergia>> {
+  // ids vêm dos resultados do próprio app, não do usuário: entram como literais depois de validados
+  const validos = ids.filter(Number.isSafeInteger);
+  if (!validos.length) return new Map();
+  await resumo();
+  const linhas = (await consultar(
+    [],
+    `SELECT co_seq_produto, alergenicos_json, intolerancias_json FROM resumo WHERE co_seq_produto IN (${validos.join(",")})`,
+  )) as { co_seq_produto: number; alergenicos_json: string | null; intolerancias_json: string | null }[];
+  return new Map(
+    linhas.map((l) => [l.co_seq_produto, resumirAlergia(deJson(l.alergenicos_json), deJson(l.intolerancias_json))]),
+  );
 }
 
 /** Apresentações de um produto com o detalhe (co_produto do detalhe é o co_seq_produto). */

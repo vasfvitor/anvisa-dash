@@ -1,124 +1,146 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
-import { deJson, resumirAlergia } from "../lib/alergia";
+import { resumirAlergia } from "../lib/alergia";
 import { consenso, empresas, vazio } from "../lib/apresentacoes";
-import { fatiar, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas } from "../lib/format";
+import { fatiar, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas, plural } from "../lib/format";
+import { tituloPagina } from "../lib/marca";
+import { ativo as estaAtivo, indeferido as foiIndeferido, marcaPrincipal } from "../lib/produto";
 import { buscarApresentacoes, produtoPorId, type Apresentacao, type Produto } from "../lib/queries";
-import { NOME } from "../lib/marca";
 import { legivel } from "../lib/texto";
+import { useCopia } from "./composables/useCopia";
 import Copiar from "./Copiar.vue";
 import Icone from "./Icone.vue";
 import ResumoAlergia from "./ResumoAlergia.vue";
 
-const props = defineProps<{ id: number; versaoResumo: number }>();
+const props = defineProps<{ id: number }>();
 const emit = defineEmits<{ voltar: []; empresa: [cnpj: string] }>();
 
 const p = shallowRef<Produto | null>(null);
 const aps = shallowRef<Apresentacao[] | null>(null);
 const carregando = ref(true);
 const erro = ref("");
-const compartilhado = ref(false);
 const todasMarcas = ref(false);
+const { copiado: compartilhado, copiar } = useCopia();
+let vez = 0;
 
 async function carregar(): Promise<void> {
+  const minha = ++vez;
   carregando.value = true;
   erro.value = "";
   aps.value = null;
   try {
-    p.value = await produtoPorId(props.id);
+    const produto = await produtoPorId(props.id);
+    if (minha !== vez) return;
+    p.value = produto;
     carregando.value = false;
     // o detalhe pode exigir baixar a segunda tabela: o topo aparece antes
-    if (p.value) aps.value = await buscarApresentacoes(props.id);
+    if (produto) {
+      const lista = await buscarApresentacoes(props.id);
+      if (minha === vez) aps.value = lista;
+    }
   } catch (e) {
-    erro.value = e instanceof Error ? e.message : String(e);
+    if (minha === vez) erro.value = e instanceof Error ? e.message : String(e);
   } finally {
-    carregando.value = false;
+    if (minha === vez) carregando.value = false;
   }
 }
 watch(() => props.id, carregar, { immediate: true });
-watch(() => props.versaoResumo, () => p.value && !aps.value && carregar());
 
 const listaMarcas = computed(() => marcas(p.value?.marcas));
-const titulo = computed(() => (p.value ? listaMarcas.value[0] ?? legivel(p.value.no_produto) : ""));
-const ativo = computed(() => p.value?.situacao_registro === "Ativo");
-const indeferido = computed(() => /indeferimento/i.test(p.value?.ds_situacao_assunto_doc ?? ""));
+const titulo = computed(() => (p.value ? marcaPrincipal(p.value) : ""));
+const ativo = computed(() => !!p.value && estaAtivo(p.value));
+const indeferido = computed(() => !!p.value && foiIndeferido(p.value));
 const notificado = computed(() => p.value?.tipo_regularizacao === "Notificado");
 
-watch(titulo, (t) => {
-  if (t) document.title = `${t} · ${NOME}.`;
-});
 const tituloOriginal = document.title;
+watch(titulo, (t) => t && (document.title = tituloPagina(t)));
 onBeforeUnmount(() => (document.title = tituloOriginal));
 
 const comDetalhe = computed(() => (aps.value ?? []).filter((a) => a.tem_detalhe));
 const semDetalhe = computed(() => (aps.value ?? []).length - comDetalhe.value.length);
+// o resumo sai das próprias apresentações, que trazem a tabela de detalhes junto
+const resumo = computed(() =>
+  aps.value ? resumirAlergia(comDetalhe.value.map((a) => a.alergenicos), comDetalhe.value.map((a) => a.intolerancias)) : null,
+);
 
-const resumo = computed(() => {
-  if (aps.value) return resumirAlergia(comDetalhe.value.map((a) => a.alergenicos), comDetalhe.value.map((a) => a.intolerancias));
-  if (p.value?.alergenicos_json) return resumirAlergia(deJson(p.value.alergenicos_json), deJson(p.value.intolerancias_json));
-  return null;
-});
+// formatadores dos campos de apresentação
+const lista = (s: string) => fatiar(s, "|").map((x) => legivel(x).replace(/^./, (c) => c.toLowerCase())).join(", ");
+/** "Primária - pote | Secundária - caixa" → "pote (primária), caixa (secundária)" */
+const nivel = (s: string) =>
+  fatiar(s, "|")
+    .map((x) => {
+      const [n, item] = x.split(" - ");
+      return item ? `${legivel(item).toLowerCase()} (${n!.toLowerCase()})` : legivel(x).toLowerCase();
+    })
+    .join(", ");
+const minusculo = (s: string) => legivel(s).toLowerCase();
 
 type Campo = keyof Apresentacao;
-const CAMPOS: { campo: Campo; rotulo: string; curto: boolean }[] = [
-  { campo: "ds_forma_fisica", rotulo: "Forma física", curto: true },
-  { campo: "validade", rotulo: "Validade", curto: true },
-  { campo: "grupos_populacionais", rotulo: "Público indicado", curto: true },
-  { campo: "vias_administracao", rotulo: "Via de uso", curto: true },
-  { campo: "tipo_embalagens", rotulo: "Embalagem", curto: true },
-  { campo: "material_embalagens", rotulo: "Material da embalagem", curto: true },
-  { campo: "situacao_apresentacao", rotulo: "Situação", curto: true },
-  { campo: "tabela_nutricional", rotulo: "Ingredientes", curto: false },
-  { campo: "alergenicos", rotulo: "Alergênicos", curto: false },
-  { campo: "intolerancias", rotulo: "Glúten e lactose", curto: false },
+interface DefCampo {
+  campo: Campo;
+  rotulo: string;
+  fmt: (s: string) => string;
+  /** curto cabe numa coluna da tabela; longo vai para o detalhe expansível */
+  curto: boolean;
+  /** entra em "Uso e embalagem" quando todas as apresentações concordam */
+  naFicha: boolean;
+}
+const CAMPOS: DefCampo[] = [
+  { campo: "ds_forma_fisica", rotulo: "Forma física", fmt: minusculo, curto: true, naFicha: true },
+  { campo: "validade", rotulo: "Validade", fmt: minusculo, curto: true, naFicha: true },
+  { campo: "grupos_populacionais", rotulo: "Público indicado", fmt: lista, curto: true, naFicha: true },
+  { campo: "vias_administracao", rotulo: "Via de uso", fmt: lista, curto: true, naFicha: true },
+  { campo: "tipo_embalagens", rotulo: "Embalagem", fmt: nivel, curto: true, naFicha: true },
+  { campo: "material_embalagens", rotulo: "Material da embalagem", fmt: nivel, curto: true, naFicha: true },
+  { campo: "situacao_apresentacao", rotulo: "Situação", fmt: minusculo, curto: true, naFicha: false },
+  { campo: "tabela_nutricional", rotulo: "Ingredientes", fmt: legivel, curto: false, naFicha: false },
+  { campo: "alergenicos", rotulo: "Alergênicos", fmt: legivel, curto: false, naFicha: false },
+  { campo: "intolerancias", rotulo: "Glúten e lactose", fmt: legivel, curto: false, naFicha: false },
 ];
+const valor = (c: DefCampo, v: unknown): string => (vazio(v) ? "—" : c.fmt(String(v)));
+const SITUACAO = CAMPOS.find((c) => c.campo === "situacao_apresentacao")!;
+
 const cons = computed(() => consenso(comDetalhe.value, CAMPOS.map((c) => c.campo)));
-const usoComum = computed(() =>
-  CAMPOS.filter((c) => c.curto && c.campo !== "situacao_apresentacao" && cons.value.comum[c.campo] !== undefined),
-);
+const usoComum = computed(() => CAMPOS.filter((c) => c.naFicha && cons.value.comum[c.campo] !== undefined));
 const variamCurtos = computed(() => CAMPOS.filter((c) => c.curto && cons.value.variam.includes(c.campo)));
 const variamLongos = computed(() => CAMPOS.filter((c) => !c.curto && cons.value.variam.includes(c.campo)));
-
-/** "Primária - pote | Secundária - caixa" → "pote (primária), caixa (secundária)" */
-function valor(campo: Campo, v: unknown): string {
-  if (vazio(v)) return "—";
-  const s = String(v);
-  if (campo === "tipo_embalagens" || campo === "material_embalagens") {
-    return fatiar(s, "|")
-      .map((x) => {
-        const [nivel, item] = x.split(" - ");
-        return item ? `${legivel(item).toLowerCase()} (${nivel!.toLowerCase()})` : legivel(x).toLowerCase();
-      })
-      .join(", ");
-  }
-  if (campo === "grupos_populacionais" || campo === "vias_administracao") {
-    return fatiar(s, "|").map((x) => legivel(x).replace(/^./, (c) => c.toLowerCase())).join(", ");
-  }
-  if (campo === "ds_forma_fisica" || campo === "situacao_apresentacao" || campo === "validade") return legivel(s).toLowerCase();
-  return legivel(s);
-}
+// a situação de cada apresentação sempre aparece: como coluna própria se não estiver entre as que variam
+const colunaSituacao = computed(() => !variamCurtos.value.includes(SITUACAO));
 
 const ingredientes = computed(() => {
   const v = cons.value.comum.tabela_nutricional;
   return typeof v === "string" ? legivel(v) : "";
 });
 const alegacoes = computed(() => fatiar(p.value?.ds_alegacao_funcional, ";"));
-const envasadoras = computed(() => empresas(comDetalhe.value.map((a) => a.empresas_envasadoras ?? "").join(" | ")));
-const exterior = computed(() => empresas(comDetalhe.value.map((a) => a.empresas_internacionais ?? "").join(" | ")));
+const juntar = (campo: "empresas_envasadoras" | "empresas_internacionais") =>
+  empresas(comDetalhe.value.map((a) => a[campo] ?? "").join(" | "));
+const fabricacao = computed(() =>
+  [
+    { rotulo: "Envasado por", lista: juntar("empresas_envasadoras"), comCodigo: true },
+    { rotulo: "Fabricantes no exterior", lista: juntar("empresas_internacionais"), comCodigo: false },
+  ].filter((f) => f.lista.length),
+);
+const datas = computed(() =>
+  p.value
+    ? (
+        [
+          ["Regularização", p.value.dt_regularizacao],
+          ["Publicação", p.value.dt_publicacao],
+          ["Início da análise", p.value.dt_inicio_analise],
+          ["Situação atual desde", p.value.dt_situacao],
+        ] as const
+      ).filter(([, d]) => d)
+    : [],
+);
 
 const linkAnvisa = computed(() =>
   p.value ? `https://consultas.anvisa.gov.br/#/alimentos/${p.value.nu_processo}/?numeroProcesso=${p.value.nu_processo}` : "",
 );
 
 async function compartilhar(): Promise<void> {
-  const url = location.href;
+  if (!navigator.share) return copiar(location.href);
   try {
-    if (navigator.share) await navigator.share({ title: document.title, url });
-    else {
-      await navigator.clipboard.writeText(url);
-      compartilhado.value = true;
-      setTimeout(() => (compartilhado.value = false), 1800);
-    }
+    await navigator.share({ title: document.title, url: location.href });
   } catch {
     // compartilhamento cancelado
   }
@@ -184,23 +206,19 @@ async function compartilhar(): Promise<void> {
         histórico; procure a versão ativa do produto pela marca ou pela empresa.</div>
       </div>
 
-      <section v-if="resumo?.temDados" class="secao">
+      <section v-if="resumo?.temDados || (resumo && ativo)" class="secao">
         <h2><Icone nome="trigo" />Glúten, lactose e alergênicos</h2>
-        <ResumoAlergia :r="resumo" />
-      </section>
-      <section v-else-if="aps && ativo" class="secao">
-        <h2><Icone nome="trigo" />Glúten, lactose e alergênicos</h2>
-        <p class="note">Sem informação de alergênicos nos dados abertos da ANVISA para este produto.</p>
+        <ResumoAlergia v-if="resumo.temDados" :r="resumo" />
+        <p v-else class="note">Sem informação de alergênicos nos dados abertos da ANVISA para este produto.</p>
       </section>
 
-      <section v-if="ingredientes" class="secao">
+      <section v-if="ingredientes || cons.variam.includes('tabela_nutricional')" class="secao">
         <h2><Icone nome="folha" />Ingredientes</h2>
-        <p class="ingredientes">{{ ingredientes }}</p>
-        <p class="note">Como declarado à ANVISA; letras maiúsculas ajustadas para leitura.</p>
-      </section>
-      <section v-else-if="cons.variam.includes('tabela_nutricional')" class="secao">
-        <h2><Icone nome="folha" />Ingredientes</h2>
-        <p>
+        <template v-if="ingredientes">
+          <p class="ingredientes">{{ ingredientes }}</p>
+          <p class="note">Como declarado à ANVISA; letras maiúsculas ajustadas para leitura.</p>
+        </template>
+        <p v-else>
           Os ingredientes mudam conforme a apresentação (por exemplo, sabores diferentes).
           <a href="#apresentacoes">Veja os de cada uma em “Apresentações”</a>.
         </p>
@@ -218,7 +236,7 @@ async function compartilhar(): Promise<void> {
         <dl class="ficha">
           <template v-for="c in usoComum" :key="c.campo">
             <dt>{{ c.rotulo }}</dt>
-            <dd>{{ valor(c.campo, cons.comum[c.campo]) }}</dd>
+            <dd>{{ valor(c, cons.comum[c.campo]) }}</dd>
           </template>
         </dl>
       </section>
@@ -236,7 +254,7 @@ async function compartilhar(): Promise<void> {
                 <tr>
                   <th>Nº</th>
                   <th v-for="c in variamCurtos" :key="c.campo">{{ c.rotulo }}</th>
-                  <th v-if="!variamCurtos.some((c) => c.campo === 'situacao_apresentacao')">Situação</th>
+                  <th v-if="colunaSituacao">Situação</th>
                   <th>Registro</th>
                 </tr>
               </thead>
@@ -244,9 +262,9 @@ async function compartilhar(): Promise<void> {
                 <template v-for="a in aps" :key="a.co_seq_apresentacao_produto">
                   <tr>
                     <td>{{ a.nu_apresentacao_produto ?? "—" }}</td>
-                    <td v-for="c in variamCurtos" :key="c.campo">{{ a.tem_detalhe ? valor(c.campo, a[c.campo]) : "—" }}</td>
-                    <td v-if="!variamCurtos.some((c) => c.campo === 'situacao_apresentacao')">
-                      {{ a.tem_detalhe ? valor("situacao_apresentacao", a.situacao_apresentacao) : "detalhe não publicado" }}
+                    <td v-for="c in variamCurtos" :key="c.campo">{{ a.tem_detalhe ? valor(c, a[c.campo]) : "—" }}</td>
+                    <td v-if="colunaSituacao">
+                      {{ a.tem_detalhe ? valor(SITUACAO, a.situacao_apresentacao) : "detalhe não publicado" }}
                     </td>
                     <td>
                       <template v-if="a.nu_registro">{{ a.nu_registro }} <Copiar :valor="a.nu_registro" rotulo="registro" /></template>
@@ -260,7 +278,7 @@ async function compartilhar(): Promise<void> {
                         <dl class="ficha">
                           <template v-for="c in variamLongos" :key="c.campo">
                             <dt>{{ c.rotulo }}</dt>
-                            <dd>{{ valor(c.campo, a[c.campo]) }}</dd>
+                            <dd>{{ valor(c, a[c.campo]) }}</dd>
                           </template>
                         </dl>
                       </details>
@@ -271,31 +289,21 @@ async function compartilhar(): Promise<void> {
             </table>
           </div>
           <p v-if="semDetalhe" class="note">
-            {{ semDetalhe }} apresentaç{{ semDetalhe === 1 ? "ão" : "ões" }} ainda sem detalhe nos dados abertos da ANVISA.
+            {{ plural(semDetalhe, "apresentação", "apresentações") }} ainda sem detalhe nos dados abertos da ANVISA.
           </p>
         </template>
       </section>
 
-      <section v-if="envasadoras.length || exterior.length" class="secao">
+      <section v-if="fabricacao.length" class="secao">
         <h2><Icone nome="fabrica" />Fabricação</h2>
         <dl class="ficha">
-          <template v-if="envasadoras.length">
-            <dt>Envasado por</dt>
+          <template v-for="f in fabricacao" :key="f.rotulo">
+            <dt>{{ f.rotulo }}</dt>
             <dd>
               <ul class="empresas">
-                <li v-for="e in envasadoras" :key="e.nome + e.codigo">
+                <li v-for="e in f.lista" :key="e.nome + e.codigo">
                   {{ legivel(e.nome, "nome") }}<span v-if="e.local" class="muted"> · {{ legivel(e.local, "nome") }}</span>
-                  <span v-if="e.codigo" class="muted"> · {{ e.codigo }}</span>
-                </li>
-              </ul>
-            </dd>
-          </template>
-          <template v-if="exterior.length">
-            <dt>Fabricantes no exterior</dt>
-            <dd>
-              <ul class="empresas">
-                <li v-for="e in exterior" :key="e.nome + e.codigo">
-                  {{ legivel(e.nome, "nome") }}<span v-if="e.local" class="muted"> · {{ legivel(e.local, "nome") }}</span>
+                  <span v-if="f.comCodigo && e.codigo" class="muted"> · {{ e.codigo }}</span>
                 </li>
               </ul>
             </dd>
@@ -332,21 +340,9 @@ async function compartilhar(): Promise<void> {
             <dt>Situação da petição</dt>
             <dd>{{ p.ds_situacao_assunto_doc }}</dd>
           </template>
-          <template v-if="p.dt_regularizacao">
-            <dt>Regularização</dt>
-            <dd>{{ fmtData(p.dt_regularizacao) }}</dd>
-          </template>
-          <template v-if="p.dt_publicacao">
-            <dt>Publicação</dt>
-            <dd>{{ fmtData(p.dt_publicacao) }}</dd>
-          </template>
-          <template v-if="p.dt_inicio_analise">
-            <dt>Início da análise</dt>
-            <dd>{{ fmtData(p.dt_inicio_analise) }}</dd>
-          </template>
-          <template v-if="p.dt_situacao">
-            <dt>Situação atual desde</dt>
-            <dd>{{ fmtData(p.dt_situacao) }}</dd>
+          <template v-for="[rotulo, data] in datas" :key="rotulo">
+            <dt>{{ rotulo }}</dt>
+            <dd>{{ fmtData(data) }}</dd>
           </template>
           <template v-if="p.dt_vencimento_registro">
             <dt>Vencimento</dt>

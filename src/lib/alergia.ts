@@ -1,10 +1,39 @@
-// Resumo de glúten, lactose e alergênicos de um produto a partir das suas apresentações.
-// Formatos da ANVISA (alimentos_resultado):
+// Glúten, lactose e alergênicos: o formato da ANVISA (alimentos_resultado) e o resumo por produto.
 //   intolerancias: "Contém Glúten - Não | Contém Lactose - Sim"
 //   alergenicos:   "Contém derivado de - Leite#Soja | Pode conter - Ovos | Não contém - Amendoim#Nozes |"
 // Rótulos encontrados nos dados de 2026-10-06: Não contém, Pode conter, Contém derivado de, Contém.
 // Em 2,5% dos produtos ativos as apresentações divergem; aí o resumo junta tudo e marca `varia`.
 import { fatiar } from "./format";
+import { normalizar } from "./texto";
+
+export interface Grupo {
+  rotulo: string;
+  itens: string[];
+}
+
+/** `alergenicos`: grupos separados por " | ", cada um "Rótulo - item#item#item". */
+export function alergenicos(s: string | null | undefined): Grupo[] {
+  return fatiar(s, "|").map((g) => {
+    const i = g.indexOf(" - ");
+    if (i < 0) return { rotulo: "", itens: fatiar(g, "#") };
+    return { rotulo: g.slice(0, i).trim(), itens: fatiar(g.slice(i + 3), "#") };
+  });
+}
+
+/** `intolerancias`: "Contém Glúten - Não | Contém Lactose - Sim" → pares rótulo/valor. */
+export function intolerancias(s: string | null | undefined): { rotulo: string; valor: string }[] {
+  return fatiar(s, "|").map((p) => {
+    const i = p.lastIndexOf(" - ");
+    return i < 0 ? { rotulo: p, valor: "" } : { rotulo: p.slice(0, i).trim(), valor: p.slice(i + 3).trim() };
+  });
+}
+
+// nomes legais longos da lista de alergênicos, encurtados onde o espaço é pouco (selos do cartão)
+const CURTOS: Record<string, string> = {
+  "Leites de todas as espécies de animais mamíferos": "Leite",
+  "Castanha-do-brasil ou castanha-do-pará": "Castanha-do-pará",
+};
+export const nomeCurto = (item: string): string => CURTOS[item] ?? item;
 
 export type Sinal = "sim" | "nao" | "varia" | null;
 
@@ -27,34 +56,28 @@ function sinal(valores: Set<string>): Sinal {
   return null;
 }
 
-function semAcento(s: string): string {
-  return s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
-}
-
-export function resumirAlergia(alergenicos: (string | null)[], intolerancias: (string | null)[]): ResumoAlergia {
+/** Junta as declarações de todas as apresentações de um produto. */
+export function resumirAlergia(listaAlergenicos: (string | null)[], listaIntolerancias: (string | null)[]): ResumoAlergia {
   const gluten = new Set<string>();
   const lactose = new Set<string>();
-  for (const s of new Set(intolerancias)) {
-    for (const par of fatiar(s, "|")) {
-      const i = par.lastIndexOf(" - ");
-      if (i < 0) continue;
-      const rotulo = semAcento(par.slice(0, i));
-      const v = semAcento(par.slice(i + 3).trim()) === "sim" ? "sim" : "nao";
-      if (rotulo.includes("gluten")) gluten.add(v);
-      else if (rotulo.includes("lactose")) lactose.add(v);
+  for (const s of new Set(listaIntolerancias)) {
+    for (const { rotulo, valor } of intolerancias(s)) {
+      if (!valor) continue;
+      const r = normalizar(rotulo);
+      const v = normalizar(valor) === "sim" ? "sim" : "nao";
+      if (r.includes("gluten")) gluten.add(v);
+      else if (r.includes("lactose")) lactose.add(v);
     }
   }
 
   const contem = new Set<string>();
   const podeConter = new Set<string>();
   const naoContem = new Set<string>();
-  for (const s of new Set(alergenicos)) {
-    for (const g of fatiar(s, "|")) {
-      const i = g.indexOf(" - ");
-      if (i < 0) continue;
-      const rotulo = semAcento(g.slice(0, i));
-      const itens = fatiar(g.slice(i + 3), "#");
-      const alvo = rotulo.startsWith("nao contem") ? naoContem : rotulo.startsWith("pode conter") ? podeConter : contem;
+  for (const s of new Set(listaAlergenicos)) {
+    for (const { rotulo, itens } of alergenicos(s)) {
+      if (!rotulo) continue;
+      const r = normalizar(rotulo);
+      const alvo = r.startsWith("nao contem") ? naoContem : r.startsWith("pode conter") ? podeConter : contem;
       for (const x of itens) alvo.add(x);
     }
   }
@@ -70,7 +93,7 @@ export function resumirAlergia(alergenicos: (string | null)[], intolerancias: (s
     contem: ordenar(contem),
     podeConter: ordenar(podeConter),
     naoContem: ordenar(naoContem),
-    varia: distintos(alergenicos) > 1 || distintos(intolerancias) > 1,
+    varia: distintos(listaAlergenicos) > 1 || distintos(listaIntolerancias) > 1,
     temDados: gluten.size + lactose.size + contem.size + podeConter.size + naoContem.size > 0,
   };
 }

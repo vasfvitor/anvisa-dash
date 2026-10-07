@@ -2,9 +2,9 @@
 // CNPJ, processo e registro como texto com zeros à esquerda; aqui também nunca viram número.
 //
 // Processos não têm todos 17 dígitos: 44% das linhas têm 13 (processos antigos), 400 têm 14 (mesmo
-// tamanho de um CNPJ) e há de 6 a 16. Números de registro têm 9. Por isso só 14 dígitos são CNPJ;
-// qualquer outro número só de dígitos procura em processo e registro, e um CNPJ sem resultado é
-// tentado de novo como processo (ver useBusca).
+// tamanho de um CNPJ) e há de 6 a 16. Números de registro têm 9. Por isso só 14 dígitos são CNPJ (que
+// também casa com processo, ver predicado() em queries.ts); qualquer outro número só de dígitos
+// procura em processo e registro.
 
 // marca: escolhida numa sugestão (casa a marca inteira); todos: sem termo, só filtros (navegar por categoria)
 export type Modo = "cnpj" | "numero" | "texto" | "marca" | "todos";

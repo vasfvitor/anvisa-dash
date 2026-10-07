@@ -79,22 +79,18 @@ async function obter(u: string, cache: RequestCache, tabela: string, total: numb
   // do corpo comprimido (o Pages manda gzip) e o stream entrega os bytes já descomprimidos
   const buf = new Uint8Array(total);
   let recebidos = 0;
-  let extra: Uint8Array[] | null = null;
   const leitor = res.body.getReader();
   for (;;) {
     const { done, value } = await leitor.read();
     if (done) break;
-    if (extra || recebidos + value.length > total) (extra ??= [buf.slice(0, recebidos)]).push(value);
-    else buf.set(value, recebidos);
+    if (recebidos + value.length > total) {
+      // maior que o manifest diz: para aqui; o buffer vazio falha na validação e baixa de novo
+      await leitor.cancel();
+      return new Uint8Array(0);
+    }
+    buf.set(value, recebidos);
     recebidos += value.length;
-    for (const fn of ouvintes) fn({ tabela, recebidos: Math.min(recebidos, total), total });
-  }
-  if (extra) {
-    // maior que o manifest diz: devolve inteiro para a validação recusar e baixar de novo
-    const tudo = new Uint8Array(recebidos);
-    let pos = 0;
-    for (const p of extra) (tudo.set(p, pos), (pos += p.length));
-    return tudo;
+    for (const fn of ouvintes) fn({ tabela, recebidos, total });
   }
   return recebidos === total ? buf : buf.slice(0, recebidos);
 }

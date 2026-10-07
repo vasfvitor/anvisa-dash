@@ -2,3 +2,5 @@
 // ("CONTÉM GLÚTEN", "contém leite") e também dos saneantes; é o que o site responde sobre cada produto.
 export const NOME = "contém";
 export const SLOGAN = "o que tem no que você consome e usa";
+
+export const tituloPagina = (titulo: string): string => `${titulo} · ${NOME}.`;

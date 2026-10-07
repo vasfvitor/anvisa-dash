@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alergenicos, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, intolerancias, marcas, toDate } from "../src/lib/format";
+import { fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas, plural, toDate } from "../src/lib/format";
 
 describe("documentos", () => {
   it("formata CNPJ e processo", () => {
@@ -32,16 +32,8 @@ describe("campos multivalorados", () => {
     expect(marcas(" A ; B;;C ")).toEqual(["A", "B", "C"]);
     expect(marcas(null)).toEqual([]);
   });
-  it("alergênicos com separador final", () => {
-    expect(alergenicos("Contém derivado de - Leite#Soja | Não contém - Amendoim#Ovos |")).toEqual([
-      { rotulo: "Contém derivado de", itens: ["Leite", "Soja"] },
-      { rotulo: "Não contém", itens: ["Amendoim", "Ovos"] },
-    ]);
-  });
-  it("intolerâncias", () => {
-    expect(intolerancias("Contém Glúten - Não | Contém Lactose - Sim")).toEqual([
-      { rotulo: "Contém Glúten", valor: "Não" },
-      { rotulo: "Contém Lactose", valor: "Sim" },
-    ]);
+  it("plural", () => {
+    expect(plural(1, "produto")).toBe("1 produto");
+    expect(plural(1200, "apresentação", "apresentações")).toBe("1.200 apresentações");
   });
 });

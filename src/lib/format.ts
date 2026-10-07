@@ -76,27 +76,7 @@ export function fatiar(s: string | null | undefined, sep: string): string[] {
 /** `marcas` e `ds_alegacao_funcional`: separados por ";". */
 export const marcas = (s: string | null | undefined) => fatiar(s, ";");
 
-export interface Grupo {
-  rotulo: string;
-  itens: string[];
-}
-
-/**
- * `alergenicos`: grupos separados por " | ", cada um "Rótulo - item#item#item".
- * Ex.: "Contém derivado de - Leite#Soja | Não contém - Amendoim#Ovos |"
- */
-export function alergenicos(s: string | null | undefined): Grupo[] {
-  return fatiar(s, "|").map((g) => {
-    const i = g.indexOf(" - ");
-    if (i < 0) return { rotulo: "", itens: fatiar(g, "#") };
-    return { rotulo: g.slice(0, i).trim(), itens: fatiar(g.slice(i + 3), "#") };
-  });
-}
-
-/** `intolerancias`: "Contém Glúten - Não | Contém Lactose - Sim" → pares rótulo/valor. */
-export function intolerancias(s: string | null | undefined): { rotulo: string; valor: string }[] {
-  return fatiar(s, "|").map((p) => {
-    const i = p.lastIndexOf(" - ");
-    return i < 0 ? { rotulo: p, valor: "" } : { rotulo: p.slice(0, i).trim(), valor: p.slice(i + 3).trim() };
-  });
+/** "1 produto", "2 produtos"; `varios` padrão é `um` + "s". */
+export function plural(n: number, um: string, varios = `${um}s`): string {
+  return `${fmtInt(n)} ${n === 1 ? um : varios}`;
 }

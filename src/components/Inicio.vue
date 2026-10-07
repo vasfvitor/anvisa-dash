@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, shallowRef } from "vue";
 import { fmtInt } from "../lib/format";
-import type { Numeros, ValorFaceta } from "../lib/queries";
+import { categoriasAtivas, numeros, type Numeros, type ValorFaceta } from "../lib/queries";
 import { legivel } from "../lib/texto";
 import Icone from "./Icone.vue";
 
-const props = defineProps<{ totais: Numeros | null; categorias: ValorFaceta[] }>();
 const emit = defineEmits<{ exemplo: [valor: string]; categoria: [valor: string] }>();
 
 const EXEMPLOS = [
@@ -15,7 +14,14 @@ const EXEMPLOS = [
   { valor: "01615814000101", texto: "01.615.814/0001-01", dica: "CNPJ" },
   { valor: "25351.453332/2024-10", texto: "25351.453332/2024-10", dica: "processo" },
 ];
-const principais = computed(() => props.categorias.slice(0, 12));
+// só esta tela usa os números gerais e as categorias: consulta ao aparecer, não na partida do app
+const totais = shallowRef<Numeros | null>(null);
+const categorias = shallowRef<ValorFaceta[]>([]);
+onMounted(() => {
+  numeros().then((n) => (totais.value = n), () => {});
+  categoriasAtivas().then((c) => (categorias.value = c), () => {});
+});
+const principais = computed(() => categorias.value.slice(0, 12));
 </script>
 
 <template>

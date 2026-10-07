@@ -7,7 +7,7 @@ import Logo from "../components/Logo.astro";
 import { MANIFEST_URL, TABELA } from "../lib/config";
 import { fmtData, url } from "../lib/format";
 import { manifestDoBuild } from "../lib/manifest";
-import { NOME, SLOGAN } from "../lib/marca";
+import { SLOGAN, tituloPagina } from "../lib/marca";
 import "../styles/global.css";
 
 interface Props {
@@ -30,18 +30,21 @@ const ativo = (p: string) => (atual === url(p) ? "page" : undefined);
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title} · {NOME}.</title>
+    <title>{tituloPagina(title)}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#f7f2e8" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#16140f" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href={url("/favicon.svg")} type="image/svg+xml" />
     <link rel="sitemap" href={url("/sitemap-index.xml")} />
     <script is:inline>
-      // aplica o tema salvo antes da primeira pintura, para não piscar (por isso inline)
+      // aplica o tema salvo e marca a tela antes da primeira pintura, para não piscar (por isso inline)
       try {
         const t = localStorage.getItem("theme");
         if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
       } catch {}
+      // tela da busca pela URL, antes da ilha montar: em link de busca ou produto o hero nem aparece
+      const q = new URLSearchParams(location.search);
+      document.documentElement.dataset.tela = q.has("p") ? "produto" : ["q", "marca", "cat"].some((k) => q.has(k)) ? "busca" : "inicio";
     </script>
   </head>
   <body>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { MODO_ROTULO } from "../lib/detect";
-import { fmtBytes, fmtCnpj, fmtData, fmtInt } from "../lib/format";
+import { fmtBytes, fmtCnpj, fmtData, fmtInt, plural } from "../lib/format";
 import { legivel } from "../lib/texto";
 import CaixaBusca from "./CaixaBusca.vue";
 import CartaoProduto from "./CartaoProduto.vue";
@@ -33,9 +33,10 @@ function aplicarUrl(): void {
   produto.value = e.produto;
 }
 
-// a página estática tem um cabeçalho de apresentação: só faz sentido na tela inicial
+// A página estática tem um cabeçalho de apresentação que só faz sentido na tela inicial. O script
+// inline do Base marca a tela pela URL antes da primeira pintura; daqui em diante a ilha atualiza.
 const tela = computed(() => (produto.value ? "produto" : b.consulta.value ? "busca" : "inicio"));
-watch(tela, (t) => (document.body.dataset.tela = t), { immediate: true });
+watch(tela, (t) => (document.documentElement.dataset.tela = t), { immediate: true });
 
 let espera: ReturnType<typeof setTimeout> | undefined;
 
@@ -70,27 +71,12 @@ watch(
   },
 );
 
-// O resumo de alergênicos chegou: refaz a lista para os cartões mostrarem os selos. Vale também com
-// uma busca ainda em andamento (começou sem o resumo); a resposta dela é descartada pela mais nova.
-watch(motor.versaoResumo, () => b.consulta.value && !produto.value && buscarAgora(true));
-
-function escolherMarca(rotulo: string): void {
-  marca.value = rotulo;
-  entrada.value = rotulo;
-  confirmar();
-}
-
-function escolherEmpresa(cnpj: string): void {
-  marca.value = "";
-  entrada.value = fmtCnpj(cnpj);
+/** Busca escolhida por clique (sugestão, exemplo, empresa): põe o texto na caixa e busca já. */
+function buscarPor(texto: string, comoMarca = false): void {
+  marca.value = comoMarca ? texto : "";
+  entrada.value = texto;
   confirmar();
   window.scrollTo({ top: 0 });
-}
-
-function exemplo(valor: string): void {
-  marca.value = "";
-  entrada.value = valor;
-  confirmar();
 }
 
 function explorar(categoria: string): void {
@@ -126,7 +112,7 @@ onMounted(async () => {
   aplicarUrl();
   window.addEventListener("popstate", aoNavegar);
   await motor.subir();
-  if (pronto.value && !produto.value) void b.buscar();
+  if (!produto.value) buscarAgora();
 });
 onBeforeUnmount(() => {
   window.removeEventListener("popstate", aoNavegar);
@@ -141,8 +127,7 @@ const termo = computed(() => {
 const titulo = computed(() => {
   const q = b.buscada.value;
   if (!q) return "";
-  const n = b.total.value;
-  const produtos = `${fmtInt(n)} produto${n === 1 ? "" : "s"}`;
+  const produtos = plural(b.total.value, "produto");
   if (q.modo === "cnpj" && b.produtos.value[0]) return `${produtos} de ${legivel(b.produtos.value[0].no_razao_social_empresa, "nome")}`;
   if (q.modo === "marca") return `${produtos} da marca ${q.valor}`;
   if (q.modo === "texto") return `${produtos} para “${q.valor}”`;
@@ -157,15 +142,16 @@ const titulo = computed(() => {
     :consulta="b.consulta.value"
     :pronto="pronto"
     @confirmar="confirmar"
-    @marca="escolherMarca"
-    @empresa="escolherEmpresa"
+    @marca="(m) => buscarPor(m, true)"
+    @empresa="(c) => buscarPor(fmtCnpj(c))"
   />
 
   <div v-if="motor.status.value === 'iniciando' || motor.status.value === 'baixando'" class="carregamento" role="status">
     <!-- um pote enchendo: o nível acompanha o download da tabela principal -->
     <svg class="pote-carregando" :class="{ indeterminado: motor.status.value === 'iniciando' }" viewBox="0 0 64 80" aria-hidden="true">
       <defs>
-        <clipPath id="pote-dentro"><path d="M14 20h36a4 4 0 0 1 4 4v44a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8V24a4 4 0 0 1 4-4Z" /></clipPath>
+        <path id="pote-forma" d="M14 20h36a4 4 0 0 1 4 4v44a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8V24a4 4 0 0 1 4-4Z" />
+        <clipPath id="pote-dentro"><use href="#pote-forma" /></clipPath>
       </defs>
       <g clip-path="url(#pote-dentro)">
         <g class="nivel" :style="motor.status.value === 'baixando' ? { transform: `translateY(${76 - 58 * motor.progresso.value}px)` } : undefined">
@@ -173,7 +159,7 @@ const titulo = computed(() => {
         </g>
       </g>
       <rect class="tampa" x="12" y="8" width="40" height="10" rx="3" />
-      <path class="contorno" d="M14 20h36a4 4 0 0 1 4 4v44a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8V24a4 4 0 0 1 4-4Z" />
+      <use href="#pote-forma" class="contorno" />
       <rect class="etiqueta" x="17" y="40" width="30" height="15" rx="2" />
     </svg>
     <p>
@@ -190,9 +176,8 @@ const titulo = computed(() => {
   <ProdutoPagina
     v-if="produto"
     :id="produto"
-    :versao-resumo="motor.versaoResumo.value"
     @voltar="voltar"
-    @empresa="escolherEmpresa"
+    @empresa="(c) => buscarPor(fmtCnpj(c))"
   />
 
   <template v-else-if="b.consulta.value">
@@ -220,6 +205,7 @@ const titulo = computed(() => {
           :key="p.co_seq_produto"
           :p="p"
           :termo="termo"
+          :resumo="b.resumos.value.get(p.co_seq_produto)"
           :style="{ '--i': i % 30 }"
           @abrir="abrirProduto"
         />
@@ -233,13 +219,7 @@ const titulo = computed(() => {
     <p v-else-if="pronto" class="estado" role="status">Buscando…</p>
   </template>
 
-  <Inicio
-    v-else
-    :totais="motor.totais.value"
-    :categorias="motor.categorias.value"
-    @exemplo="exemplo"
-    @categoria="explorar"
-  />
+  <Inicio v-else @exemplo="buscarPor" @categoria="explorar" />
 
   <p v-if="motor.fonte.value?.loaded_at" class="note fonte">
     Dados abertos da ANVISA de {{ fmtData(motor.fonte.value.loaded_at) }}
