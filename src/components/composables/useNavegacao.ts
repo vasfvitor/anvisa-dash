@@ -23,6 +23,16 @@ function marcarPlacas(id: string): void {
   }
 }
 
+/**
+ * Põe a abertura do corredor no lugar da atual. A página só traz a sua viva (um <h1> por página para os
+ * buscadores); as outras esperam em <template data-hero>, inertes, e entram por clone.
+ */
+function trocarAbertura(id: string): void {
+  const atual = document.querySelector(".hero[data-hero]");
+  const modelo = document.querySelector<HTMLTemplateElement>(`template[data-hero="${id}"]`);
+  if (atual && modelo) atual.replaceWith(modelo.content.cloneNode(true));
+}
+
 const reduzido = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function useNavegacao(estado: Estado, acoes: Acoes) {
@@ -44,6 +54,7 @@ export function useNavegacao(estado: Estado, acoes: Acoes) {
       estado.entrarNo(novo);
       document.documentElement.dataset.corredor = novo.id;
       marcarPlacas(novo.id);
+      trocarAbertura(novo.id);
       acoes.trocou();
       acoes.limpar();
       opcoes.depois?.();
