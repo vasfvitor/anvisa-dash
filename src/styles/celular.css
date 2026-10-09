@@ -97,7 +97,7 @@
     box-shadow: 4px 4px 0 var(--accent);
   }
   .secao {
-    padding: 0.95rem 1rem 1rem;
+    padding: 0.95rem 1rem 1.25rem;
   }
   table {
     font-size: 0.88rem;

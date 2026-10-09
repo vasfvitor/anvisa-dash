@@ -265,7 +265,7 @@ footer.site {
 }
 .rotulo-rodape dl div {
   display: grid;
-  grid-template-columns: 5.2rem 1fr;
+  grid-template-columns: 5.2rem minmax(0, 1fr);
   gap: 0.75rem;
   padding: 0.4rem 0;
   border-bottom: 1px solid var(--line);
@@ -283,6 +283,7 @@ footer.site {
 .rotulo-rodape dd {
   margin: 0;
   color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 /* ---------------------------------------------------------------- controles */
@@ -410,7 +411,7 @@ a.badge:hover {
 }
 .hero {
   position: relative;
-  padding: 2.2rem 0 1.4rem;
+  padding: 2.2rem 0 2.1rem;
 }
 .hero h1 {
   position: relative;
@@ -814,7 +815,7 @@ a.badge:hover {
 }
 .facetas {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.65rem;
   margin: 1.2rem 0 0.5rem;
 }
 .faceta {
@@ -1089,6 +1090,10 @@ a.badge:hover {
 }
 
 /* ---------------------------------------------------------------- página inicial */
+/* o espaço entre seções é bem maior que o de dentro delas, para cada uma ler como um bloco */
+.inicio h2 {
+  margin: 3.5rem 0 1rem;
+}
 .exemplos {
   margin: 1rem 0 0;
   color: var(--muted);
@@ -1169,8 +1174,8 @@ a.badge:hover {
   background: var(--superficie);
   border: 2px solid var(--fg);
   border-radius: 20px;
-  padding: 1.4rem 1.5rem 1.2rem;
-  margin-bottom: 1.1rem;
+  padding: 1.4rem 1.5rem 1.3rem;
+  margin-bottom: 1.6rem;
   box-shadow: 6px 6px 0 var(--accent);
   overflow: hidden;
 }
@@ -1190,16 +1195,16 @@ a.badge:hover {
 .produto-cabecalho h1 {
   font-size: clamp(1.9rem, 5.5vw, 2.9rem);
   overflow-wrap: anywhere;
-  margin: 0.5rem 0 0.2rem;
+  margin: 0.8rem 0 0.5rem;
   position: relative;
 }
 .outras-marcas {
-  margin: 0.2rem 0 0;
+  margin: 0 0 0.6rem;
   color: var(--muted);
   font-size: 0.86rem;
 }
 .produto-nome {
-  margin: 0.5rem 0 0;
+  margin: 0.4rem 0 0;
   font-size: 1.15rem;
 }
 .produto-status {
@@ -1217,8 +1222,8 @@ a.badge:hover {
   align-items: center;
   gap: 0.45rem;
   flex-wrap: wrap;
-  margin: 0.9rem 0 0;
-  padding-top: 0.8rem;
+  margin: 1.1rem 0 0;
+  padding-top: 0.9rem;
   border-top: 1.5px dashed var(--line);
   font-size: 0.92rem;
 }
@@ -1251,8 +1256,8 @@ a.badge:hover {
   border: 1.5px solid var(--contorno-suave);
   box-shadow: var(--sombra-superficie);
   border-radius: var(--raio);
-  padding: 1.1rem 1.25rem 1.2rem;
-  margin: 0 0 0.95rem;
+  padding: 1.1rem 1.25rem 1.5rem;
+  margin: 0 0 1.5rem;
 }
 /* título de seção como cabeçalho de tabela nutricional: régua grossa embaixo */
 .secao h2 {
@@ -1402,7 +1407,7 @@ a.badge:hover {
 }
 .medidas-lista {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.9rem;
   margin: 0.8rem 0;
 }
 .medida {
@@ -1411,11 +1416,11 @@ a.badge:hover {
   border-left: 5px solid var(--off);
   border-radius: var(--raio);
   box-shadow: var(--sombra-superficie);
-  padding: 0.8rem 1rem;
+  padding: 0.95rem 1.1rem;
 }
 .medida > summary {
   display: grid;
-  gap: 0.3rem;
+  gap: 0.45rem;
   cursor: pointer;
   list-style: none;
 }
@@ -1435,7 +1440,7 @@ a.badge:hover {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: 0.25rem 0.75rem;
+  gap: 0.35rem 0.75rem;
 }
 .medida-produto {
   font-family: var(--fonte-titulo);
