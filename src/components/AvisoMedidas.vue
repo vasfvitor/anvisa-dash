@@ -7,6 +7,7 @@ import { plural } from "../lib/format";
 import { medidasPorEmpresa, porRegistro, type Medida } from "../lib/medidas";
 import Icone from "./Icone.vue";
 import MedidaCartao from "./MedidaCartao.vue";
+import { noApp, urlEmpresa } from "./composables/useUrlState";
 
 const props = defineProps<{ tipo: number; cnpj: string; registro?: string | null }>();
 const emit = defineEmits<{ empresa: [cnpj: string] }>();
@@ -43,7 +44,7 @@ onMounted(() => {
     <div>
       A ANVISA tem {{ plural(daEmpresa, "medida de fiscalização", "medidas de fiscalização") }} contra esta empresa (não
       necessariamente sobre este produto).
-      <a href="#" @click.prevent="emit('empresa', cnpj)">Ver as medidas</a>
+      <a :href="urlEmpresa(cnpj)" @click="noApp($event, () => emit('empresa', cnpj))">Ver as medidas</a>
     </div>
   </div>
 </template>

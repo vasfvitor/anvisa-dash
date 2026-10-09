@@ -9,10 +9,13 @@ import { useCopia } from "../../components/composables/useCopia";
 import Copiar from "../../components/Copiar.vue";
 import AvisoMedidas from "../../components/AvisoMedidas.vue";
 import Icone from "../../components/Icone.vue";
+import { noApp, urlEmpresa } from "../../components/composables/useUrlState";
 import { meta } from "./meta";
 
 const props = defineProps<{ id: string }>();
 const emit = defineEmits<{ voltar: []; empresa: [cnpj: string]; titulo: [texto: string] }>();
+/** o CNPJ é um link de verdade para a busca pela empresa; o clique simples busca sem recarregar */
+const verEmpresa = (ev: MouseEvent, cnpj: string) => noApp(ev, () => emit("empresa", cnpj));
 
 const p = shallowRef<Saneante | null>(null);
 const carregando = ref(true);
@@ -70,9 +73,9 @@ watch(titulo, (t) => t && emit("titulo", t));
           <Icone nome="fabrica" />
           {{ legivel(p.no_razao_social_empresa, "nome") }} ·
           <a
-            href="#"
+            :href="urlEmpresa(p.nu_cnpj_empresa)"
             title="Ver todos os produtos de limpeza desta empresa"
-            @click.prevent="emit('empresa', p.nu_cnpj_empresa)"
+            @click="verEmpresa($event, p.nu_cnpj_empresa)"
           >
             CNPJ {{ fmtCnpj(p.nu_cnpj_empresa) }}
           </a>

@@ -4,6 +4,7 @@
 //   ?marca=LIQUID%20I.V.                      marca escolhida numa sugestão
 //   ?p=3767776                                página de um produto (id da fonte do corredor)
 import { FILTROS_PADRAO, type Filtros, type Situacao } from "../../lib/fonte";
+import { fmtCnpj } from "../../lib/format";
 
 export interface EstadoUrl extends Filtros {
   q: string;
@@ -41,6 +42,11 @@ export function montarUrl(e: Partial<EstadoUrl>, rota = location.pathname): stri
   return `${rota}${qs ? `?${qs}` : ""}`;
 }
 
+/** Busca pelos produtos de uma empresa no corredor atual (o link de todo CNPJ). */
+export function urlEmpresa(cnpj: string): string {
+  return montarUrl({ q: fmtCnpj(cnpj) });
+}
+
 /** `push` cria entrada no histórico (ação deliberada); sem ele só substitui (digitação). */
 export function gravarUrl(e: Partial<EstadoUrl>, push = false, rota?: string): void {
   const alvo = montarUrl(e, rota);
@@ -51,4 +57,11 @@ export function gravarUrl(e: Partial<EstadoUrl>, push = false, rota?: string): v
 /** Clique simples navega dentro do app; com Ctrl/Cmd/Shift/botão do meio deixa o navegador abrir aba. */
 export function cliqueInterno(ev: MouseEvent): boolean {
   return ev.button === 0 && !ev.metaKey && !ev.ctrlKey && !ev.shiftKey && !ev.altKey;
+}
+
+/** Link de verdade com ação no app: o clique simples roda `acao`; Ctrl/Cmd/Shift/botão do meio abrem o href. */
+export function noApp(ev: MouseEvent, acao: () => void): void {
+  if (!cliqueInterno(ev)) return;
+  ev.preventDefault();
+  acao();
 }

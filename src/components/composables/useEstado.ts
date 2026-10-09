@@ -6,7 +6,7 @@ import { computed, onBeforeUnmount, ref, shallowRef } from "vue";
 import { corredorDaUrl, rotaDo, type Corredor } from "../../corredores";
 import { detectar, type Consulta } from "../../lib/detect";
 import { FILTROS_PADRAO, type Filtros } from "../../lib/fonte";
-import { gravarUrl, lerUrl } from "./useUrlState";
+import { gravarUrl, lerUrl, montarUrl, type EstadoUrl } from "./useUrlState";
 
 /** `buscar` busca a consulta atual (quem chama sabe se o corredor está pronto); `forcar` refaz a mesma busca. */
 export function useEstado(buscar: (forcar: boolean) => void) {
@@ -29,6 +29,12 @@ export function useEstado(buscar: (forcar: boolean) => void) {
   function gravar(push: boolean): void {
     const e = { q: entrada.value, marca: marca.value, ...filtros.value, produto: produto.value };
     gravarUrl(e, push, rotaDo(corredor.value));
+  }
+
+  /** URL do estado atual com `mudancas`: o href dos links que só trocam um filtro. */
+  function urlCom(mudancas: Partial<EstadoUrl>): string {
+    const e = { q: entrada.value, marca: marca.value, ...filtros.value, produto: null, ...mudancas };
+    return montarUrl(e, rotaDo(corredor.value));
   }
 
   let espera: ReturnType<typeof setTimeout> | undefined;
@@ -122,6 +128,7 @@ export function useEstado(buscar: (forcar: boolean) => void) {
     produto,
     consulta,
     gravar,
+    urlCom,
     digitar,
     cancelarDigitacao,
     confirmar,

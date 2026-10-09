@@ -13,6 +13,7 @@ import { useCorredorPronto } from "./composables/useCorredorPronto";
 import { useEstado } from "./composables/useEstado";
 import { useMedidas } from "./composables/useMedidas";
 import { useNavegacao } from "./composables/useNavegacao";
+import { noApp } from "./composables/useUrlState";
 import { TELAS } from "../corredores/telas";
 import Facetas from "./Facetas.vue";
 import Icone from "./Icone.vue";
@@ -21,7 +22,7 @@ import MedidasBloco from "./MedidasBloco.vue";
 
 const estado = useEstado(buscar);
 const { corredor, entrada, filtros, produto, consulta } = estado;
-const { digitar, confirmar, buscarPor, filtrar, explorar, abrir, voltar } = estado;
+const { digitar, confirmar, buscarPor, filtrar, explorar, abrir, voltar, urlCom } = estado;
 const fonte = computed(() => FONTES[corredor.value.id]);
 const telas = computed(() => TELAS[corredor.value.id]);
 const motor = reactive(useCorredorPronto(corredor));
@@ -202,10 +203,18 @@ const titulo = computed(() => {
         <Icone nome="pote" />
         <p v-if="filtros.situacao === 'ativo'">
           Só aparecem os liberados agora.
-          <a href="#" @click.prevent="filtrar({ ...filtros, situacao: 'todos' })">Incluir os encerrados</a>
+          <a
+            :href="urlCom({ situacao: 'todos' })"
+            @click="noApp($event, () => filtrar({ ...filtros, situacao: 'todos' }))"
+            >Incluir os encerrados</a
+          >
         </p>
         <p v-if="filtros.grupo || filtros.tipo">
-          <a href="#" @click.prevent="filtrar({ ...filtros, grupo: '', tipo: '' })">Limpar os filtros</a>
+          <a
+            :href="urlCom({ grupo: '', tipo: '' })"
+            @click="noApp($event, () => filtrar({ ...filtros, grupo: '', tipo: '' }))"
+            >Limpar os filtros</a
+          >
         </p>
         <p class="note">{{ corredor.dica }}</p>
       </div>

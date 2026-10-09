@@ -7,9 +7,12 @@ import type { Medida } from "../lib/medidas";
 import { legivel } from "../lib/texto";
 import Copiar from "./Copiar.vue";
 import Icone from "./Icone.vue";
+import { noApp, urlEmpresa } from "./composables/useUrlState";
 
 const props = defineProps<{ m: Medida }>();
 const emit = defineEmits<{ empresa: [cnpj: string] }>();
+/** o CNPJ é um link de verdade para a busca pela empresa; o clique simples busca sem recarregar */
+const verEmpresa = (ev: MouseEvent, cnpj: string) => noApp(ev, () => emit("empresa", cnpj));
 
 /** Suspensão é temporária; as outras tiram o produto de circulação. */
 const grave = (acao: string) => acao !== "Suspensão";
@@ -55,7 +58,7 @@ const datas = computed(() =>
       <div v-if="m.cnpj">
         <dt>Empresa</dt>
         <dd>
-          <a href="#" title="Ver o que mais há desta empresa" @click.prevent="emit('empresa', m.cnpj)"
+          <a :href="urlEmpresa(m.cnpj)" title="Ver o que mais há desta empresa" @click="verEmpresa($event, m.cnpj)"
             >CNPJ {{ fmtCnpj(m.cnpj) }}</a
           >
         </dd>
