@@ -1281,8 +1281,9 @@ a.badge:hover {
   margin-left: auto;
   font-family: var(--fonte-mono);
 }
+/* um tom do próprio fundo, um pouco mais escuro: fica atrás dos outros cartões sem parecer vazio */
 .secao.tecnico {
-  background: transparent;
+  background: color-mix(in srgb, var(--fg) 4%, var(--bg));
   border-style: dashed;
   border-color: var(--fg);
   box-shadow: none;
