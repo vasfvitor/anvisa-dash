@@ -1,7 +1,7 @@
 name: Publicar site
 
-# A busca lê o manifest ao vivo e não depende de rebuild. O cron existe para o dicionário, o "sobre" e o
-# rodapé, gerados no build a partir do manifest. O pipeline de dados (anvisa-api) agenda 21:00 UTC, mas o
+# A busca lê o manifest ao vivo e não depende de rebuild. O cron existe para o que o build gera a partir dos
+# dados: as páginas de empresa, o llms.txt, o dicionário, o "sobre" e o rodapé. O pipeline de dados (anvisa-api) agenda 21:00 UTC, mas o
 # GitHub atrasa crons em até horas e o pipeline pula dias sem dados novos: em vez de adivinhar a hora, o
 # cron passa algumas vezes à noite e só publica quando o build_id do manifest difere do que o site usou
 # (/build.json). Push e disparo manual publicam sempre.

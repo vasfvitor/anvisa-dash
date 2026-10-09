@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from "vue";
 import { fonte, type Saneante } from "./fonte";
-import { fmtCnpj, fmtData, fmtProcesso } from "../../lib/format";
+import { fmtCnpj, fmtData, fmtProcesso, url } from "../../lib/format";
+import { CNPJ } from "../../lib/estatico/empresas";
 import { situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 import { validade } from "./validade";
@@ -79,6 +80,10 @@ watch(titulo, (t) => t && emit("titulo", t));
           >
             CNPJ {{ fmtCnpj(p.nu_cnpj_empresa) }}
           </a>
+          <!-- a página estática da empresa: tudo dela num lugar, também sem JavaScript -->
+          <template v-if="CNPJ.test(p.nu_cnpj_empresa)">
+            · <a :href="url(`/empresa/${p.nu_cnpj_empresa}/`)">Página da empresa</a>
+          </template>
         </p>
       </header>
 

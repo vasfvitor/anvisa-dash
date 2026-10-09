@@ -2,7 +2,8 @@
 import { computed, ref, shallowRef, watch } from "vue";
 import { resumirAlergia } from "./alergia";
 import { consenso, empresas, vazio } from "./apresentacoes";
-import { fatiar, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas, plural } from "../../lib/format";
+import { fatiar, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas, plural, url } from "../../lib/format";
+import { CNPJ } from "../../lib/estatico/empresas";
 import { ativo as estaAtivo, indeferido as foiIndeferido, marcaPrincipal } from "./produto";
 import { buscarApresentacoes, fonte, type Apresentacao, type Produto } from "./fonte";
 import { situacaoDe } from "../../lib/situacao";
@@ -202,6 +203,10 @@ const linkAnvisa = computed(() =>
           >
             CNPJ {{ fmtCnpj(p.nu_cnpj_empresa) }}
           </a>
+          <!-- a página estática da empresa: tudo dela num lugar, também sem JavaScript -->
+          <template v-if="CNPJ.test(p.nu_cnpj_empresa)">
+            · <a :href="url(`/empresa/${p.nu_cnpj_empresa}/`)">Página da empresa</a>
+          </template>
         </p>
       </header>
 

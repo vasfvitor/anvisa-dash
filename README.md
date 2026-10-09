@@ -3,7 +3,8 @@
 Consulta de produtos regularizados na ANVISA (alimentos e suplementos; produtos de limpeza, os saneantes) por nº do processo,
 CNPJ, registro, nome, marca, empresa e categoria. Site estático (Astro + uma ilha Vue). A busca roda no navegador
 com DuckDB-WASM sobre os Parquet que o repo [`anvisa`](https://github.com/vasfvitor/anvisa-api)
-publica diariamente. Não há backend.
+publica diariamente. Não há backend. No build, uma página estática por empresa (`/empresa/<cnpj>/`) e o
+`/llms.txt` levam os dados a quem não roda JavaScript: buscadores e assistentes.
 
 ## Dados
 
@@ -48,8 +49,9 @@ técnicos. Cada corredor é uma pasta em `src/corredores/`; para criar outro:
    (os tokens de `tokens.css`) em `[data-corredor="…"]`, a cor da placa e o que muda de caráter.
 
 As páginas Astro rodam no build e só podem ler o registro (`index.ts`, `tipos.ts`, `meta.ts`,
-`colunas.ts`); o DuckDB, o SQL e os componentes da ilha só existem no navegador, e o ESLint barra o
-import no lugar errado.
+`colunas.ts`) e o SQL puro (`consultas.ts`); o DuckDB-WASM, as fontes e os componentes da ilha só existem
+no navegador, e o ESLint barra o import no lugar errado. As páginas de empresa leem os Parquet no build com
+o DuckDB do Node (`src/lib/estatico/dados.ts`), rodando o mesmo SQL de `consultas.ts` que a ilha roda.
 
 A página é gerada por `src/pages/[...corredor].astro`. A troca de corredor não recarrega: a ilha
 intercepta o clique na placa, troca `html[data-corredor]` numa View Transition (círculo a partir do
@@ -63,7 +65,7 @@ pnpm install
 pnpm dev                 # usa o manifest de produção
 pnpm test                # vitest: detecção da entrada, formatação, manifest
 pnpm check               # astro check + vue-tsc
-pnpm build               # dist/ estático; lê o manifest no build (dicionário, sobre, rodapé)
+pnpm build               # dist/ estático; baixa o manifest e os Parquet (páginas de empresa, ~12 s)
 ```
 
 Para não depender do site publicado, gere os dados localmente com o CLI do repo `anvisa` e sirva-os
@@ -81,8 +83,8 @@ PUBLIC_MANIFEST_URL=http://localhost:8000/manifest.json pnpm dev
 `.github/workflows/pages.yml` testa, checa e publica no GitHub Pages a cada push em `main`. À noite
 (22:30, 01:30 e 04:30 UTC) ele compara o `build_id` do manifest com o de `/build.json` no site e só
 republica quando o pipeline de dados publicou um build novo: o GitHub atrasa crons em horas, e o
-pipeline pula dias sem dados novos. O rebuild só atualiza dicionário, "sobre" e rodapé, porque a busca
-lê o manifest ao vivo. Em Settings → Pages, use a fonte
+pipeline pula dias sem dados novos. A busca lê o manifest ao vivo; o rebuild atualiza as páginas de
+empresa, o `llms.txt`, o dicionário, o "sobre" e o rodapé. Em Settings → Pages, use a fonte
 "GitHub Actions" e o domínio próprio `contem.abelhaninja.de` (o mesmo de `site` em `astro.config.mjs`;
 o endereço `github.io` redireciona para ele).
 
