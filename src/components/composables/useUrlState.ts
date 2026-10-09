@@ -13,8 +13,8 @@ export interface EstadoUrl extends Filtros {
 
 const SITUACOES: Situacao[] = ["ativo", "inativo", "todos"];
 
-export function lerUrl(): EstadoUrl {
-  const p = new URLSearchParams(location.search);
+export function lerUrl(search = location.search): EstadoUrl {
+  const p = new URLSearchParams(search);
   const sit = p.get("sit") as Situacao | null;
   const id = p.get("p");
   return {

@@ -133,7 +133,8 @@ function sugestoes(): Promise<void> {
 // ---------------------------------------------------------------------------------------------
 // busca
 
-function predicado(q: Consulta): Trecho {
+/** Condição da busca para cada modo de consulta (exportada para os testes). */
+export function predicado(q: Consulta): Trecho {
   switch (q.modo) {
     case "cnpj":
       // 400 processos antigos também têm 14 dígitos

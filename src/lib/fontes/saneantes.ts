@@ -60,7 +60,8 @@ function sugestoes(): Promise<void> {
   );
 }
 
-function predicado(q: Consulta): Trecho {
+/** Condição da busca para cada modo de consulta (exportada para os testes). */
+export function predicado(q: Consulta): Trecho {
   switch (q.modo) {
     case "cnpj":
       return { sql: "(nu_cnpj_empresa = ? OR nu_processo = ?)", params: [q.valor, q.valor] };
