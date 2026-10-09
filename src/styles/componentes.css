@@ -415,42 +415,10 @@ a.badge:hover {
 .hero h1 {
   position: relative;
   z-index: 1;
-  font-size: clamp(2.2rem, 6.4vw, 4rem);
-  line-height: 1.02;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1.05;
   letter-spacing: -0.03em;
-  max-width: 13em;
   font-weight: 750;
-}
-.hero h1 em {
-  font-style: italic;
-  color: var(--accent);
-  font-weight: 650;
-}
-.sublinhado {
-  position: relative;
-  white-space: nowrap;
-}
-.sublinhado svg {
-  position: absolute;
-  left: -2%;
-  bottom: -0.08em;
-  width: 104%;
-  height: 0.32em;
-  overflow: visible;
-}
-.sublinhado path {
-  fill: none;
-  stroke: var(--pop);
-  stroke-width: 5;
-  stroke-linecap: round;
-  stroke-dasharray: 220;
-  stroke-dashoffset: 220;
-  animation: tracar 1s 0.35s ease-out forwards;
-}
-@keyframes tracar {
-  to {
-    stroke-dashoffset: 0;
-  }
 }
 .hero .lead {
   position: relative;
@@ -573,9 +541,6 @@ a.badge:hover {
   .deco-7,
   .deco-8 {
     display: none;
-  }
-  .hero h1 {
-    max-width: 9.5em;
   }
 }
 @media (max-width: 34rem) {

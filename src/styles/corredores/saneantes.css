@@ -52,30 +52,6 @@
   font-weight: 850;
   letter-spacing: -0.045em;
 }
-/* o destaque vira um adesivo de oferta colado na embalagem */
-[data-corredor="saneantes"] .hero h1 em {
-  font-style: normal;
-  font-weight: 850;
-  color: #fff;
-  background: var(--accent);
-  display: inline-block;
-  padding: 0 0.16em 0.04em;
-  border-radius: 0.24em;
-  transform: rotate(-2.5deg);
-  box-shadow: var(--macia);
-}
-/* o sublinhado vira uma fila de bolhas escorrendo */
-[data-corredor="saneantes"] .sublinhado path {
-  stroke-width: 7;
-  stroke-dasharray: 0.1 13;
-  stroke-dashoffset: 0;
-  animation: escorrer 1.6s linear infinite;
-}
-@keyframes escorrer {
-  to {
-    stroke-dashoffset: -13.1;
-  }
-}
 [data-corredor="saneantes"] .deco {
   border: 0;
   box-shadow:

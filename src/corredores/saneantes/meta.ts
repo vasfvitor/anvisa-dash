@@ -14,11 +14,7 @@ export const meta: Corredor = {
   titulo: "Produtos de limpeza liberados pela ANVISA",
   descricao:
     "Veja se um produto de limpeza (saneante) está liberado pela ANVISA e até quando: água sanitária, desinfetante, inseticida. Busque por nome, empresa ou CNPJ.",
-  hero: {
-    linha1: { antes: "Está ", destaque: "liberado", depois: "?" },
-    linha2: { antes: "Até quando ", destaque: "vale", depois: "?" },
-    lead: "Produtos de limpeza registrados ou notificados na ANVISA.",
-  },
+  lead: "Registrados ou notificados na ANVISA.",
   placeholder: "Produto, empresa ou CNPJ",
   rotuloTexto: "Nome do produto ou empresa",
   rotuloNumero: "Nº do processo, registro ou expediente",

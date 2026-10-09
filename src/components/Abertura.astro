@@ -18,19 +18,6 @@ const { c } = Astro.props;
       </span>
     ))}
   </div>
-  <h1>
-    {c.hero.linha1.antes}
-    <em>{c.hero.linha1.destaque}</em>
-    {c.hero.linha1.depois}
-    <br />
-    {c.hero.linha2.antes}
-    <span class="sublinhado">
-      {c.hero.linha2.destaque}
-      <svg viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M2 8c40-6 90-7 196-2" />
-      </svg>
-    </span>
-    {c.hero.linha2.depois}
-  </h1>
-  <p class="lead">{c.hero.lead}</p>
+  <h1>{c.nome}</h1>
+  <p class="lead">{c.lead}</p>
 </section>

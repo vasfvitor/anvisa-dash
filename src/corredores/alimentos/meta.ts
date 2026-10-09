@@ -13,11 +13,7 @@ export const meta: Corredor = {
   titulo: "Alimentos e suplementos liberados pela ANVISA",
   descricao:
     "Consulte alimentos e suplementos regularizados na ANVISA pela marca, nome, empresa, CNPJ ou nº do processo: situação, glúten, lactose, alergênicos e ingredientes.",
-  hero: {
-    linha1: { antes: "Está ", destaque: "liberado", depois: "?" },
-    linha2: { antes: "O que ele ", destaque: "contém", depois: "?" },
-    lead: "Alimentos e suplementos registrados ou notificados na ANVISA.",
-  },
+  lead: "Registrados ou notificados na ANVISA.",
   placeholder: "Marca, produto ou CNPJ",
   exemplos: [
     { valor: "whey", texto: "whey" },

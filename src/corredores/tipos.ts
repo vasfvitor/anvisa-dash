@@ -2,13 +2,6 @@
 // páginas Astro gerarem tudo no build sem carregar o DuckDB.
 export type IdCorredor = "alimentos" | "saneantes";
 
-export interface Frase {
-  /** texto antes do destaque */
-  antes: string;
-  destaque: string;
-  depois: string;
-}
-
 export interface Corredor {
   id: IdCorredor;
   numero: number;
@@ -27,7 +20,8 @@ export interface Corredor {
   /** o <title> da página do corredor (o que aparece no resultado de busca e na aba): descritivo, não o slogan */
   titulo: string;
   descricao: string;
-  hero: { linha1: Frase; linha2: Frase; lead: string };
+  /** frase sob o título (o h1 é o nome do corredor) */
+  lead: string;
   placeholder: string;
   /** o que a busca por texto procura, quando não é o padrão (nome, marca ou empresa) */
   rotuloTexto?: string;
