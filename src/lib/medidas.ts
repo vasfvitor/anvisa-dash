@@ -64,13 +64,17 @@ export async function prepararMedidas(): Promise<void> {
 }
 
 /** Condição para cada modo de consulta; null quando o modo não procura medidas (navegar por grupo). */
-export function predicado(q: Consulta): Trecho | null {
+export function predicado(q: Consulta, registros: string[] = []): Trecho | null {
   switch (q.modo) {
     case "cnpj":
       return { sql: "cnpj = ?", params: [q.valor] };
-    case "numero":
-      // o processo da medida ou o registro do produto (só nos saneantes)
-      return { sql: "(processo = ? OR registro = ?)", params: [q.valor, q.valor] };
+    case "numero": {
+      // o processo da medida ou o registro do produto (só nos saneantes), e os registros dos produtos que o
+      // número achou (um processo ou expediente leva às medidas que citam o registro daquele produto)
+      const outros = [...new Set(registros)].filter((r) => r !== q.valor);
+      const lista = outros.length ? ` OR registro IN (${outros.map(() => "?").join(", ")})` : "";
+      return { sql: `(processo = ? OR registro = ?${lista})`, params: [q.valor, q.valor, ...outros] };
+    }
     case "marca":
     case "texto":
       return { sql: "contains(busca, ?)", params: [termo(q)] };
@@ -90,8 +94,13 @@ function medidas(linhas: Bruta[]): Medida[] {
 }
 
 /** Medidas do corredor que citam a consulta, das mais recentes para as mais antigas. */
-export async function buscarMedidas(tipo: number, q: Consulta, pagina = 0): Promise<Medida[]> {
-  const p = predicado(q);
+export async function buscarMedidas(
+  tipo: number,
+  q: Consulta,
+  pagina = 0,
+  registros: string[] = [],
+): Promise<Medida[]> {
+  const p = predicado(q, registros);
   if (!p || !(await disponivel())) return [];
   await tabela();
   const sql = `SELECT ${COLUNAS}, (count(*) OVER ())::INTEGER AS total FROM medidas

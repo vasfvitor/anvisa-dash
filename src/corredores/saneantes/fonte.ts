@@ -142,4 +142,5 @@ export const fonte: Fonte<Saneante> = {
   },
   idDe: (s) => s.id,
   cnpjDe: (s) => s.nu_cnpj_empresa,
+  registroDe: (s) => s.nu_registro_produto,
 };

@@ -60,6 +60,8 @@ export interface Fonte<P extends Item = Item> {
   idDe(p: P): string;
   /** CNPJ da empresa responsável (para cruzar com as medidas de fiscalização) */
   cnpjDe(p: P): string | null;
+  /** registro do produto como as medidas o citam (só os saneantes; os alimentos não têm nas medidas) */
+  registroDe?(p: P): string | null;
   /** informação que chega depois da lista (o resumo de alergênicos nos alimentos) */
   complementar?(ids: string[]): Promise<Map<string, unknown>>;
 }

@@ -51,6 +51,17 @@ describe("medidas", () => {
     expect(sql({ modo: "todos", valor: "" })).toBeNull();
   });
 
+  it("por número, também os registros dos produtos achados (sem repetir o próprio número)", async () => {
+    const q = { modo: "numero", valor: "1208030256" } as const;
+    expect(comValores(predicado(q, ["341750056", "341750056", "1208030256", "300000001"])!)).toBe(
+      "(processo = '1208030256' OR registro = '1208030256' OR registro IN ('341750056', '300000001'))",
+    );
+    await buscarMedidas(3, q, 0, ["341750056"]);
+    expect(consultas()[0]).toContain(
+      "WHERE tipo = 3 AND (processo = '1208030256' OR registro = '1208030256' OR registro IN ('341750056'))",
+    );
+  });
+
   it("toda consulta começa pelo tipo do corredor", async () => {
     await buscarMedidas(3, { modo: "texto", valor: "biojet" }, 1);
     await recentes(6);

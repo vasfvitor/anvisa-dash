@@ -14,6 +14,8 @@ export function useMedidas() {
   const buscada = shallowRef<Consulta | null>(null);
   let tipo = 0;
   let pagina = 0;
+  /** registros dos produtos que a busca por número achou (entram na consulta das medidas) */
+  let registros: string[] = [];
   let ultima = "";
   const vez = vezes();
 
@@ -24,14 +26,15 @@ export function useMedidas() {
   const perguntados = new Set<string>();
   let geracao = 0;
 
-  async function pedir(t: number, q: Consulta, p: number): Promise<void> {
+  async function pedir(t: number, q: Consulta, p: number, regs: string[]): Promise<void> {
     const minhaVez = vez.nova();
     carregando.value = true;
     try {
-      const linhas = await buscarMedidas(t, q, p);
+      const linhas = await buscarMedidas(t, q, p, regs);
       if (!minhaVez()) return;
       tipo = t;
       pagina = p;
+      registros = regs;
       itens.value = p ? [...itens.value, ...linhas] : linhas;
       if (linhas.length) total.value = linhas[0]!.total;
       else if (!p) total.value = 0;
@@ -77,9 +80,13 @@ export function useMedidas() {
     carregando.value = false;
   }
 
-  /** Medidas de `q` no corredor de `tipoProduto`; a mesma consulta de antes é ignorada. */
-  async function buscar(tipoProduto: number | undefined, q: Consulta | null): Promise<void> {
-    const chave = JSON.stringify([tipoProduto, q]);
+  /**
+   * Medidas de `q` no corredor de `tipoProduto` (com os `registros` dos produtos achados, numa busca por
+   * número); a mesma consulta de antes é ignorada.
+   */
+  async function buscar(tipoProduto: number | undefined, q: Consulta | null, achados: string[] = []): Promise<void> {
+    const regs = [...new Set(achados)].sort();
+    const chave = JSON.stringify([tipoProduto, q, regs]);
     if (chave === ultima) return;
     if (!tipoProduto || !q || q.modo === "todos") {
       limpar();
@@ -87,11 +94,11 @@ export function useMedidas() {
       return;
     }
     ultima = chave;
-    await pedir(tipoProduto, q, 0);
+    await pedir(tipoProduto, q, 0, regs);
   }
 
   async function mais(): Promise<void> {
-    if (buscada.value && tipo) await pedir(tipo, buscada.value, pagina + 1);
+    if (buscada.value && tipo) await pedir(tipo, buscada.value, pagina + 1, registros);
   }
 
   const temMais = computed(() => itens.value.length < total.value && itens.value.length >= MEDIDAS_POR_PAGINA);

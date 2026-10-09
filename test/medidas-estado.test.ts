@@ -8,6 +8,7 @@ interface Pedido {
   tipo: number;
   q: Consulta;
   pagina: number;
+  registros: string[];
   responder: (m: Medida[]) => void;
 }
 
@@ -18,9 +19,9 @@ const { pedidos, contagens } = vi.hoisted(() => ({
 
 vi.mock("../src/lib/medidas", () => ({
   MEDIDAS_POR_PAGINA: 20,
-  buscarMedidas: (tipo: number, q: Consulta, pagina: number) =>
+  buscarMedidas: (tipo: number, q: Consulta, pagina: number, registros: string[] = []) =>
     new Promise<Medida[]>((responder) => {
-      pedidos.push({ tipo, q, pagina, responder });
+      pedidos.push({ tipo, q, pagina, registros, responder });
     }),
   medidasPorEmpresa: (tipo: number, cnpjs: string[]) =>
     new Promise<Map<string, number>>((responder) => {
@@ -143,6 +144,23 @@ describe("useMedidas", () => {
     expect(m.porEmpresa.value.size).toBe(0);
     void m.marcar(6, [a]);
     expect(contagens[3]).toMatchObject({ tipo: 6, cnpjs: [a] });
+  });
+
+  it("por número, os registros achados fazem parte da consulta e seguem no mostrar mais", async () => {
+    const m = montar();
+    const q: Consulta = { modo: "numero", valor: "1208030256" };
+    const p1 = m.buscar(3, q, ["341750056", "341750056"]);
+    expect(pedidos[0]!.registros).toEqual(["341750056"]);
+    pedidos[0]!.responder(medidas(20, 21));
+    await p1;
+    await m.buscar(3, q, ["341750056"]);
+    expect(pedidos).toHaveLength(1);
+    const p2 = m.mais();
+    expect(pedidos[1]).toMatchObject({ pagina: 1, registros: ["341750056"] });
+    pedidos[1]!.responder(medidas(1, 21, 20));
+    await p2;
+    void m.buscar(3, q, []);
+    expect(pedidos).toHaveLength(3);
   });
 
   it("sem tipo no corredor, não marca", async () => {

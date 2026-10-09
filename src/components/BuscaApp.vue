@@ -33,8 +33,19 @@ const pronto = computed(() => motor.status === "pronto");
 // todo caminho que busca passa por aqui (digitação, Enter, filtro, voltar, troca de corredor, carga)
 function buscar(forcar: boolean): void {
   if (!pronto.value) return;
-  void b.buscar(consulta.value, filtros.value, forcar);
-  void m.buscar(corredor.value.tipoProduto, consulta.value);
+  const q = consulta.value;
+  const lista = b.buscar(q, filtros.value, forcar);
+  if (q?.modo !== "numero") {
+    void m.buscar(corredor.value.tipoProduto, q);
+    return;
+  }
+  // por número, as medidas também procuram pelo registro dos produtos achados: espera a lista
+  void lista.then(() => {
+    if (consulta.value !== q) return;
+    const f = fonte.value;
+    const registros = f.registroDe ? b.produtos.flatMap((p) => f.registroDe?.(p) ?? []) : [];
+    void m.buscar(corredor.value.tipoProduto, q, registros);
+  });
 }
 
 function limpar(): void {
