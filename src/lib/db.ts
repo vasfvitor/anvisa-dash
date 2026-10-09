@@ -149,15 +149,18 @@ export async function buildAtual(): Promise<string> {
   return (await banco!).manifest.build_id;
 }
 
-/** Consulta preparada sobre tabelas já carregadas; valores do usuário sempre como parâmetros. */
-export async function consultar(tabelas: string[], sql: string, params: Valor[] = []): Promise<Linha[]> {
+/**
+ * Consulta preparada sobre tabelas já carregadas; valores do usuário sempre como parâmetros. `T` é a forma
+ * das linhas segundo o SQL de quem chama: é a única afirmação de tipo sobre o que vem do banco.
+ */
+export async function consultar<T = Linha>(tabelas: string[], sql: string, params: Valor[] = []): Promise<T[]> {
   await Promise.all(tabelas.map(carregar));
   const { conn } = await banco!;
   const stmt = await conn.prepare(sql);
   try {
     const res = await stmt.query(...params);
     // sem o esquema das colunas, o Arrow tipa cada linha como any; daqui só se usa o toJSON()
-    const linhas: Iterable<{ toJSON(): Linha }> = res;
+    const linhas: Iterable<{ toJSON(): T }> = res;
     return Array.from(linhas, (r) => r.toJSON());
   } finally {
     await stmt.close();

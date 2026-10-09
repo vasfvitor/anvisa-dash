@@ -3,4 +3,8 @@
 export const NOME = "contém";
 export const SLOGAN = "o que tem no que você consome e usa";
 
+/** Descrição das páginas que não são de um corredor (cada corredor tem a sua no registro). */
+export const DESCRICAO =
+  "Consulte alimentos, suplementos e produtos de limpeza liberados pela ANVISA pela marca, pelo nome, pela empresa, pelo CNPJ ou pelo número do rótulo.";
+
 export const tituloPagina = (titulo: string): string => `${titulo} · ${NOME}.`;

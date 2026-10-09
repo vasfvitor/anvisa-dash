@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { fmtInt } from "../lib/format";
-import type { Facetas, Filtros, Situacao } from "../lib/fontes/comum";
+import type { Facetas, Filtros, Situacao } from "../lib/fonte";
 import { SITUACAO, TIPOS } from "../lib/situacao";
 import { legivel } from "../lib/texto";
 

@@ -2,7 +2,3 @@
 // PUBLIC_MANIFEST_URL=http://localhost:8000/manifest.json pnpm dev
 export const MANIFEST_URL: string =
   import.meta.env.PUBLIC_MANIFEST_URL || "https://vasfvitor.github.io/anvisa-api/manifest.json";
-
-/** Tabela principal da busca e a de detalhe por apresentação. */
-export const TABELA = "alimentos";
-export const TABELA_DETALHE = "alimentos_resultado";

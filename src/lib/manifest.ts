@@ -7,7 +7,8 @@ export interface Coluna {
   source?: string;
 }
 
-export interface Fonte {
+/** De onde a ANVISA publica a tabela (o arquivo aberto de origem). */
+export interface Origem {
   name: string;
   url: string;
   loaded_at?: string;
@@ -22,7 +23,7 @@ export interface Tabela {
   sha256?: string;
   sort?: string[];
   columns: Coluna[];
-  source: Fonte;
+  source: Origem;
   nulls_added?: Record<string, number>;
 }
 

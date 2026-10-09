@@ -10,7 +10,10 @@ const m = await manifestDoBuild(MANIFEST_URL);
 const tabelas = Object.entries(m.tables);
 ---
 
-<Base title="Dicionário de dados" description="Tabelas e colunas dos dados abertos de alimentos da ANVISA em Parquet.">
+<Base
+  title="Dicionário de dados"
+  description="Tabelas e colunas dos dados abertos da ANVISA usados no site (alimentos e produtos de limpeza), em Parquet."
+>
   <h1>Dicionário de dados</h1>
   <p class="lead">
     O site consulta arquivos Parquet republicados diariamente a partir dos dados abertos da ANVISA. Esta página descreve

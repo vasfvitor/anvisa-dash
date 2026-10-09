@@ -4,20 +4,8 @@
 // e validade são independentes: há saneantes ativos com vencimento já passado e inativos com data futura.
 import { carregar, consultar } from "../db";
 import type { Consulta } from "../detect";
-import {
-  contarFacetas,
-  contarNumeros,
-  derivar,
-  gruposAtivos,
-  onde,
-  POR_PAGINA,
-  sugerirEm,
-  termo,
-  type Facetas,
-  type Filtros,
-  type Fonte,
-  type Trecho,
-} from "./comum";
+import { POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../fonte";
+import { contarFacetas, contarNumeros, derivar, gruposAtivos, onde, sugerirEm, termo, type Trecho } from "../sql";
 
 const TABELA = "saneantes";
 
@@ -110,7 +98,7 @@ async function buscar(q: Consulta, f: Filtros, pagina = 0): Promise<Saneante[]> 
     WHERE ${w.sql}
     ORDER BY relevancia, situacao_registro, ordem_data DESC NULLS LAST, id
     LIMIT ${POR_PAGINA} OFFSET ?`;
-  return (await consultar([], sql, [...params, pagina * POR_PAGINA])) as unknown as Saneante[];
+  return consultar<Saneante>([], sql, [...params, pagina * POR_PAGINA]);
 }
 
 async function facetas(q: Consulta, f: Filtros): Promise<Facetas> {
@@ -120,9 +108,7 @@ async function facetas(q: Consulta, f: Filtros): Promise<Facetas> {
 
 async function porId(id: string): Promise<Saneante | null> {
   await tabela();
-  const [s] = (await consultar([], `SELECT ${COLUNAS}, 1 AS total FROM san WHERE id = ?`, [
-    id,
-  ])) as unknown as Saneante[];
+  const [s] = await consultar<Saneante>([], `SELECT ${COLUNAS}, 1 AS total FROM san WHERE id = ?`, [id]);
   return s ?? null;
 }
 

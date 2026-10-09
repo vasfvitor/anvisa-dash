@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue";
 import { corredorDaUrl, corredorPorId, rotaDo, type Corredor } from "../lib/corredores";
 import { MODO_ROTULO } from "../lib/detect";
+import { FILTROS_PADRAO } from "../lib/fonte";
 import { FONTES } from "../lib/fontes";
 import { fmtBytes, fmtCnpj, fmtData, fmtInt, plural } from "../lib/format";
 import { tituloPagina } from "../lib/marca";
@@ -45,6 +46,24 @@ watch(tela, (t) => (document.documentElement.dataset.tela = t), { immediate: tru
 
 let espera: ReturnType<typeof setTimeout> | undefined;
 
+/**
+ * Estado que vem da URL (carga da página, voltar/avançar) não volta para a URL nem dispara busca pelos
+ * observadores: quem aplica decide o que gravar e quando buscar. Os observadores rodam depois, antes da
+ * próxima pintura, então a marca só sai depois de um nextTick.
+ */
+let daUrl = false;
+
+async function vindoDaUrl<T>(aplicar: () => T | Promise<T>): Promise<T> {
+  daUrl = true;
+  try {
+    const r = await aplicar();
+    await nextTick();
+    return r;
+  } finally {
+    daUrl = false;
+  }
+}
+
 function buscarAgora(forcar = false): void {
   if (pronto.value) void b.buscar(false, forcar);
 }
@@ -58,8 +77,9 @@ function confirmar(): void {
 
 // digitar desfaz a marca escolhida; a busca espera a pausa e só substitui a URL
 watch(entrada, (v) => {
-  if (marca.value && v !== marca.value) marca.value = "";
   clearTimeout(espera);
+  if (daUrl) return;
+  if (marca.value && v !== marca.value) marca.value = "";
   espera = setTimeout(() => {
     if (produto.value) return;
     gravarUrl(estado());
@@ -71,6 +91,7 @@ watch(entrada, (v) => {
 watch(
   () => ({ ...filtros }),
   () => {
+    if (daUrl) return;
     gravarUrl(estado(), true);
     buscarAgora();
   },
@@ -124,15 +145,20 @@ const reduzido = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 watch(corredor, (c) => produto.value || (document.title = tituloPagina(c.titulo)), { flush: "post" });
 
 /**
- * Troca de corredor sem recarregar: leva o termo, zera filtros, marca e produto aberto, e prepara a
- * fonte nova (o que já foi baixado continua em memória). Com View Transitions, a página nova aparece
- * num círculo que cresce a partir do clique, como a cor do corredor tomando conta.
+ * Troca de corredor sem recarregar: leva o termo e zera filtros, marca e produto aberto. Com View
+ * Transitions, a página nova aparece num círculo que cresce a partir do clique, como a cor do corredor
+ * tomando conta. `depois` roda logo depois de zerar, dentro da mesma atualização (voltar/avançar aplica
+ * ali o estado da URL; a animação roda a atualização mais tarde, então aplicar antes seria desfeito).
+ * Devolve se trocou; quem chama prepara a fonte nova com motor.subir().
  */
 async function trocarCorredor(
   novo: Corredor,
-  opcoes: { origem?: { x: number; y: number }; push: boolean },
-): Promise<void> {
-  if (novo.id === corredor.value.id) return;
+  opcoes: { origem?: { x: number; y: number }; push: boolean; depois?: () => void },
+): Promise<boolean> {
+  if (novo.id === corredor.value.id) {
+    opcoes.depois?.();
+    return false;
+  }
   const aplicar = () => {
     corredor.value = novo;
     document.documentElement.dataset.corredor = novo.id;
@@ -140,8 +166,9 @@ async function trocarCorredor(
     marca.value = "";
     produto.value = null;
     abertoDaqui.value = false;
-    Object.assign(filtros, { grupo: "", tipo: "", situacao: "ativo" });
+    Object.assign(filtros, FILTROS_PADRAO);
     b.limpar();
+    opcoes.depois?.();
     if (opcoes.push) gravarUrl(estado(), true, rotaDo(novo));
   };
   const h = document.documentElement;
@@ -166,7 +193,7 @@ async function trocarCorredor(
       if (corredor.value.id !== novo.id) aplicar();
     }
   } else aplicar();
-  await motor.subir();
+  return true;
 }
 
 async function aoClicarPlaca(ev: MouseEvent): Promise<void> {
@@ -174,19 +201,22 @@ async function aoClicarPlaca(ev: MouseEvent): Promise<void> {
   if (!a || !cliqueInterno(ev)) return;
   ev.preventDefault();
   clearTimeout(espera);
-  await trocarCorredor(corredorPorId(a.dataset.corredorLink ?? ""), {
+  const trocou = await trocarCorredor(corredorPorId(a.dataset.corredorLink ?? ""), {
     origem: { x: ev.clientX, y: ev.clientY },
     push: true,
   });
+  if (trocou) await motor.subir();
   buscarAgora(true);
 }
 
+/** Voltar/avançar: o estado inteiro vem da URL, inclusive o corredor; nada é gravado no histórico. */
 async function aoNavegar(): Promise<void> {
-  const novo = corredorDaUrl(location.pathname);
-  const trocando = trocarCorredor(novo, { push: false });
-  aplicarUrl();
-  abertoDaqui.value = false;
-  await trocando;
+  clearTimeout(espera);
+  const trocou = await vindoDaUrl(() => {
+    abertoDaqui.value = false;
+    return trocarCorredor(corredorDaUrl(location.pathname), { push: false, depois: aplicarUrl });
+  });
+  if (trocou) await motor.subir();
   if (!produto.value) buscarAgora(true);
 }
 
@@ -195,7 +225,9 @@ const naNavegacao = () => void aoNavegar();
 const noClique = (ev: MouseEvent) => void aoClicarPlaca(ev);
 
 onMounted(async () => {
-  aplicarUrl();
+  await vindoDaUrl(aplicarUrl);
+  // link antigo (?inativos=1) ou com espaços sobrando: corrige a URL sem criar entrada no histórico
+  gravarUrl(estado());
   marcarPlacas(corredor.value.id);
   window.addEventListener("popstate", naNavegacao);
   document.addEventListener("click", noClique);
@@ -348,9 +380,9 @@ const titulo = computed(() => {
 
   <Inicio v-else :key="corredor.id" :corredor="corredor" :fonte="fonte" @exemplo="buscarPor" @grupo="explorar" />
 
-  <p v-if="motor.fonte.value?.loaded_at" class="note fonte">
-    Dados abertos da ANVISA de {{ fmtData(motor.fonte.value.loaded_at) }} (<a :href="motor.fonte.value.url">{{
-      motor.fonte.value.name
+  <p v-if="motor.origem.value?.loaded_at" class="note fonte">
+    Dados abertos da ANVISA de {{ fmtData(motor.origem.value.loaded_at) }} (<a :href="motor.origem.value.url">{{
+      motor.origem.value.name
     }}</a
     >).
   </p>

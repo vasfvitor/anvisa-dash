@@ -3,7 +3,7 @@
 //   ?q=whey&cat=…&tipo=Notificado&sit=todos   busca (sit: ativo é o padrão e não aparece; cat é o grupo)
 //   ?marca=LIQUID%20I.V.                      marca escolhida numa sugestão
 //   ?p=3767776                                página de um produto (id da fonte do corredor)
-import type { Filtros, Situacao } from "../../lib/fontes/comum";
+import { FILTROS_PADRAO, type Filtros, type Situacao } from "../../lib/fonte";
 
 export interface EstadoUrl extends Filtros {
   q: string;
@@ -23,7 +23,7 @@ export function lerUrl(): EstadoUrl {
     grupo: p.get("cat") ?? "",
     tipo: p.get("tipo") ?? "",
     // inativos=1 é o formato antigo dos links compartilhados
-    situacao: sit && SITUACOES.includes(sit) ? sit : p.get("inativos") === "1" ? "todos" : "ativo",
+    situacao: sit && SITUACOES.includes(sit) ? sit : p.get("inativos") === "1" ? "todos" : FILTROS_PADRAO.situacao,
     // ids são só dígitos (co_seq_produto, nu_expediente com zeros à esquerda)
     produto: id && /^\d{1,20}$/.test(id) ? id : null,
   };
@@ -37,7 +37,7 @@ export function montarUrl(e: Partial<EstadoUrl>, rota = location.pathname): stri
   else if (e.q?.trim()) p.set("q", e.q.trim());
   if (e.grupo) p.set("cat", e.grupo);
   if (e.tipo) p.set("tipo", e.tipo);
-  if (e.situacao && e.situacao !== "ativo") p.set("sit", e.situacao);
+  if (e.situacao && e.situacao !== FILTROS_PADRAO.situacao) p.set("sit", e.situacao);
   const qs = p.toString();
   return `${rota}${qs ? `?${qs}` : ""}`;
 }

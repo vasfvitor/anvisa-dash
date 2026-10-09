@@ -5,11 +5,11 @@ import "@fontsource-variable/jetbrains-mono";
 import Corredores from "../components/Corredores.astro";
 import Icone from "../components/Icone.astro";
 import Logo from "../components/Logo.astro";
-import { MANIFEST_URL, TABELA } from "../lib/config";
+import { MANIFEST_URL } from "../lib/config";
 import { CORREDORES } from "../lib/corredores";
 import { fmtData, url } from "../lib/format";
 import { manifestDoBuild } from "../lib/manifest";
-import { SLOGAN, tituloPagina } from "../lib/marca";
+import { DESCRICAO, SLOGAN, tituloPagina } from "../lib/marca";
 import "../styles/global.css";
 
 interface Props {
@@ -18,14 +18,15 @@ interface Props {
   /** corredor desta página (busca); dados e sobre não têm */
   corredor?: string;
 }
-const {
-  title,
-  corredor,
-  description = "Consulte alimentos e suplementos regularizados na ANVISA pela marca, nome, empresa, CNPJ ou nº do processo: situação, glúten, lactose, alergênicos e ingredientes.",
-} = Astro.props;
+const { title, corredor, description = DESCRICAO } = Astro.props;
 
-// rodapé com a data dos dados do último build; a página de busca mostra a data do manifest ao vivo
-const fonte = (await manifestDoBuild(MANIFEST_URL)).tables[TABELA]?.source;
+// rodapé com a origem de cada corredor no último build (a troca de corredor não recarrega a página, então
+// o rodapé cita todos); a busca mostra a do corredor ativo pelo manifest ao vivo
+const tabelas = (await manifestDoBuild(MANIFEST_URL)).tables;
+const origens = CORREDORES.flatMap((c) => {
+  const origem = tabelas[c.tabela]?.source;
+  return origem ? [{ nome: c.curto, origem }] : [];
+});
 const atual = Astro.url.pathname.replace(/\/+$/, "/");
 const ativo = (p: string) => (atual === url(p) ? "page" : undefined);
 // para o script inline marcar o corredor pela URL antes da primeira pintura
@@ -84,13 +85,14 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
           <div>
             <dt>Fonte</dt>
             <dd>
-              Dados abertos da ANVISA{fonte?.loaded_at && <> de {fmtData(fonte.loaded_at)}</>}
-              {fonte && (
+              Dados abertos da ANVISA:
+              {origens.map(({ nome, origem }, i) => (
                 <>
-                  {" "}
-                  · <a href={fonte.url}>{fonte.name}</a>
+                  {/* o Astro descarta a quebra de linha depois de "ANVISA:" */ i > 0 ? " · " : " "}
+                  {nome}
+                  {origem.loaded_at && <> de {fmtData(origem.loaded_at)}</>} (<a href={origem.url}>{origem.name}</a>)
                 </>
-              )}
+              ))}
             </dd>
           </div>
           <div>

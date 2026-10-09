@@ -3,7 +3,7 @@
 // corredor) são descartadas pelo número da vez.
 import { computed, reactive, ref, shallowRef, type Ref } from "vue";
 import { detectar, type Consulta } from "../../lib/detect";
-import { POR_PAGINA, type Facetas, type Filtros, type Fonte, type Item } from "../../lib/fontes/comum";
+import { FILTROS_PADRAO, POR_PAGINA, type Facetas, type Filtros, type Fonte, type Item } from "../../lib/fonte";
 
 const SEM_FACETAS: Facetas = { situacao: [], tipo: [], grupo: [] };
 
@@ -11,7 +11,7 @@ export function useBusca(fonte: Ref<Fonte>) {
   const entrada = ref("");
   /** marca escolhida numa sugestão; digitar de novo a desfaz */
   const marca = ref("");
-  const filtros = reactive<Filtros>({ grupo: "", tipo: "", situacao: "ativo" });
+  const filtros = reactive<Filtros>({ ...FILTROS_PADRAO });
   const consulta = computed<Consulta | null>(() => {
     if (marca.value) return { modo: "marca", valor: marca.value };
     // sem termo mas com um grupo escolhido: navegar por ele

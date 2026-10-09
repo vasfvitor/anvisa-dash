@@ -5,24 +5,14 @@
 //   não espera por ela; os cartões pedem o resumo dos produtos listados com resumosDe);
 // - sugestoes: marcas e empresas com a contagem de produtos, para sugerir enquanto a pessoa digita.
 import { deJson, resumirAlergia, type ResumoAlergia } from "../alergia";
-import { TABELA, TABELA_DETALHE } from "../config";
 import { carregar, consultar } from "../db";
 import type { Consulta } from "../detect";
-import {
-  contarFacetas,
-  contarNumeros,
-  derivar,
-  gruposAtivos,
-  onde,
-  POR_PAGINA,
-  sugerirEm,
-  termo,
-  TS,
-  type Facetas,
-  type Filtros,
-  type Fonte,
-  type Trecho,
-} from "./comum";
+import { POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../fonte";
+import { contarFacetas, contarNumeros, derivar, gruposAtivos, onde, sugerirEm, termo, TS, type Trecho } from "../sql";
+
+/** Tabela principal da busca e a de detalhe por apresentação, no manifest. */
+const TABELA = "alimentos";
+const TABELA_DETALHE = "alimentos_resultado";
 
 export interface Produto {
   co_seq_produto: number;
@@ -187,7 +177,7 @@ async function buscar(q: Consulta, f: Filtros, pagina = 0): Promise<Produto[]> {
     WHERE ${w.sql}
     ORDER BY relevancia, situacao_registro, ordem_data DESC NULLS LAST, co_seq_produto
     LIMIT ${POR_PAGINA} OFFSET ?`;
-  return (await consultar([], sql, [...params, pagina * POR_PAGINA])) as unknown as Produto[];
+  return consultar<Produto>([], sql, [...params, pagina * POR_PAGINA]);
 }
 
 async function facetas(q: Consulta, f: Filtros): Promise<Facetas> {
@@ -198,7 +188,7 @@ async function facetas(q: Consulta, f: Filtros): Promise<Facetas> {
 async function porId(id: string): Promise<Produto | null> {
   await produtos();
   const sql = `SELECT ${COLUNAS}, 1 AS total FROM produtos WHERE co_seq_produto = ?`;
-  const [p] = (await consultar([], sql, [Number(id)])) as unknown as Produto[];
+  const [p] = await consultar<Produto>([], sql, [Number(id)]);
   return p ?? null;
 }
 
@@ -211,10 +201,14 @@ async function resumosDe(ids: string[]): Promise<Map<string, ResumoAlergia>> {
   const validos = ids.map(Number).filter(Number.isSafeInteger);
   if (!validos.length) return new Map();
   await resumo();
-  const linhas = (await consultar(
+  const linhas = await consultar<{
+    co_seq_produto: number;
+    alergenicos_json: string | null;
+    intolerancias_json: string | null;
+  }>(
     [],
     `SELECT co_seq_produto, alergenicos_json, intolerancias_json FROM resumo WHERE co_seq_produto IN (${validos.join(",")})`,
-  )) as { co_seq_produto: number; alergenicos_json: string | null; intolerancias_json: string | null }[];
+  );
   return new Map(
     linhas.map((l) => [
       String(l.co_seq_produto),
@@ -233,7 +227,7 @@ export async function buscarApresentacoes(id: number): Promise<Apresentacao[]> {
     FROM "${TABELA}" a LEFT JOIN "${TABELA_DETALHE}" r USING (co_seq_apresentacao_produto)
     WHERE a.co_seq_produto = ?
     ORDER BY TRY_CAST(r.nu_apresentacao_produto AS INTEGER) NULLS LAST, a.co_seq_apresentacao_produto`;
-  return (await consultar([TABELA, TABELA_DETALHE], sql, [id])) as unknown as Apresentacao[];
+  return consultar<Apresentacao>([TABELA, TABELA_DETALHE], sql, [id]);
 }
 
 export const alimentos: Fonte<Produto> = {

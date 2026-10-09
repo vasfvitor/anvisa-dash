@@ -1,66 +1,9 @@
-// O que toda fonte de dados (corredor) compartilha: tipos da busca, tabelas derivadas memoizadas por
-// build, filtros e contagem de facetas. Valores do usuário entram só como parâmetros; o WHERE é
-// montado com fragmentos fixos.
-import { buildAtual, consultar, type Valor } from "../db";
-import type { Consulta } from "../detect";
-import { normalizar } from "../texto";
-
-export const POR_PAGINA = 30;
-
-export type Situacao = "ativo" | "inativo" | "todos";
-
-export interface Filtros {
-  /** terceira faceta: categoria nos alimentos, validade nos saneantes */
-  grupo: string;
-  tipo: string;
-  situacao: Situacao;
-}
-
-export type Dimensao = "situacao" | "tipo" | "grupo";
-
-export interface ValorFaceta {
-  valor: string;
-  n: number;
-}
-export type Facetas = Record<Dimensao, ValorFaceta[]>;
-
-export interface Sugestao {
-  tipo: "marca" | "empresa";
-  rotulo: string;
-  nu_cnpj_empresa: string | null;
-  n: number;
-  ativos: number;
-}
-
-export interface Numeros {
-  produtos: number;
-  ativos: number;
-  empresas: number;
-}
-
-/** Item de uma lista de resultados: `total` é o total da busca (window count) em toda linha. */
-export interface Item {
-  total: number;
-}
-
-/** O contrato de um corredor com o app. */
-export interface Fonte<P extends Item = Item> {
-  /** baixa a tabela principal e monta o necessário para a primeira busca */
-  preparar(): Promise<void>;
-  buscar(q: Consulta, f: Filtros, pagina: number): Promise<P[]>;
-  facetas(q: Consulta, f: Filtros): Promise<Facetas>;
-  sugerir(texto: string): Promise<Sugestao[]>;
-  porId(id: string): Promise<P | null>;
-  numeros(): Promise<Numeros>;
-  /** valores da terceira faceta com produtos ativos, para explorar sem digitar */
-  grupos(): Promise<ValorFaceta[]>;
-  idDe(p: P): string;
-  /** informação que chega depois da lista (o resumo de alergênicos nos alimentos) */
-  complementar?(ids: string[]): Promise<Map<string, unknown>>;
-}
-
-// ---------------------------------------------------------------------------------------------
-// tabelas derivadas
+// SQL que toda fonte de dados compartilha: tabelas derivadas memoizadas por build, filtros e contagem de
+// facetas. Valores do usuário entram só como parâmetros; o WHERE é montado com fragmentos fixos.
+import { buildAtual, consultar, type Valor } from "./db";
+import type { Consulta } from "./detect";
+import type { Dimensao, Facetas, Filtros, Numeros, Sugestao, ValorFaceta } from "./fonte";
+import { normalizar } from "./texto";
 
 const derivadas = new Map<string, Promise<void>>();
 
@@ -124,11 +67,11 @@ export async function contarFacetas(tabela: string, predicado: Trecho, f: Filtro
       WHERE ${w.sql} AND ${col} IS NOT NULL GROUP BY ${col}`);
     params.push(...w.params);
   }
-  const linhas = (await consultar([], `${partes.join(" UNION ALL ")} ORDER BY n DESC, valor`, params)) as {
-    dim: Dimensao;
-    valor: string;
-    n: number;
-  }[];
+  const linhas = await consultar<{ dim: Dimensao; valor: string; n: number }>(
+    [],
+    `${partes.join(" UNION ALL ")} ORDER BY n DESC, valor`,
+    params,
+  );
   const r: Facetas = { situacao: [], tipo: [], grupo: [] };
   for (const l of linhas) r[l.dim].push({ valor: l.valor, n: l.n });
   return r;
@@ -136,33 +79,33 @@ export async function contarFacetas(tabela: string, predicado: Trecho, f: Filtro
 
 /** Totais de uma tabela derivada (com situacao_registro e nu_cnpj_empresa). */
 export async function contarNumeros(tabela: string): Promise<Numeros> {
-  const [n] = (await consultar(
+  const [n] = await consultar<Numeros>(
     [],
     `SELECT count(*)::INTEGER AS produtos, (count(*) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER AS ativos,
       count(DISTINCT nu_cnpj_empresa)::INTEGER AS empresas FROM ${tabela}`,
-  )) as unknown as Numeros[];
+  );
   return n!;
 }
 
 /** Valores da terceira faceta com produtos ativos. */
 export async function gruposAtivos(tabela: string): Promise<ValorFaceta[]> {
-  return (await consultar(
+  return consultar<ValorFaceta>(
     [],
     `SELECT grupo AS valor, count(*)::INTEGER AS n FROM ${tabela}
      WHERE situacao_registro = 'Ativo' AND grupo IS NOT NULL GROUP BY 1 ORDER BY n DESC, valor`,
-  )) as unknown as ValorFaceta[];
+  );
 }
 
 /** Sugestões que contêm o termo; as que começam com ele e as com produtos ativos primeiro. */
 export async function sugerirEm(tabela: string, texto: string, limite = 8): Promise<Sugestao[]> {
   const t = normalizar(texto.trim());
   if (t.length < 2) return [];
-  return (await consultar(
+  return consultar<Sugestao>(
     [],
     `SELECT tipo, rotulo, nu_cnpj_empresa, n, ativos FROM ${tabela}
      WHERE contains(chave, ?)
      ORDER BY NOT starts_with(chave, ?), ativos DESC, n DESC, length(rotulo), rotulo
      LIMIT ${Math.trunc(limite)}`,
     [t, t],
-  )) as unknown as Sugestao[];
+  );
 }

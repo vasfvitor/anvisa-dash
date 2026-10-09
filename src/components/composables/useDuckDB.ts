@@ -5,14 +5,14 @@ import { onBeforeUnmount, ref, shallowRef, type Ref } from "vue";
 import type { Corredor } from "../../lib/corredores";
 import { aoProgresso, iniciar } from "../../lib/db";
 import { FONTES } from "../../lib/fontes";
-import type { Fonte } from "../../lib/manifest";
+import type { Origem } from "../../lib/manifest";
 
 export type Status = "iniciando" | "baixando" | "pronto" | "erro";
 
 export function useDuckDB(corredor: Ref<Corredor>) {
   const status = ref<Status>("iniciando");
   const erro = ref("");
-  const fonte = shallowRef<Fonte | null>(null);
+  const origem = shallowRef<Origem | null>(null);
   const progresso = ref(0); // 0 a 1, download da tabela do corredor
   const tamanho = ref(0); // bytes da tabela do corredor, do manifest
   let vez = 0;
@@ -32,10 +32,12 @@ export function useDuckDB(corredor: Ref<Corredor>) {
     progresso.value = 0;
     erro.value = "";
     try {
-      const m = await iniciar();
-      fonte.value = m.tables[c.tabela]?.source ?? null;
-      tamanho.value = m.tables[c.tabela]?.bytes ?? 0;
-      if (!m.tables[c.tabela]) throw new Error(`os dados de ${c.nome.toLowerCase()} ainda não foram publicados`);
+      const t = (await iniciar()).tables[c.tabela];
+      // trocou de corredor enquanto o manifest chegava: a vez nova é que mostra o dela
+      if (minha !== vez) return;
+      origem.value = t?.source ?? null;
+      tamanho.value = t?.bytes ?? 0;
+      if (!t) throw new Error(`os dados de ${c.nome.toLowerCase()} ainda não foram publicados`);
       await FONTES[c.id].preparar();
       if (minha === vez) status.value = "pronto";
     } catch (e) {
@@ -45,5 +47,5 @@ export function useDuckDB(corredor: Ref<Corredor>) {
     }
   }
 
-  return { status, erro, fonte, progresso, tamanho, subir };
+  return { status, erro, origem, progresso, tamanho, subir };
 }

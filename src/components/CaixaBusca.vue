@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from "vue";
 import { detectar, MODO_ROTULO, type Consulta } from "../lib/detect";
 import { fmtCnpj, fmtProcesso, plural } from "../lib/format";
-import type { Sugestao } from "../lib/fontes/comum";
+import type { Sugestao } from "../lib/fonte";
 import { legivel } from "../lib/texto";
 import Destaque from "./Destaque.vue";
 import Icone from "./Icone.vue";
