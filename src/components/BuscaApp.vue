@@ -58,6 +58,12 @@ useNavegacao(estado, { trocou: motor.trocou, subir: motor.subir, limpar, buscar 
 // as medidas só aparecem junto da lista da mesma busca (não as de um termo novo sobre a lista antiga)
 const medidasDaBusca = computed(() => m.itens.length > 0 && JSON.stringify(m.buscada) === JSON.stringify(b.buscada));
 const semResultados = computed(() => !b.total && !b.carregando);
+// nenhum liberado, mas há encerrados: o vazio diz quantos e oferece mostrá-los antes das medidas
+const encerrados = computed(() =>
+  semResultados.value && filtros.value.situacao === "ativo"
+    ? (b.contagens.situacao.find((x) => x.valor === "Inativo")?.n ?? 0)
+    : 0,
+);
 
 onMounted(async () => {
   estado.lerDaUrl();
@@ -188,8 +194,18 @@ const titulo = computed(() => {
     <template v-else-if="b.buscada">
       <h2 class="resultado-titulo" aria-live="polite">
         <template v-if="b.total">{{ titulo }}</template>
-        <template v-else-if="!b.carregando">Nenhum {{ corredor.item[0] }} encontrado</template>
+        <template v-else-if="!b.carregando"
+          >Nenhum {{ corredor.item[0] }} {{ encerrados ? "liberado" : "encontrado" }}</template
+        >
       </h2>
+      <p v-if="encerrados" class="encerrados">
+        {{ plural(encerrados, "encerrado", "encerrados") }} com esta busca.
+        <a
+          :href="urlCom({ situacao: 'todos' })"
+          @click="noApp($event, () => filtrar({ ...filtros, situacao: 'todos' }))"
+          >Mostrar</a
+        >
+      </p>
       <MedidasBloco
         v-if="medidasDaBusca && semResultados"
         :itens="m.itens"
@@ -199,16 +215,8 @@ const titulo = computed(() => {
         @mais="m.mais()"
         @empresa="(c: string) => buscarPor(fmtCnpj(c))"
       />
-      <div v-if="semResultados" class="vazio">
+      <div v-if="semResultados && (!encerrados || filtros.grupo || filtros.tipo)" class="vazio">
         <Icone nome="pote" />
-        <p v-if="filtros.situacao === 'ativo'">
-          Só aparecem os liberados agora.
-          <a
-            :href="urlCom({ situacao: 'todos' })"
-            @click="noApp($event, () => filtrar({ ...filtros, situacao: 'todos' }))"
-            >Incluir os encerrados</a
-          >
-        </p>
         <p v-if="filtros.grupo || filtros.tipo">
           <a
             :href="urlCom({ grupo: '', tipo: '' })"
@@ -216,7 +224,8 @@ const titulo = computed(() => {
             >Limpar os filtros</a
           >
         </p>
-        <p class="note">{{ corredor.dica }}</p>
+        <!-- a dica (o que não passa pela ANVISA) é para quando nada foi achado, nem entre os encerrados -->
+        <p v-if="!encerrados" class="note">{{ corredor.dica }}</p>
       </div>
       <div class="lista" :class="{ esmaecida: b.carregando }">
         <component

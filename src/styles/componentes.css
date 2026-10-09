@@ -939,6 +939,9 @@ a.badge:hover {
   font-size: 1.35rem;
   margin: 1.4rem 0 0.9rem;
 }
+.encerrados {
+  margin: -0.4rem 0 1.1rem;
+}
 .lista {
   display: grid;
   gap: 0.85rem;
