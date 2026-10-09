@@ -118,15 +118,15 @@ export async function porRegistro(tipo: number, registro: string): Promise<Medid
   return medidas(await consultar<Bruta>([], sql, [tipo, registro]));
 }
 
-/** Quantos dossiês de fiscalização cada empresa tem no corredor (só as que têm). */
-export async function dossiesPorEmpresa(tipo: number, cnpjs: string[]): Promise<Map<string, number>> {
+/** Quantas medidas (dossiê × produto, a mesma unidade da lista) cada empresa tem no corredor (só as que têm). */
+export async function medidasPorEmpresa(tipo: number, cnpjs: string[]): Promise<Map<string, number>> {
   // CNPJs vêm dos resultados do próprio app; entram como literais depois de validados
   const validos = [...new Set(cnpjs)].filter((c) => /^\d{14}$/.test(c));
   if (!validos.length || !(await disponivel())) return new Map();
   await tabela();
   const linhas = await consultar<{ cnpj: string; n: number }>(
     [],
-    `SELECT cnpj, count(DISTINCT dossie)::INTEGER AS n FROM medidas
+    `SELECT cnpj, count(*)::INTEGER AS n FROM medidas
      WHERE tipo = ? AND cnpj IN (${validos.map((c) => `'${c}'`).join(",")}) GROUP BY cnpj`,
     [tipo],
   );

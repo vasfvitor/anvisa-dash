@@ -19,7 +19,7 @@ vi.mock("../src/lib/db", () => ({
   },
 }));
 
-const { buscarMedidas, dossiesPorEmpresa, porRegistro, predicado, recentes } = await import("../src/lib/medidas");
+const { buscarMedidas, medidasPorEmpresa, porRegistro, predicado, recentes } = await import("../src/lib/medidas");
 
 function comValores({ sql, params }: Chamada): string {
   let i = 0;
@@ -55,7 +55,7 @@ describe("medidas", () => {
     await buscarMedidas(3, { modo: "texto", valor: "biojet" }, 1);
     await recentes(6);
     await porRegistro(3, "341750056");
-    await dossiesPorEmpresa(6, ["29822523000103"]);
+    await medidasPorEmpresa(6, ["29822523000103"]);
     const qs = consultas();
     expect(qs).toHaveLength(4);
     expect(qs[0]).toContain("WHERE tipo = 3 AND contains(busca, 'biojet')");
@@ -73,9 +73,9 @@ describe("medidas", () => {
   });
 
   it("CNPJ inválido nem entra na consulta; sem nenhum válido, não consulta", async () => {
-    await dossiesPorEmpresa(3, ["abc'; DROP", "123"]);
+    await medidasPorEmpresa(3, ["abc'; DROP", "123"]);
     expect(estado.chamadas).toHaveLength(0);
-    await dossiesPorEmpresa(3, ["43461789000190", "x", "43461789000190"]);
+    await medidasPorEmpresa(3, ["43461789000190", "x", "43461789000190"]);
     expect(consultas()[0]).toContain("cnpj IN ('43461789000190')");
   });
 
@@ -89,7 +89,7 @@ describe("medidas", () => {
     expect(await buscarMedidas(3, { modo: "texto", valor: "biojet" })).toEqual([]);
     expect(await recentes(3)).toEqual([]);
     expect(await porRegistro(3, "341750056")).toEqual([]);
-    expect(await dossiesPorEmpresa(3, ["43461789000190"])).toEqual(new Map());
+    expect(await medidasPorEmpresa(3, ["43461789000190"])).toEqual(new Map());
     expect(estado.chamadas).toHaveLength(0);
   });
 });

@@ -1607,3 +1607,6 @@ a.badge:hover {
 .medida .ficha {
   margin: 0 0 0.5rem;
 }
+.aviso-medidas .medidas-lista {
+  margin: 0.6rem 0 0;
+}

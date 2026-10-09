@@ -7,7 +7,9 @@ import { legivel } from "../../lib/texto";
 import { validade } from "./validade";
 import { useCopia } from "../../components/composables/useCopia";
 import Copiar from "../../components/Copiar.vue";
+import AvisoMedidas from "../../components/AvisoMedidas.vue";
 import Icone from "../../components/Icone.vue";
+import { meta } from "./meta";
 
 const props = defineProps<{ id: string }>();
 const emit = defineEmits<{ voltar: []; empresa: [cnpj: string]; titulo: [texto: string] }>();
@@ -77,6 +79,13 @@ watch(titulo, (t) => t && emit("titulo", t));
         </p>
       </header>
 
+      <AvisoMedidas
+        v-if="meta.tipoProduto"
+        :tipo="meta.tipoProduto"
+        :cnpj="p.nu_cnpj_empresa"
+        :registro="p.nu_registro_produto"
+        @empresa="(c: string) => emit('empresa', c)"
+      />
       <div v-if="!ativo" class="aviso" role="note">
         <Icone nome="alerta" />
         <div>

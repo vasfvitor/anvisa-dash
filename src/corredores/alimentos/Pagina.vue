@@ -9,7 +9,9 @@ import { situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 import { useCopia } from "../../components/composables/useCopia";
 import Copiar from "../../components/Copiar.vue";
+import AvisoMedidas from "../../components/AvisoMedidas.vue";
 import Icone from "../../components/Icone.vue";
+import { meta } from "./meta";
 import ResumoAlergia from "./ResumoAlergia.vue";
 
 const props = defineProps<{ id: string }>();
@@ -196,6 +198,12 @@ const linkAnvisa = computed(() =>
         </p>
       </header>
 
+      <AvisoMedidas
+        v-if="meta.tipoProduto"
+        :tipo="meta.tipoProduto"
+        :cnpj="p.nu_cnpj_empresa"
+        @empresa="(c: string) => emit('empresa', c)"
+      />
       <div v-if="indeferido" class="aviso perigo" role="note">
         <Icone nome="alerta" />
         <div>
