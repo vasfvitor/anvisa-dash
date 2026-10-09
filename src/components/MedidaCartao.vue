@@ -31,7 +31,9 @@ const datas = computed(() =>
         <span class="medida-produto">{{ legivel(m.produto, "nome") }}</span>
         <span class="medida-data">{{ fmtData(m.dt_ultima) }}</span>
       </span>
-      <span class="medida-empresa">{{ m.empresa ? legivel(m.empresa, "nome") : "Responsável não identificado" }}</span>
+      <span class="medida-empresa">{{
+        m.empresa ? legivel(m.empresa, "nome") : "Empresa não informada na medida"
+      }}</span>
       <span class="medida-acoes">
         <span v-for="a in m.acoes" :key="a" class="selo" :class="grave(a) ? 'perigo' : 'atencao'">
           <Icone nome="alerta" />{{ a }}

@@ -99,7 +99,10 @@ watch(
 
     <template v-if="medidas.length">
       <h2>Medidas recentes da ANVISA</h2>
-      <p class="note">Suspensões, proibições, recolhimentos e apreensões publicados nos últimos dados abertos.</p>
+      <p class="note">
+        Suspensões, proibições, recolhimentos, interdições, apreensões e inutilizações publicadas nos últimos dados
+        abertos.
+      </p>
       <div class="medidas-lista">
         <MedidaCartao v-for="m in medidas" :key="m.id" :m="m" @empresa="(c: string) => emit('exemplo', fmtCnpj(c))" />
       </div>

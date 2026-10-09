@@ -5,14 +5,14 @@ describe("validade de um saneante", () => {
   it("em dia", () => {
     const v = validade("Em dia", "2030-06-15");
     expect(v.classe).toBe("ok");
-    expect(v.curto).toBe("Liberado até 06/2030");
+    expect(v.curto).toBe("Liberado até 15/06/2030");
     expect(v.estranha).toBe(false);
   });
 
   it("vencida: o grupo vem do SQL, calculado com a data do dia", () => {
     const v = validade("Vencida", "2020-01-10");
     expect(v.classe).toBe("perigo");
-    expect(v.curto).toBe("Liberação venceu em 01/2020");
+    expect(v.curto).toBe("Liberação venceu em 10/01/2020");
   });
 
   it("sem data", () => {

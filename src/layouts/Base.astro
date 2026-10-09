@@ -32,10 +32,19 @@ const jsonLd = (d: Record<string, unknown>) => JSON.stringify(d).replace(/</g, "
 // rodapé com a origem de cada corredor no último build (a troca de corredor não recarrega a página, então
 // o rodapé cita todos); a busca mostra a do corredor ativo pelo manifest ao vivo
 const tabelas = (await manifestDoBuild(MANIFEST_URL)).tables;
-const origens = CORREDORES.flatMap((c) => {
-  const origem = tabelas[c.tabela]?.source;
-  return origem ? [{ nome: c.curto, origem }] : [];
-});
+const medidas = tabelas.produtos_irregulares?.source;
+const origens = [
+  ...CORREDORES.flatMap((c) => {
+    const origem = tabelas[c.tabela]?.source;
+    return origem ? [{ nome: c.curto, origem }] : [];
+  }),
+  // as medidas de fiscalização aparecem em todo corredor
+  ...(medidas ? [{ nome: "Medidas", origem: medidas }] : []),
+];
+// o que é de um corredor só (o ícone do rodapé) aparece só nele, também depois de trocar sem recarregar
+const soCorredor = `[data-so-corredor]{display:none}${CORREDORES.map(
+  (c) => `[data-corredor="${c.id}"] [data-so-corredor="${c.id}"]{display:inline}`,
+).join("")}`;
 const atual = Astro.url.pathname.replace(/\/+$/, "/");
 const ativo = (p: string) => (atual === url(p) ? "page" : undefined);
 // para o script inline marcar o corredor pela URL antes da primeira pintura
@@ -75,6 +84,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
       const q = new URLSearchParams(location.search);
       h.dataset.tela = q.has("p") ? "produto" : ["q", "marca", "cat"].some((k) => q.has(k)) ? "busca" : "inicio";
     </script>
+    <style is:inline set:html={soCorredor}></style>
   </head>
   <body>
     <a class="skip" href="#conteudo">
@@ -123,7 +133,12 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
           <div>
             <dt>Contém</dt>
             <dd>
-              Nenhum servidor: a busca roda inteira no seu navegador. <Icone nome="capsula" class="mini" />
+              Nenhum servidor: a busca roda inteira no seu navegador.
+              {CORREDORES.map((c) => (
+                <span data-so-corredor={c.id}>
+                  <Icone nome={c.icone} class="mini" />
+                </span>
+              ))}
             </dd>
           </div>
         </dl>

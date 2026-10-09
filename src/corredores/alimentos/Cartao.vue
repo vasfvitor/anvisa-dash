@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ResumoAlergia as Resumo } from "./alergia";
-import { fmtData, plural } from "../../lib/format";
+import { fmtData, fmtProcesso, plural } from "../../lib/format";
 import { ativo, indeferido, marcasParaBusca } from "./produto";
 import type { Produto } from "./fonte";
 import { situacaoDe } from "../../lib/situacao";
@@ -60,6 +60,8 @@ function abrir(ev: MouseEvent): void {
           }}<template v-if="p.dt_regularizacao"> em {{ fmtData(p.dt_regularizacao) }}</template></span
         >
         <span>{{ plural(p.n_apresentacoes, "apresentação", "apresentações") }}</span>
+        <!-- produtos de mesmo nome e marca (sabores, versões) só se distinguem pelo processo -->
+        <span>Processo {{ fmtProcesso(p.nu_processo) }}</span>
         <Icone nome="seta" class="seta" />
       </p>
     </a>

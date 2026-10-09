@@ -75,9 +75,9 @@ const medidas = tam("produtos_irregulares");
     ))}
   </ul>
   <p>
-    A ANVISA atualiza esses arquivos nos dias úteis, por volta das 12h30 (horário de Brasília). Às 18h um processo
-    automático converte os arquivos para Parquet e os publica com um <a href={MANIFEST_URL}>manifest</a>. A estrutura
-    está no <a href={url("/dicionario/")}>dicionário de dados</a>.
+    A ANVISA atualiza esses arquivos nos dias úteis, por volta das 12h30 (horário de Brasília). No fim do dia, um
+    processo automático converte os arquivos para Parquet e os publica com um <a href={MANIFEST_URL}>manifest</a>. A
+    estrutura está no <a href={url("/dicionario/")}>dicionário de dados</a>.
   </p>
 
   <h2>Como a busca funciona</h2>
@@ -92,10 +92,14 @@ const medidas = tam("produtos_irregulares");
   <ul>
     <li>
       14 dígitos buscam por <strong>CNPJ</strong>. Outros números buscam por <strong>nº do processo</strong> (17 dígitos
-      nos atuais, 13 na maioria dos antigos) ou <strong>registro</strong> (9 dígitos no produto, 13 na apresentação).
-      Pontuação é ignorada.
+      nos atuais, 13 na maioria dos antigos) ou <strong>registro</strong> (9 dígitos no produto, 13 na apresentação); na
+      limpeza, também pelo
+      <strong>expediente</strong>. Pontuação é ignorada.
     </li>
-    <li>Qualquer outro texto procura no nome do produto, nas marcas e na razão social, sem diferenciar acentos.</li>
+    <li>
+      Qualquer outro texto procura no nome do produto, nas marcas (nos alimentos) e na razão social, sem diferenciar
+      acentos.
+    </li>
     <li>Por padrão só aparecem os liberados; o filtro de situação mostra também os encerrados.</li>
   </ul>
 

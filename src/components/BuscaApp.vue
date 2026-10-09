@@ -124,7 +124,7 @@ const titulo = computed(() => {
   if (q.modo === "marca") return `${itens} da marca ${q.valor}`;
   if (q.modo === "texto") return `${itens} para “${q.valor}”`;
   if (q.modo === "todos") return `${itens} · ${corredor.value.grupo}: ${legivel(filtros.value.grupo)}`;
-  return `${itens} · ${MODO_ROTULO[q.modo]}`;
+  return `${itens} · ${q.modo === "numero" ? (corredor.value.rotuloNumero ?? MODO_ROTULO.numero) : MODO_ROTULO[q.modo]}`;
 });
 </script>
 
@@ -135,6 +135,7 @@ const titulo = computed(() => {
     :pronto="pronto"
     :placeholder="corredor.placeholder"
     :rotulo-texto="corredor.rotuloTexto"
+    :rotulo-numero="corredor.rotuloNumero"
     :sugerir="fonte.sugerir"
     @update:model-value="digitar"
     @confirmar="confirmar"

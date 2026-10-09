@@ -41,11 +41,23 @@ export function toDate(v: unknown): Date | null {
 
 const DATA = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", day: "2-digit", month: "2-digit", year: "numeric" });
 const MES_ANO = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", month: "2-digit", year: "numeric" });
+const DATA_BRASILIA = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Sao_Paulo",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
 
 /** DD/MM/AAAA, ou "" sem data. */
 export function fmtData(v: unknown): string {
   const d = toDate(v);
   return d ? DATA.format(d) : "";
+}
+
+/** DD/MM/AAAA de um instante de verdade (com Z, como o built_at do manifest), no dia de Brasília. */
+export function fmtDataLocal(v: string): string {
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? "" : DATA_BRASILIA.format(d);
 }
 
 /** MM/AAAA: o vencimento tem precisão de mês (gravado como dia 1). */

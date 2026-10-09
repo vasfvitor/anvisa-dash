@@ -23,6 +23,7 @@ export const meta: Corredor = {
   },
   placeholder: "Produto, empresa ou CNPJ",
   rotuloTexto: "Nome do produto ou empresa",
+  rotuloNumero: "Nº do processo, registro ou expediente",
   exemplos: [
     { valor: "ypê", texto: "ypê" },
     { valor: "bombril", texto: "bombril" },

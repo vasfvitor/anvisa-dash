@@ -3,7 +3,7 @@ import Base from "../layouts/Base.astro";
 import { COLUNA_DESCRICAO, TABELAS } from "../corredores";
 import { MANIFEST_URL } from "../lib/config";
 import { conjuntoDados } from "../lib/dataset";
-import { fmtBytes, fmtData, fmtInt } from "../lib/format";
+import { fmtBytes, fmtData, fmtDataLocal, fmtInt } from "../lib/format";
 import { manifestDoBuild, tabelaUrl } from "../lib/manifest";
 
 // gerado a cada build a partir do manifest: tabela ou coluna nova aparece aqui sem mudar código
@@ -33,7 +33,7 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
   <h1>Dicionário de dados</h1>
   <p class="lead">
     O site consulta arquivos Parquet republicados diariamente a partir dos dados abertos da ANVISA. Esta página descreve
-    o build <code>{m.build_id}</code>, gerado em {fmtData(m.built_at)}.
+    o build <code>{m.build_id}</code>, gerado em {fmtDataLocal(m.built_at)}.
   </p>
   <p class="note">
     Manifest: <a href={MANIFEST_URL}>{MANIFEST_URL}</a>. Os caminhos dos arquivos mudam a cada build; leia sempre o

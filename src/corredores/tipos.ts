@@ -31,6 +31,8 @@ export interface Corredor {
   placeholder: string;
   /** o que a busca por texto procura, quando não é o padrão (nome, marca ou empresa) */
   rotuloTexto?: string;
+  /** o que a busca por número procura, quando não é o padrão (processo ou registro) */
+  rotuloNumero?: string;
   exemplos: { valor: string; texto: string; dica?: string }[];
   /** buscas prontas para explorar sem digitar; sem elas, a abertura oferece os valores da terceira faceta */
   atalhos?: string[];
