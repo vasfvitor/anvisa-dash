@@ -1,11 +1,23 @@
 ---
 import Base from "../layouts/Base.astro";
+import { CORREDORES } from "../corredores";
 import { MANIFEST_URL } from "../lib/config";
-import { fmtData, url } from "../lib/format";
+import { fmtBytes, fmtData, url } from "../lib/format";
 import { manifestDoBuild } from "../lib/manifest";
 
 const m = await manifestDoBuild(MANIFEST_URL);
 const fontes = Object.entries(m.tables);
+// tamanhos do build atual (mudam todo dia: sempre do manifest, nunca escritos aqui)
+const tam = (t: string) => {
+  const tabela = m.tables[t];
+  return tabela ? fmtBytes(tabela.bytes) : null;
+};
+const corredores = CORREDORES.flatMap((c) => {
+  const t = tam(c.tabela);
+  return t ? [`${t} em ${c.curto.toLowerCase()}`] : [];
+});
+const detalhe = tam("alimentos_resultado");
+const medidas = tam("produtos_irregulares");
 ---
 
 <Base title="Sobre" description="De onde vêm os dados, quando são atualizados e como a consulta funciona.">
@@ -32,6 +44,20 @@ const fontes = Object.entries(m.tables);
     o ano 3033), mostradas como foram publicadas.
   </p>
 
+  <h2>Medidas de fiscalização</h2>
+  <p>
+    Além dos produtos liberados, cada corredor mostra as medidas que a ANVISA publica contra produtos irregulares:
+    suspensão, proibição, recolhimento, interdição, apreensão e inutilização. Elas aparecem na busca (depois dos
+    produtos, ou no lugar deles quando nenhum produto liberado é encontrado), na abertura do corredor, na página de um
+    produto quando a medida é contra a empresa dele (ou, na limpeza, contra o próprio produto, pelo número de registro)
+    e como uma marca nos cartões.
+  </p>
+  <p>
+    A medida diz o que a ANVISA publicou, não se o produto ainda está à venda. A empresa citada nem sempre tem CNPJ, e
+    quando a medida é contra uma pessoa o nome não aparece aqui. A marca num cartão quer dizer que a empresa tem
+    medidas, não necessariamente sobre aquele produto.
+  </p>
+
   <h2>De onde vêm os dados</h2>
   <p>
     Os dados são os arquivos abertos publicados pela ANVISA em{" "}
@@ -55,9 +81,10 @@ const fontes = Object.entries(m.tables);
   <p>
     Não há servidor. A busca roda no seu navegador com o{" "}
     <a href="https://duckdb.org/docs/api/wasm/overview">DuckDB-WASM</a>, sobre os arquivos Parquet. Na primeira visita o
-    navegador baixa cerca de 5 MB do motor e 3,3 MB da tabela de produtos; ao abrir as apresentações de um produto, mais
-    1,5 MB da tabela de detalhes. Depois disso todas as buscas rodam no seu navegador, sem rede, e os arquivos ficam no
-    cache.
+    navegador baixa cerca de 5 MB do motor e a tabela do corredor que você abriu ({corredores.join(", ")})
+    {detalhe && <>; ao abrir as apresentações de um alimento, mais {detalhe} da tabela de detalhes</>}
+    {medidas && <>; e, em segundo plano, {medidas} das medidas de fiscalização</>}. Depois disso todas as buscas rodam
+    no seu navegador, sem rede, e os arquivos ficam no cache.
   </p>
   <ul>
     <li>

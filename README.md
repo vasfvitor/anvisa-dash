@@ -37,7 +37,9 @@ falam a língua de quem compra (liberado, encerrado, limpeza); o termo técnico 
 técnicos. Cada corredor é uma pasta em `src/corredores/`; para criar outro:
 
 1. `meta.ts`: o registro (nome, número, rota, tabela, textos, exemplos, ícones; tipo em `tipos.ts`), que
-   entra em `CORREDORES` (`src/corredores/index.ts`);
+   entra em `CORREDORES` (`src/corredores/index.ts`). Com `tipoProduto` (o `co_tipo_produto` da área em
+   `produtos_irregulares`: 6 alimento, 3 saneantes, 2 cosmético…), o corredor ganha as medidas de
+   fiscalização (`src/lib/medidas.ts`) na busca, na abertura, na página do produto e nos cartões;
 2. `fonte.ts`: a fonte de dados, que implementa `Fonte` (`src/lib/fonte.ts`) com o SQL compartilhado de
    `src/lib/sql.ts` e entra em `fontes.ts`;
 3. `Cartao.vue` e `Pagina.vue`: o cartão da lista e a página de detalhe, que entram em `telas.ts`;
