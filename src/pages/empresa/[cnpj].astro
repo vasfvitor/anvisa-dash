@@ -1,5 +1,5 @@
 ---
-// Uma página por empresa com produto na ANVISA, gerada no build: os produtos de cada corredor com
+// Uma página por empresa com produto ou medida na ANVISA, gerada no build: os produtos de cada corredor com
 // situação e números, e as medidas de fiscalização. HTML puro, sem a ilha: buscadores e ferramentas de
 // leitura de página (inclusive as dos assistentes) leem sem rodar JavaScript.
 import Base from "../../layouts/Base.astro";
@@ -21,8 +21,10 @@ interface Props {
   e: Empresa;
 }
 const { e } = Astro.props;
-const nome = legivel(e.nome, "nome");
+// medida sem razão social (rara) deixa a empresa sem nome: o CNPJ vira o nome
+const nome = e.nome ? legivel(e.nome, "nome") : `CNPJ ${fmtCnpj(e.cnpj)}`;
 const r = resumo(e);
+const semProdutos = r.alimentos + r.saneantes === 0;
 const alimentos = corredorPorId("alimentos");
 const limpeza = corredorPorId("saneantes");
 const produto = (rota: string, id: string | number) => `${rota}?p=${encodeURIComponent(String(id))}`;
@@ -34,7 +36,11 @@ const partes = [
   r.saneantes &&
     `${plural(r.saneantes, "produto de limpeza", "produtos de limpeza")} (${plural(r.saneantesAtivos, "liberado")})`,
 ].filter(Boolean);
-const descricao = `${partes.join(" e ")} de ${nome} (CNPJ ${fmtCnpj(e.cnpj)}) na ANVISA, com situação e números de processo.`;
+const medidas = `${plural(r.medidas, "medida")} da ANVISA`;
+const descricao = semProdutos
+  ? `${medidas} contra ${nome} (CNPJ ${fmtCnpj(e.cnpj)}). Nenhum produto da empresa entre os alimentos e os produtos de limpeza registrados ou notificados.`
+  : `${partes.join(" e ")} de ${nome} (CNPJ ${fmtCnpj(e.cnpj)}) na ANVISA, com situação e números de processo.`;
+const resumoLinha = [`CNPJ ${fmtCnpj(e.cnpj)}`, ...partes, r.medidas > 0 && medidas].filter(Boolean).join(" · ");
 
 const canonico = new URL(Astro.url.pathname, Astro.site).href;
 const organizacao = {
@@ -46,12 +52,18 @@ const organizacao = {
 };
 ---
 
-<Base title={`${nome}: produtos na ANVISA`} description={descricao} estruturados={[organizacao]}>
+<Base
+  title={`${nome}: ${semProdutos ? "medidas da ANVISA" : "produtos na ANVISA"}`}
+  description={descricao}
+  estruturados={[organizacao]}
+>
   <h1>{nome}</h1>
-  <p class="lead">
-    CNPJ {fmtCnpj(e.cnpj)} · {partes.join(" · ")}
-    {r.medidas > 0 && <> · {plural(r.medidas, "medida")} da ANVISA</>}
-  </p>
+  <p class="lead">{resumoLinha}</p>
+  {semProdutos && (
+    <p>
+      Nenhum produto desta empresa entre os alimentos e os produtos de limpeza registrados ou notificados na ANVISA.
+    </p>
+  )}
   <p>
     <a href={busca}>Buscar esta empresa no contém.</a>
   </p>

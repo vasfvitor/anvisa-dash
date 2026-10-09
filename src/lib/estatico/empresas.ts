@@ -65,42 +65,55 @@ const porNome = (a: { ativo: boolean; nome: string }, b: { ativo: boolean; nome:
   Number(b.ativo) - Number(a.ativo) || a.nome.localeCompare(b.nome, "pt-BR");
 
 /**
- * Uma empresa por CNPJ com produto (as medidas entram só nas que têm página). O nome é o mais frequente
- * nos produtos: a razão social varia na grafia entre processos. Liberados primeiro, depois por nome;
- * medidas da mais recente para a mais antiga.
+ * Uma empresa por CNPJ com produto ou com medida da ANVISA (quem só tem medida também é procurado: "essa
+ * marca é confiável?"). O nome é o mais frequente nos produtos, ou nas medidas quando não há produto: a
+ * razão social varia na grafia entre processos. Liberados primeiro, depois por nome; medidas da mais recente
+ * para a mais antiga.
  */
 export function agrupar(e: Entrada): Map<string, Empresa> {
   const empresas = new Map<string, Empresa>();
-  const nomes = new Map<string, Map<string, number>>();
+  const nomes = new Map<string, { produtos: Map<string, number>; medidas: Map<string, number> }>();
 
-  const da = (cnpj: string, nome: string): Empresa | undefined => {
+  const da = (cnpj: string, nome: string, origem: "produtos" | "medidas"): Empresa | undefined => {
     if (!CNPJ.test(cnpj)) return undefined;
     let emp = empresas.get(cnpj);
     if (!emp) {
-      emp = { cnpj, nome, alimentos: [], saneantes: [], medidas: [] };
+      emp = { cnpj, nome: "", alimentos: [], saneantes: [], medidas: [] };
       empresas.set(cnpj, emp);
-      nomes.set(cnpj, new Map());
+      nomes.set(cnpj, { produtos: new Map(), medidas: new Map() });
     }
-    const conta = nomes.get(cnpj)!;
-    conta.set(nome, (conta.get(nome) ?? 0) + 1);
+    if (nome) {
+      const conta = nomes.get(cnpj)![origem];
+      conta.set(nome, (conta.get(nome) ?? 0) + 1);
+    }
     return emp;
   };
 
-  for (const { cnpj, empresa, ...linha } of e.alimentos) da(cnpj, empresa)?.alimentos.push(linha);
-  for (const { cnpj, empresa, ...linha } of e.saneantes) da(cnpj, empresa)?.saneantes.push(linha);
+  for (const { cnpj, empresa, ...linha } of e.alimentos) da(cnpj, empresa, "produtos")?.alimentos.push(linha);
+  for (const { cnpj, empresa, ...linha } of e.saneantes) da(cnpj, empresa, "produtos")?.saneantes.push(linha);
   for (const m of e.medidas) {
-    empresas.get(m.cnpj)?.medidas.push({ corredor: m.corredor, produto: m.produto, acoes: m.acoes, data: m.data });
+    da(m.cnpj, m.empresa, "medidas")?.medidas.push({
+      corredor: m.corredor,
+      produto: m.produto,
+      acoes: m.acoes,
+      data: m.data,
+    });
   }
 
   for (const emp of empresas.values()) {
-    // o mais frequente; no empate, o primeiro em ordem alfabética (estável entre builds)
-    const [maior] = [...nomes.get(emp.cnpj)!].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "pt-BR"));
-    emp.nome = maior![0];
+    const { produtos, medidas } = nomes.get(emp.cnpj)!;
+    emp.nome = maisFrequente(produtos.size ? produtos : medidas);
     emp.alimentos.sort(porNome);
     emp.saneantes.sort(porNome);
     emp.medidas.sort((a, b) => b.data.localeCompare(a.data) || a.produto.localeCompare(b.produto, "pt-BR"));
   }
   return empresas;
+}
+
+/** O mais frequente; no empate, o primeiro em ordem alfabética (estável entre builds). Sem nenhum, "". */
+function maisFrequente(conta: Map<string, number>): string {
+  const [maior] = [...conta].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "pt-BR"));
+  return maior?.[0] ?? "";
 }
 
 /** Contagens para o título, a descrição e o cabeçalho da página. */

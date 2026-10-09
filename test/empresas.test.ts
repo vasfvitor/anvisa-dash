@@ -32,6 +32,15 @@ const saneante = (id: string, nome: string, ativo: boolean, cnpj = CNPJ_A, empre
   empresa,
 });
 
+const medida = (produto: string, data: string, cnpj = CNPJ_A, empresa = "EMPRESA A LTDA") => ({
+  corredor: "alimentos" as const,
+  produto,
+  acoes: ["Proibição"],
+  data,
+  cnpj,
+  empresa,
+});
+
 const vazio: Entrada = { alimentos: [], saneantes: [], medidas: [] };
 
 describe("agrupar", () => {
@@ -75,22 +84,45 @@ describe("agrupar", () => {
     expect(m.size).toBe(0);
   });
 
-  it("medidas entram só em empresa com página, da mais recente para a mais antiga", () => {
-    const medida = (produto: string, data: string, cnpj = CNPJ_A) => ({
-      corredor: "alimentos" as const,
-      produto,
-      acoes: ["Proibição"],
-      data,
-      cnpj,
-      empresa: "EMPRESA A LTDA",
-    });
+  it("medidas da mais recente para a mais antiga", () => {
     const m = agrupar({
       ...vazio,
       alimentos: [alimento(1, "WHEY", true)],
-      medidas: [medida("VELHA", "2024-01-01"), medida("NOVA", "2026-10-05"), medida("OUTRA", "2026-01-01", CNPJ_B)],
+      medidas: [medida("VELHA", "2024-01-01"), medida("NOVA", "2026-10-05")],
     });
     expect(m.get(CNPJ_A)!.medidas.map((x) => x.produto)).toEqual(["NOVA", "VELHA"]);
-    expect(m.has(CNPJ_B)).toBe(false);
+  });
+
+  it("empresa só com medidas também tem página, com o nome das medidas", () => {
+    const m = agrupar({
+      ...vazio,
+      medidas: [
+        medida("X", "2026-01-01", CNPJ_B, "Empresa B Ltda"),
+        medida("Y", "2026-02-01", CNPJ_B, "EMPRESA B LTDA"),
+        medida("Z", "2026-03-01", CNPJ_B, "EMPRESA B LTDA"),
+      ],
+    });
+    const b = m.get(CNPJ_B)!;
+    expect(b.nome).toBe("EMPRESA B LTDA");
+    expect(b.alimentos).toEqual([]);
+    expect(b.medidas).toHaveLength(3);
+  });
+
+  it("com produto, o nome vem dos produtos, não das medidas", () => {
+    const m = agrupar({
+      ...vazio,
+      alimentos: [alimento(1, "WHEY", true, CNPJ_A, "Nome Do Produto Ltda")],
+      medidas: [medida("X", "2026-01-01", CNPJ_A, "OUTRO NOME"), medida("Y", "2026-01-02", CNPJ_A, "OUTRO NOME")],
+    });
+    expect(m.get(CNPJ_A)!.nome).toBe("Nome Do Produto Ltda");
+  });
+
+  it("medida sem nome de empresa não vira nome vazio quando há outro", () => {
+    const m = agrupar({
+      ...vazio,
+      medidas: [medida("X", "2026-01-01", CNPJ_B, ""), medida("Y", "2026-01-02", CNPJ_B)],
+    });
+    expect(m.get(CNPJ_B)!.nome).toBe("EMPRESA A LTDA");
   });
 });
 

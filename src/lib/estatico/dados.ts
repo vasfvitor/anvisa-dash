@@ -83,8 +83,15 @@ async function ler(con: DuckDBConnection, medidas: boolean): Promise<Entrada> {
   if (!medidas) return { alimentos, saneantes, medidas: [] };
 
   const tipos = [...CORREDOR_DO_TIPO.keys()].join(", ");
-  const brutas = await linhas<{ tipo: number; produto: string; acoes: string; data: string; cnpj: string }>(
-    `SELECT tipo::INTEGER AS tipo, produto, acoes, dt_ultima AS data, cnpj
+  const brutas = await linhas<{
+    tipo: number;
+    produto: string;
+    acoes: string;
+    data: string;
+    cnpj: string;
+    empresa: string | null;
+  }>(
+    `SELECT tipo::INTEGER AS tipo, produto, acoes, dt_ultima AS data, cnpj, empresa
     FROM medidas WHERE cnpj IS NOT NULL AND tipo IN (${tipos})`,
   );
   return {
@@ -96,7 +103,7 @@ async function ler(con: DuckDBConnection, medidas: boolean): Promise<Entrada> {
       acoes: x.acoes ? x.acoes.split("|") : [],
       data: x.data,
       cnpj: x.cnpj,
-      empresa: "",
+      empresa: x.empresa ?? "",
     })),
   };
 }
