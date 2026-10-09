@@ -1,13 +1,17 @@
 name: Publicar site
 
-# A busca lê o manifest ao vivo e não depende de rebuild. O cron diário existe para o dicionário e o
-# "sobre", que são gerados no build a partir do manifest: roda depois do pipeline de dados
-# (anvisa-api, 21:00 UTC) para pegar colunas e datas novas.
+# A busca lê o manifest ao vivo e não depende de rebuild. O cron existe para o dicionário, o "sobre" e o
+# rodapé, gerados no build a partir do manifest. O pipeline de dados (anvisa-api) agenda 21:00 UTC, mas o
+# GitHub atrasa crons em até horas e o pipeline pula dias sem dados novos: em vez de adivinhar a hora, o
+# cron passa algumas vezes à noite e só publica quando o build_id do manifest difere do que o site usou
+# (/build.json). Push e disparo manual publicam sempre.
 on:
   push:
     branches: [main]
   schedule:
     - cron: "30 22 * * *" # 19h30 em Brasília
+    - cron: "30 1 * * *" # 22h30
+    - cron: "30 4 * * *" # 01h30
   workflow_dispatch:
 
 # Menor privilégio: nada por padrão; cada job pede só o escopo que usa.
@@ -22,7 +26,39 @@ defaults:
     shell: bash
 
 jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {} # só lê URLs públicas
+    outputs:
+      mudou: ${{ steps.comparar.outputs.mudou }}
+    steps:
+      - name: Comparar o build do manifest com o do site
+        id: comparar
+        env:
+          EVENTO: ${{ github.event_name }}
+          # os mesmos de src/lib/config.ts e de site em astro.config.mjs
+          MANIFEST: https://vasfvitor.github.io/anvisa-api/manifest.json
+          PUBLICADO: https://contem.abelhaninja.de/build.json
+        run: |
+          if [ "$EVENTO" != schedule ]; then
+            echo "mudou=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # ?t= fura o cache de 600 s do Pages; uma falha conta como mudança (publica)
+          novo=$(curl -fsS "$MANIFEST?t=$(date +%s)" | jq -r .build_id) || novo=""
+          site=$(curl -fsS "$PUBLICADO?t=$(date +%s)" | jq -r .build_id) || site=""
+          echo "manifest: ${novo:-?} · site: ${site:-?}"
+          if [ -n "$novo" ] && [ "$novo" != null ] && [ "$novo" = "$site" ]; then
+            echo "unchanged: build $novo is current"
+            echo "mudou=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "mudou=true" >> "$GITHUB_OUTPUT"
+          fi
+
   publicar:
+    needs: verificar
+    if: needs.verificar.outputs.mudou == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

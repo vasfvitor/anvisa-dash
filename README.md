@@ -78,9 +78,11 @@ PUBLIC_MANIFEST_URL=http://localhost:8000/manifest.json pnpm dev
 
 ## Publicação
 
-`.github/workflows/pages.yml` testa, checa e publica no GitHub Pages a cada push em `main` e
-diariamente às 22:30 UTC, depois do pipeline de dados (21:00 UTC). O rebuild diário só atualiza
-dicionário, "sobre" e rodapé, porque a busca lê o manifest ao vivo. Em Settings → Pages, use a fonte
+`.github/workflows/pages.yml` testa, checa e publica no GitHub Pages a cada push em `main`. À noite
+(22:30, 01:30 e 04:30 UTC) ele compara o `build_id` do manifest com o de `/build.json` no site e só
+republica quando o pipeline de dados publicou um build novo: o GitHub atrasa crons em horas, e o
+pipeline pula dias sem dados novos. O rebuild só atualiza dicionário, "sobre" e rodapé, porque a busca
+lê o manifest ao vivo. Em Settings → Pages, use a fonte
 "GitHub Actions" e o domínio próprio `contem.abelhaninja.de` (o mesmo de `site` em `astro.config.mjs`;
 o endereço `github.io` redireciona para ele).
 
