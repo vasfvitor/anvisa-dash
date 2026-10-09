@@ -4,7 +4,7 @@
 import { computed, onMounted, reactive, shallowRef, watch, watchEffect } from "vue";
 import { MODO_ROTULO } from "../lib/detect";
 import { FONTES } from "../corredores/fontes";
-import { fmtBytes, fmtCnpj, fmtData, fmtInt, plural } from "../lib/format";
+import { fmtBytes, fmtCnpj, fmtInt, plural } from "../lib/format";
 import { tituloPagina } from "../lib/marca";
 import { legivel } from "../lib/texto";
 import CaixaBusca from "./CaixaBusca.vue";
@@ -168,14 +168,9 @@ const titulo = computed(() => {
       <rect class="etiqueta" x="17" y="40" width="30" height="15" rx="2" />
     </svg>
     <p>
-      <strong v-if="motor.status === 'iniciando'">Abrindo o corredor {{ corredor.numero }}…</strong>
+      <strong v-if="motor.status === 'iniciando'">Carregando…</strong>
       <strong v-else
-        >Enchendo {{ corredor.recipiente }}: {{ Math.round(motor.progresso * 100) }}% de
-        {{ fmtBytes(motor.tamanho) }}</strong
-      >
-      <span class="muted"
-        >Os dados de {{ corredor.nome.toLowerCase() }} vêm da ANVISA só na primeira visita; depois ficam guardados no
-        navegador.</span
+        >Baixando os dados ({{ Math.round(motor.progresso * 100) }}% de {{ fmtBytes(motor.tamanho) }})</strong
       >
     </p>
   </div>
@@ -279,11 +274,4 @@ const titulo = computed(() => {
     @exemplo="buscarPor"
     @grupo="explorar"
   />
-
-  <p v-if="motor.origem?.loaded_at" class="note fonte">
-    Dados abertos da ANVISA de {{ fmtData(motor.origem.loaded_at) }} (<a :href="motor.origem.url">{{
-      motor.origem.name
-    }}</a
-    >).
-  </p>
 </template>

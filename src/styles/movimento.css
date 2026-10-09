@@ -1,5 +1,5 @@
 /* Por último: vence as animações declaradas antes. */
-/* quem pede menos movimento não vê flutuação, carimbo girando nem entradas animadas */
+/* quem pede menos movimento não vê flutuação nem entradas animadas */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

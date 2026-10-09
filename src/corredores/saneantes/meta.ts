@@ -15,11 +15,9 @@ export const meta: Corredor = {
   descricao:
     "Veja se um produto de limpeza (saneante) está liberado pela ANVISA e até quando: água sanitária, desinfetante, inseticida. Busque por nome, empresa ou CNPJ.",
   hero: {
-    selo: "antes de usar em casa",
-    linha1: { antes: "Liberado ou ", destaque: "clandestino", depois: "?" },
-    linha2: { antes: "Ainda está ", destaque: "valendo", depois: "?" },
-    lead: "Água sanitária, detergente, desinfetante, inseticida: produto de limpeza também precisa passar pela ANVISA. Busque pelo nome, pela empresa ou pelo número que vem no rótulo.",
-    carimbo: "fora do alcance das crianças ·",
+    linha1: { antes: "Está ", destaque: "liberado", depois: "?" },
+    linha2: { antes: "Até quando ", destaque: "vale", depois: "?" },
+    lead: "Produtos de limpeza registrados ou notificados na ANVISA.",
   },
   placeholder: "Produto, empresa ou CNPJ",
   rotuloTexto: "Nome do produto ou empresa",
@@ -47,25 +45,6 @@ export const meta: Corredor = {
   ],
   grupo: "Validade",
   item: ["produto de limpeza", "produtos de limpeza"],
-  oQue: [
-    {
-      icone: "certo",
-      titulo: "Se está liberado",
-      texto: "Se a ANVISA conhece o produto e se a liberação continua valendo.",
-    },
-    { icone: "gota", titulo: "Até quando vale", texto: "A data em que a liberação vence, e se ela já passou." },
-    {
-      icone: "fabrica",
-      titulo: "Quem responde por ele",
-      texto: "A empresa, com CNPJ, e os outros produtos de limpeza dela.",
-    },
-    {
-      icone: "documento",
-      titulo: "Os números do rótulo",
-      texto: "Processo, registro e expediente, para conferir na ANVISA.",
-    },
-  ],
-  dica: "Todo produto de limpeza vendido no Brasil precisa estar registrado ou notificado na ANVISA, e o rótulo diz qual. Tente o nome da empresa ou o número do rótulo; se não achar de jeito nenhum, desconfie.",
-  recipiente: "o balde",
+  dica: "Todo produto de limpeza vendido no Brasil precisa estar na ANVISA.",
   tipoProduto: 3,
 };

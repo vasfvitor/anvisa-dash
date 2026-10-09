@@ -27,7 +27,7 @@ export interface Corredor {
   /** o <title> da página do corredor (o que aparece no resultado de busca e na aba): descritivo, não o slogan */
   titulo: string;
   descricao: string;
-  hero: { selo: string; linha1: Frase; linha2: Frase; lead: string; carimbo: string };
+  hero: { linha1: Frase; linha2: Frase; lead: string };
   placeholder: string;
   /** o que a busca por texto procura, quando não é o padrão (nome, marca ou empresa) */
   rotuloTexto?: string;
@@ -40,11 +40,8 @@ export interface Corredor {
   grupo: string;
   /** como chamar um item da lista: [singular, plural] */
   item: [string, string];
-  oQue: { icone: string; titulo: string; texto: string }[];
   /** dica quando a busca não acha nada */
   dica: string;
-  /** o que enche no carregamento ("o pote", "o balde") */
-  recipiente: string;
   /**
    * co_tipo_produto destes produtos em produtos_irregulares (medidas de fiscalização da ANVISA: 6 é
    * Alimento, 3 Saneantes, 2 Cosmético…); sem ele, o corredor não mostra medidas

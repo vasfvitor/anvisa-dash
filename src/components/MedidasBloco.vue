@@ -15,10 +15,6 @@ const emit = defineEmits<{ mais: []; empresa: [cnpj: string] }>();
     <h2 id="medidas-titulo" class="medidas-titulo">
       <Icone nome="alerta" />Medidas da ANVISA <span class="chip-n">{{ fmtInt(total) }}</span>
     </h2>
-    <p class="note">
-      A ANVISA tomou medidas que citam esta busca (suspensão, proibição, recolhimento, interdição, apreensão ou
-      inutilização). Abra uma para ver os detalhes.
-    </p>
     <div class="medidas-lista">
       <MedidaCartao v-for="m in itens" :key="m.id" :m="m" @empresa="(c: string) => emit('empresa', c)" />
     </div>

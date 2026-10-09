@@ -66,6 +66,5 @@ const datas = computed(() =>
         </dd>
       </div>
     </dl>
-    <p class="note">Medida publicada pela ANVISA; não diz se o produto ainda está à venda.</p>
   </details>
 </template>

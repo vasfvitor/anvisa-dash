@@ -76,11 +76,6 @@
     stroke-dashoffset: -13.1;
   }
 }
-[data-corredor="saneantes"] .hero-selo {
-  border-color: transparent;
-  background: var(--pop-suave);
-  color: var(--pop);
-}
 [data-corredor="saneantes"] .deco {
   border: 0;
   box-shadow:
@@ -96,10 +91,6 @@
   to {
     transform: translateY(-10px) scale(1.03);
   }
-}
-[data-corredor="saneantes"] .carimbo-borda {
-  stroke-dasharray: none;
-  stroke: var(--pop);
 }
 
 /* superfícies: pílulas e cartões de plástico, com brilho e sombra macia no lugar da tinta */

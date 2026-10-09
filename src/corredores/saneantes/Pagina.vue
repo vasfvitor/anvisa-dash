@@ -92,9 +92,7 @@ watch(titulo, (t) => t && emit("titulo", t));
       <div v-if="!ativo" class="aviso" role="note">
         <Icone nome="alerta" />
         <div>
-          <strong>Liberação encerrada.</strong> A ANVISA não lista mais este produto como liberado (regularização
-          inativa). Ele aparece aqui como histórico; se ainda está à venda, procure a versão atual pelo nome ou pela
-          empresa.
+          <strong>Liberação encerrada.</strong> Se ainda está à venda, procure a versão nova pelo nome ou pela empresa.
         </div>
       </div>
 
@@ -105,13 +103,9 @@ watch(titulo, (t) => t && emit("titulo", t));
             ><Icone nome="gota" />{{ val.curto }}</span
           >
         </div>
-        <p>{{ val.longo }}</p>
-        <p v-if="val.estranha" class="note">
-          A data parece fora do comum, mas é a que a ANVISA publica nos dados abertos.
-        </p>
+        <p v-if="val.estranha" class="note">Data como publicada pela ANVISA.</p>
         <p v-if="ativo && val.classe === 'perigo'" class="note">
-          A ANVISA ainda lista o produto como liberado, mas a data de vencimento já passou. Pode ser uma renovação em
-          andamento ou um dado desatualizado; confira na consulta oficial.
+          A data já passou, mas a ANVISA ainda lista o produto como liberado. Confira na consulta oficial.
         </p>
       </section>
 
@@ -132,12 +126,7 @@ watch(titulo, (t) => t && emit("titulo", t));
             <Copiar :valor="p.nu_cnpj_empresa" rotulo="CNPJ" />
           </dd>
           <dt>Categoria</dt>
-          <dd>
-            Saneante
-            <span class="note"
-              >(o nome técnico da ANVISA para produtos de limpeza, desinfecção e controle de pragas)</span
-            >
-          </dd>
+          <dd>Saneante</dd>
           <dt>Situação</dt>
           <dd>
             {{ sit.tecnico }} <span class="note">({{ sit.dica }})</span>

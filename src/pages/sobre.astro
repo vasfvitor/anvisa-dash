@@ -22,48 +22,16 @@ const medidas = tam("produtos_irregulares");
 
 <Base
   title="Sobre"
-  description="Como o contém. funciona: de onde vêm os dados abertos da ANVISA, quando são atualizados, como a busca roda no navegador e o que são as medidas de fiscalização."
+  description="De onde vêm os dados do contém., quando são atualizados, como a busca funciona e o que são as medidas de fiscalização da ANVISA."
 >
   <h1>Sobre</h1>
   <p class="lead">
-    Consulta independente de produtos liberados pela ANVISA, organizada em corredores, como num supermercado: o corredor
-    1 tem alimentos e suplementos e o corredor 2, produtos de limpeza (água sanitária, detergente, desinfetante,
-    inseticida…), que a ANVISA chama de saneantes. Você pode buscar por nome, marca, empresa, CNPJ ou pelo número que
-    vem no rótulo.
-  </p>
-
-  <h2>Por que “contém.”</h2>
-  <p>
-    “Contém” é a palavra mais lida dos rótulos: contém glúten, contém leite, pode conter soja. O site existe para
-    responder isso sobre qualquer produto, e se ele está liberado. O acento do logotipo muda com o corredor: é uma
-    cápsula nos alimentos e uma gota na limpeza.
-  </p>
-
-  <h2>Corredores</h2>
-  <p>
-    Cada fonte de dados é um corredor, com cores próprias. Trocar de corredor leva a sua busca junto: um CNPJ buscado
-    nos alimentos mostra os produtos de limpeza da mesma empresa. Na limpeza, a validade é a data de vencimento da
-    liberação publicada pela ANVISA; há produtos liberados com a data já vencida e datas que parecem fora do comum (até
-    o ano 3033), mostradas como foram publicadas.
-  </p>
-
-  <h2>Medidas de fiscalização</h2>
-  <p>
-    Além dos produtos liberados, cada corredor mostra as medidas que a ANVISA publica contra produtos irregulares:
-    suspensão, proibição, recolhimento, interdição, apreensão e inutilização. Elas aparecem na busca (depois dos
-    produtos, ou no lugar deles quando nenhum produto liberado é encontrado), na abertura do corredor, na página de um
-    produto quando a medida é contra a empresa dele (ou, na limpeza, contra o próprio produto, pelo número de registro)
-    e como uma marca nos cartões.
-  </p>
-  <p>
-    A medida diz o que a ANVISA publicou, não se o produto ainda está à venda. A empresa citada nem sempre tem CNPJ, e
-    quando a medida é contra uma pessoa o nome não aparece aqui. A marca num cartão quer dizer que a empresa tem
-    medidas, não necessariamente sobre aquele produto.
+    Consulta independente aos dados abertos da ANVISA sobre alimentos, suplementos e produtos de limpeza (saneantes).
   </p>
 
   <h2>De onde vêm os dados</h2>
   <p>
-    Os dados são os arquivos abertos publicados pela ANVISA em{" "}
+    Dos arquivos que a ANVISA publica em{" "}
     <a href="https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/">dados.anvisa.gov.br</a>:
   </p>
   <ul>
@@ -75,37 +43,42 @@ const medidas = tam("produtos_irregulares");
     ))}
   </ul>
   <p>
-    A ANVISA atualiza esses arquivos nos dias úteis, por volta das 12h30 (horário de Brasília). No fim do dia, um
-    processo automático converte os arquivos para Parquet e os publica com um <a href={MANIFEST_URL}>manifest</a>. A
-    estrutura está no <a href={url("/dicionario/")}>dicionário de dados</a>.
+    A ANVISA atualiza esses arquivos nos dias úteis, por volta das 12h30 (horário de Brasília). No fim do dia eles são
+    convertidos para Parquet e publicados com um <a href={MANIFEST_URL}>manifest</a>. A estrutura está no{" "}
+    <a href={url("/dicionario/")}>dicionário de dados</a>. Datas fora do comum, como validades no ano 3033, aparecem
+    como a ANVISA publicou.
   </p>
 
   <h2>Como a busca funciona</h2>
   <p>
     Não há servidor. A busca roda no seu navegador com o{" "}
-    <a href="https://duckdb.org/docs/api/wasm/overview">DuckDB-WASM</a>, sobre os arquivos Parquet. Na primeira visita o
-    navegador baixa cerca de 5 MB do motor e a tabela do corredor que você abriu ({corredores.join(", ")})
-    {detalhe && <>; ao abrir as apresentações de um alimento, mais {detalhe} da tabela de detalhes</>}
-    {medidas && <>; e, em segundo plano, {medidas} das medidas de fiscalização</>}. Depois disso todas as buscas rodam
-    no seu navegador, sem rede, e os arquivos ficam no cache.
+    <a href="https://duckdb.org/docs/api/wasm/overview">DuckDB-WASM</a>. A primeira visita baixa cerca de 5 MB do motor
+    e a tabela que você abriu ({corredores.join(", ")})
+    {detalhe && <>, mais {detalhe} ao abrir as apresentações de um alimento</>}
+    {medidas && <> e {medidas} de medidas de fiscalização</>}. Depois os arquivos ficam no cache.
   </p>
   <ul>
     <li>
-      14 dígitos buscam por <strong>CNPJ</strong>. Outros números buscam por <strong>nº do processo</strong> (17 dígitos
-      nos atuais, 13 na maioria dos antigos) ou <strong>registro</strong> (9 dígitos no produto, 13 na apresentação); na
-      limpeza, também pelo
-      <strong>expediente</strong>. Pontuação é ignorada.
+      Um número de 14 dígitos busca o <strong>CNPJ</strong>. Outros números buscam o <strong>processo</strong>, o{" "}
+      <strong>registro</strong> e, na limpeza, o <strong>expediente</strong>. Pontuação é ignorada.
     </li>
-    <li>
-      Qualquer outro texto procura no nome do produto, nas marcas (nos alimentos) e na razão social, sem diferenciar
-      acentos.
-    </li>
-    <li>Por padrão só aparecem os liberados; o filtro de situação mostra também os encerrados.</li>
+    <li>Texto busca no nome do produto, nas marcas e na empresa, sem diferenciar acentos.</li>
+    <li>Só aparecem os produtos liberados, a não ser que você mude o filtro de situação.</li>
   </ul>
+
+  <h2>Medidas de fiscalização</h2>
+  <p>
+    A ANVISA publica medidas contra produtos irregulares: suspensão, proibição, recolhimento, interdição, apreensão e
+    inutilização. Elas aparecem nas buscas e na página do produto.
+  </p>
+  <p>
+    Uma medida diz o que a ANVISA publicou, não se o produto ainda está à venda. O aviso na página de um produto pode
+    ser sobre outro produto da mesma empresa. Medidas contra pessoas aparecem sem o nome.
+  </p>
 
   <h2>Aviso</h2>
   <p>
-    Este site não tem vínculo com a ANVISA. As informações são reproduzidas como publicadas nos dados abertos e podem
-    estar defasadas ou incompletas. Para qualquer decisão, confira a consulta oficial da ANVISA.
+    Este site não tem vínculo com a ANVISA. Os dados podem estar defasados ou incompletos; para qualquer decisão,
+    confira a consulta oficial.
   </p>
 </Base>

@@ -14,11 +14,9 @@ export const meta: Corredor = {
   descricao:
     "Consulte alimentos e suplementos regularizados na ANVISA pela marca, nome, empresa, CNPJ ou nº do processo: situação, glúten, lactose, alergênicos e ingredientes.",
   hero: {
-    selo: "leia o rótulo antes de levar",
     linha1: { antes: "Está ", destaque: "liberado", depois: "?" },
     linha2: { antes: "O que ele ", destaque: "contém", depois: "?" },
-    lead: "Suplementos e alimentos que passam pela ANVISA. Busque pela marca, pelo nome, pela empresa ou pelo número que vem no rótulo.",
-    carimbo: "dados abertos · leia o rótulo ·",
+    lead: "Alimentos e suplementos registrados ou notificados na ANVISA.",
   },
   placeholder: "Marca, produto ou CNPJ",
   exemplos: [
@@ -30,29 +28,6 @@ export const meta: Corredor = {
   ],
   grupo: "Categoria",
   item: ["produto", "produtos"],
-  oQue: [
-    {
-      icone: "certo",
-      titulo: "Se está liberado",
-      texto: "Se a ANVISA conhece o produto, se a liberação continua valendo e desde quando.",
-    },
-    {
-      icone: "trigo",
-      titulo: "Se serve para você",
-      texto: "Glúten, lactose, alergênicos que contém ou pode conter, ingredientes e público indicado.",
-    },
-    {
-      icone: "fabrica",
-      titulo: "Quem fabrica",
-      texto: "A empresa responsável, quem envasa e os fabricantes no exterior.",
-    },
-    {
-      icone: "documento",
-      titulo: "Os números do rótulo",
-      texto: "Processo, registro ou notificação, para conferir na consulta da ANVISA.",
-    },
-  ],
-  dica: "Nem todo alimento passa pela ANVISA: arroz, pão e biscoito comum, por exemplo, não precisam de registro. Tente a marca, a empresa ou o número do rótulo.",
-  recipiente: "o pote",
+  dica: "Arroz, pão e outros alimentos comuns não passam pela ANVISA.",
   tipoProduto: 6,
 };

@@ -63,9 +63,6 @@
   .numeros dd {
     font-size: 1.5rem;
   }
-  .o-que {
-    grid-template-columns: 1fr;
-  }
   .ficha {
     grid-template-columns: 1fr;
   }

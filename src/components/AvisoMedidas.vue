@@ -42,8 +42,8 @@ onMounted(() => {
   <div v-else-if="daEmpresa" class="aviso aviso-medidas" role="note">
     <Icone nome="alerta" />
     <div>
-      A ANVISA tem {{ plural(daEmpresa, "medida de fiscalização", "medidas de fiscalização") }} contra esta empresa (não
-      necessariamente sobre este produto).
+      {{ plural(daEmpresa, "medida", "medidas") }} da ANVISA contra esta empresa, não necessariamente sobre este
+      produto.
       <a :href="urlEmpresa(cnpj)" @click="noApp($event, () => emit('empresa', cnpj))">Ver as medidas</a>
     </div>
   </div>

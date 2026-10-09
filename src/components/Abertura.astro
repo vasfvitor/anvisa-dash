@@ -2,7 +2,6 @@
 // A abertura (hero) de um corredor. A página do corredor mostra a sua e guarda as dos outros em <template>:
 // conteúdo inerte (fora da página para buscadores e leitores de tela) que a troca de corredor clona.
 import type { Corredor } from "../corredores";
-import { url } from "../lib/format";
 import Icone from "./Icone.astro";
 
 interface Props {
@@ -18,24 +17,7 @@ const { c } = Astro.props;
         <Icone nome={nome} />
       </span>
     ))}
-    <svg class="carimbo" viewBox="0 0 120 120">
-      <defs>
-        <path id={`carimbo-circulo-${c.id}`} d="M60 60m-45 0a45 45 0 1 1 90 0a45 45 0 1 1-90 0" />
-      </defs>
-      <circle cx="60" cy="60" r="56" class="carimbo-borda" />
-      <text>
-        <textPath href={`#carimbo-circulo-${c.id}`} textLength="281" lengthAdjust="spacing">
-          {c.hero.carimbo}
-        </textPath>
-      </text>
-      <svg x="36" y="36" width="48" height="48" class="carimbo-icone">
-        <use href={url(`/icones.svg#${c.icone}`)} />
-      </svg>
-    </svg>
   </div>
-  <p class="hero-selo">
-    <Icone nome="lupa" /> {c.hero.selo}
-  </p>
   <h1>
     {c.hero.linha1.antes}
     <em>{c.hero.linha1.destaque}</em>

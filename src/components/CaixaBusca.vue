@@ -161,6 +161,5 @@ function lida(c: Consulta): string {
     <template v-if="consulta"
       >Buscando por: <strong>{{ lida(consulta) }}</strong></template
     >
-    <template v-else>Dica: aperte <kbd>/</kbd> para buscar de qualquer lugar.</template>
   </p>
 </template>

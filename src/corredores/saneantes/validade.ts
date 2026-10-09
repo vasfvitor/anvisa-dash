@@ -5,7 +5,6 @@ import { fmtData, toDate } from "../../lib/format";
 export interface Validade {
   classe: "ok" | "perigo" | "neutro";
   curto: string;
-  longo: string;
   /** data fora do comum (a ANVISA publica vencimentos até 3033) */
   estranha: boolean;
 }
@@ -16,7 +15,6 @@ export function validade(grupo: string, dt: string | null): Validade {
     return {
       classe: "neutro",
       curto: "Sem data de vencimento",
-      longo: "A ANVISA não informa até quando a liberação deste produto vale.",
       estranha: false,
     };
   }
@@ -25,14 +23,12 @@ export function validade(grupo: string, dt: string | null): Validade {
     return {
       classe: "perigo",
       curto: `Liberação venceu em ${fmtData(dt)}`,
-      longo: `A liberação na ANVISA venceu em ${fmtData(dt)}.`,
       estranha,
     };
   }
   return {
     classe: "ok",
     curto: `Liberado até ${fmtData(dt)}`,
-    longo: `A liberação na ANVISA vale até ${fmtData(dt)}.`,
     estranha,
   };
 }

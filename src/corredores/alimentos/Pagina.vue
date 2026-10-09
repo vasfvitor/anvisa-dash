@@ -221,11 +221,7 @@ const linkAnvisa = computed(() =>
       </div>
       <div v-else-if="!ativo" class="aviso" role="note">
         <Icone nome="alerta" />
-        <div>
-          <strong>Liberação encerrada.</strong> A ANVISA não lista mais este produto como liberado (regularização
-          inativa). Ele aparece aqui como histórico; se ainda está à venda, procure a versão atual pela marca ou pela
-          empresa.
-        </div>
+        <div><strong>Liberação encerrada.</strong> Se ainda está à venda, procure a versão nova pela marca.</div>
       </div>
 
       <section v-if="resumo?.temDados || (resumo && ativo)" class="secao">
@@ -238,7 +234,6 @@ const linkAnvisa = computed(() =>
         <h2><Icone nome="folha" />Ingredientes</h2>
         <template v-if="ingredientes">
           <p class="ingredientes">{{ ingredientes }}</p>
-          <p class="note">Como declarado à ANVISA; letras maiúsculas ajustadas para leitura.</p>
         </template>
         <p v-else>
           Os ingredientes mudam conforme a apresentação (por exemplo, sabores diferentes).

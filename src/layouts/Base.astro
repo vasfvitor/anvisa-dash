@@ -3,13 +3,12 @@ import "@fontsource-variable/fraunces/soft.css";
 import "@fontsource-variable/figtree";
 import "@fontsource-variable/jetbrains-mono";
 import Corredores from "../components/Corredores.astro";
-import Icone from "../components/Icone.astro";
 import Logo from "../components/Logo.astro";
 import { MANIFEST_URL } from "../lib/config";
 import { CORREDOR_PADRAO, CORREDORES } from "../corredores";
 import { fmtData, url } from "../lib/format";
 import { manifestDoBuild } from "../lib/manifest";
-import { DESCRICAO, NOME, SLOGAN, tituloPagina } from "../lib/marca";
+import { DESCRICAO, NOME, tituloPagina } from "../lib/marca";
 import "../styles/global.css";
 
 interface Props {
@@ -29,8 +28,8 @@ const canonico = new URL(Astro.url.pathname, Astro.site).href;
 // JSON dentro de <script>: "</" não pode aparecer cru
 const jsonLd = (d: Record<string, unknown>) => JSON.stringify(d).replace(/</g, "\\u003c");
 
-// rodapé com a origem de cada corredor no último build (a troca de corredor não recarrega a página, então
-// o rodapé cita todos); a busca mostra a do corredor ativo pelo manifest ao vivo
+// rodapé com a origem de cada corredor no último build, que roda quando os dados mudam (a troca de corredor
+// não recarrega a página, então o rodapé cita todos)
 const tabelas = (await manifestDoBuild(MANIFEST_URL)).tables;
 const medidas = tabelas.produtos_irregulares?.source;
 const origens = [
@@ -41,10 +40,6 @@ const origens = [
   // as medidas de fiscalização aparecem em todo corredor
   ...(medidas ? [{ nome: "Medidas", origem: medidas }] : []),
 ];
-// o que é de um corredor só (o ícone do rodapé) aparece só nele, também depois de trocar sem recarregar
-const soCorredor = `[data-so-corredor]{display:none}${CORREDORES.map(
-  (c) => `[data-corredor="${c.id}"] [data-so-corredor="${c.id}"]{display:inline}`,
-).join("")}`;
 const atual = Astro.url.pathname.replace(/\/+$/, "/");
 const ativo = (p: string) => (atual === url(p) ? "page" : undefined);
 // para o script inline marcar o corredor pela URL antes da primeira pintura
@@ -84,7 +79,6 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
       const q = new URLSearchParams(location.search);
       h.dataset.tela = q.has("p") ? "produto" : ["q", "marca", "cat"].some((k) => q.has(k)) ? "busca" : "inicio";
     </script>
-    <style is:inline set:html={soCorredor}></style>
   </head>
   <body>
     <a class="skip" href="#conteudo">
@@ -109,9 +103,6 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     </main>
     <footer class="site">
       <div class="rotulo-rodape">
-        <p class="rotulo-titulo">
-          <Logo /> <span>{SLOGAN}</span>
-        </p>
         <dl>
           <div>
             <dt>Fonte</dt>
@@ -128,18 +119,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
           </div>
           <div>
             <dt>Atenção</dt>
-            <dd>Ferramenta independente, sem vínculo com a ANVISA. Confira sempre a consulta oficial.</dd>
-          </div>
-          <div>
-            <dt>Contém</dt>
-            <dd>
-              Nenhum servidor: a busca roda inteira no seu navegador.
-              {CORREDORES.map((c) => (
-                <span data-so-corredor={c.id}>
-                  <Icone nome={c.icone} class="mini" />
-                </span>
-              ))}
-            </dd>
+            <dd>Sem vínculo com a ANVISA. Confira sempre a consulta oficial.</dd>
           </div>
         </dl>
       </div>
