@@ -6,6 +6,8 @@
 html {
   font: 16.5px/1.55 var(--fonte-texto);
   -webkit-text-size-adjust: 100%;
+  /* âncoras (#tabela no dicionário) e foco param abaixo do cabeçalho fixo (67 px; 101 px no celular) */
+  scroll-padding-top: 5rem;
 }
 body {
   margin: 0;
@@ -75,6 +77,8 @@ code {
 .note {
   font-size: 0.88rem;
   color: var(--muted);
+  /* nomes de arquivo da origem (TA_CONSULTA_…_RESULTADO.CSV) passam da largura do celular */
+  overflow-wrap: break-word;
 }
 .lead {
   font-size: 1.08rem;
