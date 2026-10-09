@@ -101,8 +101,9 @@ export async function sugerirEm(tabela: string, texto: string, limite = 8): Prom
     [],
     `SELECT tipo, rotulo, nu_cnpj_empresa, n, ativos FROM ${tabela}
      WHERE contains(chave, ?)
-     ORDER BY NOT starts_with(chave, ?), ativos DESC, n DESC, length(rotulo), rotulo
+     -- começo de palavra conta como começo: "catarinense" acha Laboratorio Catarinense junto das marcas
+     ORDER BY NOT (starts_with(chave, ?) OR contains(chave, ' ' || ?)), ativos DESC, n DESC, length(rotulo), rotulo
      LIMIT ${Math.trunc(limite)}`,
-    [t, t],
+    [t, t, t],
   );
 }

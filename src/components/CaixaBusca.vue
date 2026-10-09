@@ -70,7 +70,9 @@ function tecla(ev: KeyboardEvent): void {
     ev.preventDefault();
     aberta.value = true;
     ativa.value = ativa.value <= 0 ? lista.value.length - 1 : ativa.value - 1;
-  } else if (ev.key === "Escape") {
+  } else if (ev.key === "Escape" && aberto.value) {
+    // o primeiro Esc só fecha a lista: o campo type=search limparia o texto (e a busca) junto
+    ev.preventDefault();
     aberta.value = false;
   } else if (ev.key === "Enter" && aberto.value && ativa.value >= 0) {
     ev.preventDefault();
