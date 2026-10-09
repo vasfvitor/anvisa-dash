@@ -3,6 +3,7 @@
 // expedientes distintos (6 registros repetidos: a tabela derivada fica com um por expediente). Situação
 // e validade são independentes: há saneantes ativos com vencimento já passado e inativos com data futura.
 import { carregar, consultar } from "../../lib/db";
+import { SQL_SAN, TABELA } from "./consultas";
 import type { Consulta } from "../../lib/detect";
 import { ID_PRODUTO, POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../../lib/fonte";
 import {
@@ -15,8 +16,6 @@ import {
   termo,
   type Trecho,
 } from "../../lib/sql";
-
-const TABELA = "saneantes";
 
 export interface Saneante {
   /** nu_expediente: o id na URL (?p=) */
@@ -37,24 +36,7 @@ export interface Saneante {
 }
 
 function tabela(): Promise<void> {
-  return derivar(
-    "san",
-    () => carregar(TABELA),
-    `CREATE OR REPLACE TABLE san AS
-    SELECT nu_expediente AS id, no_produto, nu_processo, nu_cnpj_empresa, no_razao_social_empresa,
-      nu_registro_produto, nu_expediente,
-      CASE WHEN st_produto_ativo THEN 'Ativo' ELSE 'Inativo' END AS situacao_registro,
-      CASE WHEN is_registrado THEN 'Registrado' ELSE 'Notificado' END AS tipo_regularizacao,
-      strftime(dt_vencimento_produto, '%Y-%m-%d') AS dt_vencimento,
-      CASE WHEN dt_vencimento_produto IS NULL THEN 'Sem data'
-        WHEN dt_vencimento_produto < current_date THEN 'Vencida' ELSE 'Em dia' END AS grupo,
-      -- só para busca e ordenação; vencimento depois de 2100 (há até 3033) conta como 2100, sem passar à frente
-      least(dt_vencimento_produto, TIMESTAMP '2100-12-31') AS ordem_data,
-      lower(strip_accents(concat_ws(' ', no_produto, no_razao_social_empresa))) AS busca,
-      lower(strip_accents(no_produto)) AS busca_nome
-    FROM "${TABELA}"
-    QUALIFY row_number() OVER (PARTITION BY nu_expediente ORDER BY dt_vencimento_produto DESC NULLS LAST) = 1`,
-  );
+  return derivar("san", () => carregar(TABELA), SQL_SAN);
 }
 
 function sugestoes(): Promise<void> {

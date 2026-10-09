@@ -22,9 +22,6 @@ export async function derivar(nome: string, deps: () => Promise<void>, sql: stri
   return p;
 }
 
-// datas saem como texto sem fuso: o tipo temporal do Arrow muda de unidade conforme a versão
-export const TS = (expr: string, nome: string) => `strftime(${expr}, '%Y-%m-%dT%H:%M:%S') AS ${nome}`;
-
 /** Termo como as colunas de busca guardam: sem acento, minúsculo. */
 export function termo(q: Consulta): string {
   return normalizar(q.valor.trim());

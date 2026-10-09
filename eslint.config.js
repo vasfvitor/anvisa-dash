@@ -23,7 +23,8 @@ const modulosDoBuild = [
   "src/corredores/tipos.ts",
   "src/corredores/*/meta.ts",
   "src/corredores/*/colunas.ts",
-  "src/lib/{config,detect,fonte,format,manifest,marca,texto}.ts",
+  "src/corredores/*/consultas.ts",
+  "src/lib/{config,consultas,detect,fonte,format,manifest,marca,texto}.ts",
 ];
 const proibidosNoBuild = [
   {

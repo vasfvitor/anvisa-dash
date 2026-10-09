@@ -4,11 +4,12 @@
 // uma por dossiê × produto × ação × atividade (cerca de 12 por dossiê); aqui viram uma por dossiê ×
 // produto. Cuidados da origem: a empresa investigada nem sempre tem CNPJ (11 dígitos é pessoa, e o nome
 // não aparece); `registro` só vem nos saneantes; nu_processo é o processo da medida, não do produto.
+import { SQL_MEDIDAS, TABELA_MEDIDAS } from "./consultas";
 import { carregar, consultar, iniciar } from "./db";
 import type { Consulta } from "./detect";
 import { derivar, termo, type Trecho } from "./sql";
 
-const TABELA = "produtos_irregulares";
+const TABELA = TABELA_MEDIDAS;
 export const MEDIDAS_POR_PAGINA = 20;
 
 export interface Medida {
@@ -32,25 +33,7 @@ export interface Medida {
 }
 
 function tabela(): Promise<void> {
-  return derivar(
-    "medidas",
-    () => carregar(TABELA),
-    `CREATE OR REPLACE TABLE medidas AS
-    SELECT co_tipo_produto AS tipo, co_seq_dossie_investig_med AS dossie, prod AS produto,
-      any_value(no_empresa_investigada) AS empresa,
-      -- 00000000000000 aparece como CNPJ de preenchimento: não é empresa nenhuma
-      any_value(nu_cnpj_empresa_investigada) FILTER (WHERE regexp_full_match(nu_cnpj_empresa_investigada, '[0-9]{14}') AND nu_cnpj_empresa_investigada <> '00000000000000') AS cnpj,
-      coalesce(bool_or(regexp_full_match(nu_cnpj_empresa_investigada, '[0-9]{11}')), false) AS pessoa,
-      any_value(nullif(regexp_replace(registro, '[^0-9]', '', 'g'), '')) AS registro,
-      any_value(nu_processo) AS processo, any_value(ds_risco_produto) AS risco,
-      -- listas viram texto: o Arrow devolve coluna de lista como vetor, não como array
-      array_to_string(list_sort(list(DISTINCT ds_acao_fiscalizacao) FILTER (WHERE ds_acao_fiscalizacao IS NOT NULL)), '|') AS acoes,
-      array_to_string(list_sort(list(DISTINCT ds_atividade_fiscalizacao) FILTER (WHERE ds_atividade_fiscalizacao IS NOT NULL)), '|') AS atividades,
-      strftime(min(dt_publicacao), '%Y-%m-%d') AS dt_primeira, strftime(max(dt_publicacao), '%Y-%m-%d') AS dt_ultima,
-      lower(strip_accents(concat_ws(' ', prod, any_value(no_empresa_investigada)))) AS busca
-    FROM (SELECT *, trim(produto) AS prod FROM "${TABELA}") WHERE coalesce(prod, '') <> ''
-    GROUP BY co_tipo_produto, co_seq_dossie_investig_med, prod`,
-  );
+  return derivar("medidas", () => carregar(TABELA), SQL_MEDIDAS);
 }
 
 /** Se o build atual publicou a tabela; sem ela o site segue sem medidas, sem tentar de novo a cada busca. */
