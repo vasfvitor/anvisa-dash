@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import type { ResumoAlergia as Resumo } from "./alergia";
 import { fmtData, fmtProcesso, plural } from "../../lib/format";
-import { ativo, indeferido, marcasParaBusca } from "./produto";
+import { ativo, indeferido, MARCAS_NO_TITULO, marcasParaBusca, tituloAlimento } from "./produto";
 import type { Produto } from "./fonte";
 import { situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
@@ -18,9 +18,10 @@ const emit = defineEmits<{ abrir: [id: string] }>();
 const liberado = computed(() => ativo(props.p));
 const sit = computed(() => situacaoDe(liberado.value));
 const listaMarcas = computed(() => marcasParaBusca(props.p, props.termo));
-const titulo = computed(() => listaMarcas.value.slice(0, 2).join(" · ") || legivel(props.p.no_produto));
-const outrasMarcas = computed(() => Math.max(0, listaMarcas.value.length - 2));
-const subtitulo = computed(() => (listaMarcas.value.length ? legivel(props.p.no_produto) : ""));
+const titulos = computed(() => tituloAlimento(listaMarcas.value, props.p.no_produto));
+const titulo = computed(() => titulos.value.titulo);
+const outrasMarcas = computed(() => Math.max(0, listaMarcas.value.length - MARCAS_NO_TITULO));
+const subtitulo = computed(() => titulos.value.subtitulo);
 const href = computed(() => montarUrl({ produto: String(props.p.co_seq_produto) }));
 
 function abrir(ev: MouseEvent): void {

@@ -1,0 +1,196 @@
+---
+// Uma página por empresa com produto na ANVISA, gerada no build: os produtos de cada corredor com
+// situação e números, e as medidas de fiscalização. HTML puro, sem a ilha: buscadores e ferramentas de
+// leitura de página (inclusive as dos assistentes) leem sem rodar JavaScript.
+import Base from "../../layouts/Base.astro";
+import { corredorPorId, rotaDo } from "../../corredores";
+import { MARCAS_NO_TITULO, tituloAlimento } from "../../corredores/alimentos/produto";
+import { validade } from "../../corredores/saneantes/validade";
+import { empresasDoBuild } from "../../lib/estatico/dados";
+import { resumo, type Empresa } from "../../lib/estatico/empresas";
+import { fmtCnpj, fmtData, fmtProcesso, marcas, plural, url } from "../../lib/format";
+import { situacaoDe } from "../../lib/situacao";
+import { legivel } from "../../lib/texto";
+
+export async function getStaticPaths() {
+  const empresas = await empresasDoBuild();
+  return [...empresas.values()].map((e) => ({ params: { cnpj: e.cnpj }, props: { e } }));
+}
+
+interface Props {
+  e: Empresa;
+}
+const { e } = Astro.props;
+const nome = legivel(e.nome, "nome");
+const r = resumo(e);
+const alimentos = corredorPorId("alimentos");
+const limpeza = corredorPorId("saneantes");
+const produto = (rota: string, id: string | number) => `${rota}?p=${encodeURIComponent(String(id))}`;
+const busca = `${url("/")}?${new URLSearchParams({ q: fmtCnpj(e.cnpj) }).toString()}`;
+
+const partes = [
+  r.alimentos &&
+    `${plural(r.alimentos, "alimento ou suplemento", "alimentos e suplementos")} (${plural(r.alimentosAtivos, "liberado")})`,
+  r.saneantes &&
+    `${plural(r.saneantes, "produto de limpeza", "produtos de limpeza")} (${plural(r.saneantesAtivos, "liberado")})`,
+].filter(Boolean);
+const descricao = `${partes.join(" e ")} de ${nome} (CNPJ ${fmtCnpj(e.cnpj)}) na ANVISA, com situação e números de processo.`;
+
+const canonico = new URL(Astro.url.pathname, Astro.site).href;
+const organizacao = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": `${canonico}#empresa`,
+  name: nome,
+  taxID: fmtCnpj(e.cnpj),
+};
+---
+
+<Base title={`${nome}: produtos na ANVISA`} description={descricao} estruturados={[organizacao]}>
+  <h1>{nome}</h1>
+  <p class="lead">
+    CNPJ {fmtCnpj(e.cnpj)} · {partes.join(" · ")}
+    {r.medidas > 0 && <> · {plural(r.medidas, "medida")} da ANVISA</>}
+  </p>
+  <p>
+    <a href={busca}>Buscar esta empresa no contém.</a>
+  </p>
+
+  {e.alimentos.length > 0 && (
+    <section>
+      <h2>{alimentos.nome}</h2>
+      <div class="table-wrap">
+        <table class="produtos">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Situação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {e.alimentos.map((p) => {
+              const ms = marcas(p.marcas);
+              const { titulo, subtitulo } = tituloAlimento(ms, p.nome);
+              const outras = ms.length - MARCAS_NO_TITULO;
+              const detalhe = [subtitulo, p.categoria && legivel(p.categoria)].filter(Boolean).join(" · ");
+              return (
+                <tr>
+                  <td>
+                    <span class="linha">
+                      <a href={produto(rotaDo(alimentos), p.id)}>{titulo}</a>
+                      {outras > 0 && <span class="muted">{` +${outras}`}</span>}
+                    </span>
+                    {detalhe && <span class="linha muted">{detalhe}</span>}
+                  </td>
+                  <td>
+                    <span class="linha">{situacaoDe(p.ativo).curto}</span>
+                    <span class="linha muted">{p.desde ? `${p.tipo} em ${fmtData(p.desde)}` : p.tipo}</span>
+                    <span class="linha numero">Processo {fmtProcesso(p.processo)}</span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )}
+
+  {e.saneantes.length > 0 && (
+    <section>
+      <h2>{limpeza.nome}</h2>
+      <div class="table-wrap">
+        <table class="produtos">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Situação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {e.saneantes.map((p) => (
+              <tr>
+                <td>
+                  <a href={produto(rotaDo(limpeza), p.id)}>{p.nome}</a>
+                </td>
+                <td>
+                  <span class="linha">{`${situacaoDe(p.ativo).curto} · ${p.tipo}`}</span>
+                  <span class="linha muted">{validade(p.grupo, p.vencimento).curto}</span>
+                  <span class="linha numero">Processo {fmtProcesso(p.processo)}</span>
+                  {p.registro && <span class="linha numero">Registro {p.registro}</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )}
+
+  {e.medidas.length > 0 && (
+    <section>
+      <h2>Medidas da ANVISA</h2>
+      <div class="table-wrap">
+        <table class="produtos">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Produto</th>
+              <th>Medida</th>
+            </tr>
+          </thead>
+          <tbody>
+            {e.medidas.map((m) => (
+              <tr>
+                <td class="mono">{fmtData(m.data)}</td>
+                <td>
+                  <span class="linha">{legivel(m.produto, "nome")}</span>
+                  <span class="linha muted">{corredorPorId(m.corredor).nome}</span>
+                </td>
+                <td>{m.acoes.join(", ")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Uma medida diz o que a ANVISA publicou, não se o produto ainda está à venda.</p>
+    </section>
+  )}
+</Base>
+
+<style>
+  /* cada informação numa linha própria: dá para ler no celular sem rolar a tabela de lado */
+  .linha {
+    display: block;
+  }
+  /* números nunca quebram no meio */
+  .numero {
+    font-family: var(--fonte-mono);
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+  .produtos td:last-child {
+    width: 16rem;
+  }
+  /* no celular cada produto vira um bloco: o nome em cima, a situação e os números embaixo */
+  @media (max-width: 34rem) {
+    .produtos thead {
+      display: none;
+    }
+    .produtos tr,
+    .produtos td {
+      display: block;
+    }
+    .produtos td {
+      border-bottom: 0;
+      padding: 0.15rem 0;
+    }
+    .produtos tr {
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .produtos td:last-child {
+      width: auto;
+    }
+  }
+</style>
