@@ -41,6 +41,17 @@ const val = computed(() => (p.value ? validade(p.value.grupo, p.value.dt_vencime
 // o nome do saneante costuma trazer a marca ("RAID ELÉTRICO LÍQUIDO JOHNSON"): iniciais maiúsculas
 const titulo = computed(() => (p.value ? legivel(p.value.no_produto, "nome") : ""));
 
+// a consulta da ANVISA separa os registrados ("produtos") dos isentos de registro ("notificados"). A página
+// de detalhe abre pelo nº do processo, mas só para o que a ANVISA considera vigente: vencido ou encerrado dá
+// "Erro inesperado" lá (conferido em 2026-10-09). Para esses, a consulta com o processo já preenchido.
+const linkAnvisa = computed(() => {
+  if (!p.value) return "";
+  const lista = notificado.value ? "notificados" : "produtos";
+  const processo = p.value.nu_processo;
+  const vigente = ativo.value && p.value.grupo !== "Vencida";
+  return `https://consultas.anvisa.gov.br/#/saneantes/${lista}/${vigente ? `${processo}/` : ""}?numeroProcesso=${processo}`;
+});
+
 watch(titulo, (t) => t && emit("titulo", t));
 </script>
 
@@ -53,6 +64,7 @@ watch(titulo, (t) => t && emit("titulo", t));
           <Icone :nome="compartilhado ? 'certo' : 'compartilhar'" />
           {{ compartilhado ? "Link copiado" : "Compartilhar" }}
         </button>
+        <a class="btn" :href="linkAnvisa" target="_blank" rel="noopener"><Icone nome="externo" /> Ver na ANVISA</a>
       </span>
     </nav>
 
