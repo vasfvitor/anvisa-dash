@@ -40,7 +40,8 @@ describe("estado na URL", () => {
 
   it("valores inválidos caem no padrão", () => {
     expect(lerUrl("?sit=qualquer").situacao).toBe("ativo");
-    expect(lerUrl("?p=12a").produto).toBeNull();
+    expect(lerUrl("?p=12a").produto).toBe("12a");
+    expect(lerUrl("?p=%20").produto).toBeNull();
     expect(lerUrl("?p=000123").produto).toBe("000123");
   });
 

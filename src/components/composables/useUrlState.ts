@@ -23,8 +23,8 @@ export function lerUrl(search = location.search): EstadoUrl {
     grupo: p.get("cat") ?? "",
     tipo: p.get("tipo") ?? "",
     situacao: sit && SITUACOES.includes(sit) ? sit : FILTROS_PADRAO.situacao,
-    // ids são só dígitos (co_seq_produto, nu_expediente com zeros à esquerda)
-    produto: id && /^\d{1,20}$/.test(id) ? id : null,
+    // qualquer id vai para a página do produto; um que não existe (ou inválido) diz "não encontrado"
+    produto: id?.trim() || null,
   };
 }
 

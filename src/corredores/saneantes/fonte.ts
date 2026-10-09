@@ -4,7 +4,7 @@
 // e validade são independentes: há saneantes ativos com vencimento já passado e inativos com data futura.
 import { carregar, consultar } from "../../lib/db";
 import type { Consulta } from "../../lib/detect";
-import { POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../../lib/fonte";
+import { ID_PRODUTO, POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../../lib/fonte";
 import {
   contarFacetas,
   contarNumeros,
@@ -117,6 +117,7 @@ async function facetas(q: Consulta, f: Filtros): Promise<Facetas> {
 }
 
 async function porId(id: string): Promise<Saneante | null> {
+  if (!ID_PRODUTO.test(id)) return null;
   await tabela();
   const [s] = await consultar<Saneante>([], `SELECT ${COLUNAS}, 1 AS total FROM san WHERE id = ?`, [id]);
   return s ?? null;

@@ -128,3 +128,11 @@ describe("alimentos", () => {
     expect(ultima()).toMatch(/WHERE co_seq_produto = 4000581$/);
   });
 });
+
+describe("id inválido", () => {
+  it("não existe em nenhum corredor e não consulta nada", async () => {
+    expect(await alimentos.porId("abc")).toBeNull();
+    expect(await saneantes.porId("12a")).toBeNull();
+    expect(chamadas).toHaveLength(0);
+  });
+});

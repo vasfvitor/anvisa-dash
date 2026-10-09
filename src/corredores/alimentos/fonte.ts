@@ -7,7 +7,7 @@
 import { deJson, resumirAlergia, type ResumoAlergia } from "./alergia";
 import { carregar, consultar } from "../../lib/db";
 import type { Consulta } from "../../lib/detect";
-import { POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../../lib/fonte";
+import { ID_PRODUTO, POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../../lib/fonte";
 import {
   contarFacetas,
   contarNumeros,
@@ -197,6 +197,7 @@ async function facetas(q: Consulta, f: Filtros): Promise<Facetas> {
 }
 
 async function porId(id: string): Promise<Produto | null> {
+  if (!ID_PRODUTO.test(id)) return null;
   await produtos();
   const sql = `SELECT ${COLUNAS}, 1 AS total FROM produtos WHERE co_seq_produto = ?`;
   const [p] = await consultar<Produto>([], sql, [Number(id)]);

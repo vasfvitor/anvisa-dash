@@ -4,6 +4,9 @@ import type { Consulta } from "./detect";
 
 export const POR_PAGINA = 30;
 
+/** Ids de produto são só dígitos (co_seq_produto, nu_expediente com zeros à esquerda); outro não existe. */
+export const ID_PRODUTO = /^\d{1,20}$/;
+
 export type Situacao = "ativo" | "inativo" | "todos";
 
 export interface Filtros {
