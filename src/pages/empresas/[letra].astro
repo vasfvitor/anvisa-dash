@@ -1,0 +1,71 @@
+---
+// Uma página por letra com o link de cada empresa, em ordem de nome.
+import Base from "../../layouts/Base.astro";
+import LetrasEmpresas from "../../components/LetrasEmpresas.astro";
+import { empresasDoBuild } from "../../lib/estatico/dados";
+import { porLetra, resumo, type Empresa } from "../../lib/estatico/empresas";
+import { fmtCnpj, fmtInt, plural, url } from "../../lib/format";
+import { legivel } from "../../lib/texto";
+
+export async function getStaticPaths() {
+  const letras = porLetra((await empresasDoBuild()).values());
+  const contagem = [...letras].map(([l, lista]) => [l, lista.length] as [string, number]);
+  return [...letras]
+    .filter(([, lista]) => lista.length > 0)
+    .map(([letra, lista]) => ({ params: { letra }, props: { lista, contagem } }));
+}
+
+interface Props {
+  lista: Empresa[];
+  contagem: [string, number][];
+}
+const { lista, contagem } = Astro.props;
+const { letra } = Astro.params;
+const rotulo = letra === "0-9" ? "0–9" : letra!.toUpperCase();
+
+const detalhe = (e: Empresa) => {
+  const r = resumo(e);
+  const produtos = r.alimentos + r.saneantes;
+  return [fmtCnpj(e.cnpj), produtos > 0 && plural(produtos, "produto"), r.medidas > 0 && plural(r.medidas, "medida")]
+    .filter(Boolean)
+    .join(" · ");
+};
+---
+
+<Base
+  title={`Empresas: ${rotulo}`}
+  description={`${plural(lista.length, "empresa")} com nome ${letra === "0-9" ? "começando por número ou símbolo" : `em ${rotulo}`} e produto ou medida na ANVISA, com o CNPJ e a quantidade de produtos de cada uma.`}
+>
+  <h1>Empresas: {rotulo}</h1>
+  <p class="lead">
+    {fmtInt(lista.length)} {lista.length === 1 ? "empresa" : "empresas"} com produto ou medida na ANVISA.
+  </p>
+  <LetrasEmpresas contagem={contagem} atual={letra} />
+  <ul class="lista-empresas">
+    {lista.map((e) => (
+      <li>
+        <a href={url(`/empresa/${e.cnpj}/`)}>{e.nome ? legivel(e.nome, "nome") : `CNPJ ${fmtCnpj(e.cnpj)}`}</a>
+        <span class="muted">{detalhe(e)}</span>
+      </li>
+    ))}
+  </ul>
+</Base>
+
+<style>
+  .lista-empresas {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lista-empresas li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .lista-empresas a,
+  .lista-empresas span {
+    display: block;
+  }
+  .lista-empresas span {
+    font-size: 0.85rem;
+  }
+</style>

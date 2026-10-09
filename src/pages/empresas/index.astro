@@ -1,0 +1,21 @@
+---
+// A entrada da lista de empresas: as letras. A lista existe para que buscadores cheguem às páginas de
+// empresa por link, não só pelo sitemap.
+import Base from "../../layouts/Base.astro";
+import LetrasEmpresas from "../../components/LetrasEmpresas.astro";
+import { empresasDoBuild } from "../../lib/estatico/dados";
+import { porLetra } from "../../lib/estatico/empresas";
+import { fmtInt } from "../../lib/format";
+
+const empresas = await empresasDoBuild();
+const contagem = [...porLetra(empresas.values())].map(([l, lista]) => [l, lista.length] as [string, number]);
+---
+
+<Base
+  title="Empresas de A a Z"
+  description={`As ${fmtInt(empresas.size)} empresas com alimentos, suplementos, produtos de limpeza ou medidas na ANVISA, em ordem alfabética.`}
+>
+  <h1>Empresas</h1>
+  <p class="lead">{fmtInt(empresas.size)} empresas com produto ou medida na ANVISA.</p>
+  <LetrasEmpresas contagem={contagem} />
+</Base>

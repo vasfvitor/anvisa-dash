@@ -127,3 +127,28 @@ export function resumo(emp: Empresa) {
     medidas: emp.medidas.length,
   };
 }
+
+/** As letras da lista de empresas (/empresas/<letra>/), na ordem; "0-9" junta quem começa com dígito ou símbolo. */
+export const LETRAS = [..."abcdefghijklmnopqrstuvwxyz".split(""), "0-9"];
+
+/** A letra da lista: o primeiro caractere de letra ou dígito do nome, sem acento ("Ótica" fica em o). */
+export function letraDe(nome: string): string {
+  const c = nome
+    .normalize("NFD")
+    .replace(/[^\p{L}\p{N}]/gu, "")
+    .charAt(0)
+    .toLowerCase();
+  return /[a-z]/.test(c) ? c : "0-9";
+}
+
+/** As empresas por letra, cada letra em ordem de nome; toda letra de LETRAS aparece, mesmo vazia. */
+export function porLetra<T extends { nome: string; cnpj: string }>(empresas: Iterable<T>): Map<string, T[]> {
+  const letras = new Map(LETRAS.map((l) => [l, [] as T[]]));
+  for (const emp of empresas) letras.get(letraDe(emp.nome))!.push(emp);
+  for (const lista of letras.values()) {
+    lista.sort(
+      (a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }) || a.cnpj.localeCompare(b.cnpj),
+    );
+  }
+  return letras;
+}

@@ -1,0 +1,55 @@
+---
+// A navegação de letras da lista de empresas: cada letra leva à sua página, com a quantidade de empresas.
+import { url } from "../lib/format";
+
+interface Props {
+  contagem: [letra: string, n: number][];
+  atual?: string;
+}
+const { contagem, atual } = Astro.props;
+const rotulo = (l: string) => (l === "0-9" ? "0–9" : l.toUpperCase());
+---
+
+<nav class="letras" aria-label="Empresas por letra">
+  {contagem.map(([l, n]) =>
+    n > 0 ? (
+      <a href={url(`/empresas/${l}/`)} aria-current={l === atual ? "page" : undefined} title={`${n} empresas`}>
+        {rotulo(l)}
+      </a>
+    ) : (
+      <span aria-hidden="true">{rotulo(l)}</span>
+    ),
+  )}
+</nav>
+
+<style>
+  .letras {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 1.25rem 0 2rem;
+  }
+  .letras a,
+  .letras span {
+    min-width: 2.5rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--line);
+    border-radius: 0.4rem;
+    font-family: var(--fonte-mono);
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+  }
+  .letras span {
+    color: var(--muted);
+    opacity: 0.5;
+  }
+  .letras a:hover {
+    border-color: currentColor;
+  }
+  .letras a[aria-current="page"] {
+    background: var(--fg);
+    border-color: var(--fg);
+    color: var(--bg);
+  }
+</style>

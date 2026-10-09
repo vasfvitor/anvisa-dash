@@ -89,6 +89,9 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
         <Logo />
         <Corredores atual={corredor} />
         <nav class="nav-site" aria-label="Sobre o site">
+          <a href={url("/empresas/")} aria-current={ativo("/empresas/")}>
+            Empresas
+          </a>
           <a href={url("/dicionario/")} aria-current={ativo("/dicionario/")}>
             Dados
           </a>

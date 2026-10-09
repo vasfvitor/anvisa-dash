@@ -3,8 +3,9 @@
 Consulta de produtos regularizados na ANVISA (alimentos e suplementos; produtos de limpeza, os saneantes) por nº do processo,
 CNPJ, registro, nome, marca, empresa e categoria. Site estático (Astro + uma ilha Vue). A busca roda no navegador
 com DuckDB-WASM sobre os Parquet que o repo [`anvisa`](https://github.com/vasfvitor/anvisa-api)
-publica diariamente. Não há backend. No build, uma página estática por empresa (`/empresa/<cnpj>/`) e o
-`/llms.txt` levam os dados a quem não roda JavaScript: buscadores e assistentes.
+publica diariamente. Não há backend. No build, uma página estática por empresa (`/empresa/<cnpj>/`), a
+lista delas de A a Z (`/empresas/`) e o `/llms.txt` levam os dados a quem não roda JavaScript: buscadores e
+assistentes.
 
 ## Dados
 
@@ -84,7 +85,7 @@ PUBLIC_MANIFEST_URL=http://localhost:8000/manifest.json pnpm dev
 (22:30, 01:30 e 04:30 UTC) ele compara o `build_id` do manifest com o de `/build.json` no site e só
 republica quando o pipeline de dados publicou um build novo: o GitHub atrasa crons em horas, e o
 pipeline pula dias sem dados novos. A busca lê o manifest ao vivo; o rebuild atualiza as páginas de
-empresa, o `llms.txt`, o dicionário, o "sobre" e o rodapé. Em Settings → Pages, use a fonte
+empresa e a lista de A a Z, o `llms.txt`, o dicionário, o "sobre" e o rodapé. Em Settings → Pages, use a fonte
 "GitHub Actions" e o domínio próprio `contem.abelhaninja.de` (o mesmo de `site` em `astro.config.mjs`;
 o endereço `github.io` redireciona para ele).
 

@@ -7,7 +7,7 @@ import { corredorPorId, rotaDo } from "../../corredores";
 import { MARCAS_NO_TITULO, tituloAlimento } from "../../corredores/alimentos/produto";
 import { validade } from "../../corredores/saneantes/validade";
 import { empresasDoBuild } from "../../lib/estatico/dados";
-import { resumo, type Empresa } from "../../lib/estatico/empresas";
+import { letraDe, resumo, type Empresa } from "../../lib/estatico/empresas";
 import { fmtCnpj, fmtData, fmtProcesso, marcas, plural, url } from "../../lib/format";
 import { situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
@@ -42,6 +42,8 @@ const descricao = semProdutos
   : `${partes.join(" e ")} de ${nome} (CNPJ ${fmtCnpj(e.cnpj)}) na ANVISA, com situação e números de processo.`;
 const resumoLinha = [`CNPJ ${fmtCnpj(e.cnpj)}`, ...partes, r.medidas > 0 && medidas].filter(Boolean).join(" · ");
 
+const letra = letraDe(e.nome);
+
 const canonico = new URL(Astro.url.pathname, Astro.site).href;
 const organizacao = {
   "@context": "https://schema.org",
@@ -65,7 +67,8 @@ const organizacao = {
     </p>
   )}
   <p>
-    <a href={busca}>Buscar esta empresa no contém.</a>
+    <a href={busca}>Buscar esta empresa no contém.</a> ·{" "}
+    <a href={url(`/empresas/${letra}/`)}>Outras empresas em {letra === "0-9" ? "0–9" : letra.toUpperCase()}</a>
   </p>
 
   {e.alimentos.length > 0 && (

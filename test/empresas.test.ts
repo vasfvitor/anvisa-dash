@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agrupar, resumo, type Entrada } from "../src/lib/estatico/empresas";
+import { agrupar, LETRAS, letraDe, porLetra, resumo, type Entrada } from "../src/lib/estatico/empresas";
 
 const CNPJ_A = "11111111000111";
 const CNPJ_B = "22222222000122";
@@ -134,5 +134,28 @@ describe("resumo", () => {
       saneantes: [saneante("1", "C", true)],
     }).get(CNPJ_A)!;
     expect(resumo(emp)).toEqual({ alimentos: 2, alimentosAtivos: 1, saneantes: 1, saneantesAtivos: 1, medidas: 0 });
+  });
+});
+
+describe("letraDe e porLetra", () => {
+  it("a letra ignora acento, caixa e símbolos no começo", () => {
+    expect(letraDe("Ótica Brasil")).toBe("o");
+    expect(letraDe('  "aurora" ltda')).toBe("a");
+    expect(letraDe("3M do Brasil")).toBe("0-9");
+    expect(letraDe("")).toBe("0-9");
+  });
+
+  it("toda letra aparece, cada uma em ordem de nome", () => {
+    const l = porLetra([
+      { nome: "Beta", cnpj: "2" },
+      { nome: "álamo", cnpj: "3" },
+      { nome: "Alfa", cnpj: "1" },
+      { nome: "123 Ltda", cnpj: "4" },
+    ]);
+    expect([...l.keys()]).toEqual(LETRAS);
+    expect(l.get("a")!.map((e) => e.nome)).toEqual(["álamo", "Alfa"]);
+    expect(l.get("b")!.map((e) => e.cnpj)).toEqual(["2"]);
+    expect(l.get("0-9")!.map((e) => e.cnpj)).toEqual(["4"]);
+    expect(l.get("z")).toEqual([]);
   });
 });

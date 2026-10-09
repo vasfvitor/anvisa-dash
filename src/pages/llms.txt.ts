@@ -27,6 +27,7 @@ A busca do site roda em JavaScript no navegador. Sem JavaScript, use as páginas
 ## Páginas sem JavaScript
 
 - Empresa: ${raiz("/empresa/")}<CNPJ com 14 dígitos>/ (exemplo: ${raiz("/empresa/84684620000187/")}). Lista os alimentos e suplementos e os produtos de limpeza da empresa com situação (Liberado ou Encerrado), tipo (Registrado ou Notificado), datas, nº do processo e registro, e as medidas de fiscalização da ANVISA contra a empresa. Todas estão no sitemap: ${raiz("/sitemap-index.xml")}
+- Empresas de A a Z, com o link da página de cada uma: ${raiz("/empresas/")}
 - Sobre o site e os dados: ${raiz("/sobre/")}
 - Dicionário de dados (colunas de cada tabela): ${raiz("/dicionario/")}
 
