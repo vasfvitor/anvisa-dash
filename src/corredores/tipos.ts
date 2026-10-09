@@ -49,3 +49,6 @@ export interface Corredor {
    */
   tipoProduto?: number;
 }
+
+// a tabela no dicionário de dados é declarada aqui, mas o formato é do Dataset (lib/dataset.ts)
+export type { InfoTabela } from "../lib/dataset";

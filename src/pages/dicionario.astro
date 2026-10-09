@@ -1,7 +1,8 @@
 ---
 import Base from "../layouts/Base.astro";
-import { COLUNA_DESCRICAO, TABELA_DESCRICAO } from "../corredores";
+import { COLUNA_DESCRICAO, TABELAS } from "../corredores";
 import { MANIFEST_URL } from "../lib/config";
+import { conjuntoDados } from "../lib/dataset";
 import { fmtBytes, fmtData, fmtInt } from "../lib/format";
 import { manifestDoBuild, tabelaUrl } from "../lib/manifest";
 
@@ -12,31 +13,14 @@ const tabelas = Object.entries(m.tables);
 // um Dataset (schema.org) por tabela que a página descreve, com o Parquet como distribuição
 const pagina = new URL(Astro.url.pathname, Astro.site).href;
 const conjuntos = tabelas.flatMap(([nome, t]) => {
-  const descricao = TABELA_DESCRICAO[nome];
-  if (!descricao) return [];
+  const info = TABELAS[nome];
+  if (!info) return [];
   return [
-    {
-      "@context": "https://schema.org",
-      "@type": "Dataset",
-      name: `Dados abertos da ANVISA em Parquet: ${nome}`,
-      description: descricao,
-      url: `${pagina}#${nome}`,
-      inLanguage: "pt-BR",
-      dateModified: t.source.loaded_at ?? m.built_at,
-      isBasedOn: t.source.url,
-      creator: {
-        "@type": "Organization",
-        name: "Agência Nacional de Vigilância Sanitária (ANVISA)",
-        url: "https://www.gov.br/anvisa",
-      },
-      distribution: [
-        {
-          "@type": "DataDownload",
-          encodingFormat: "application/vnd.apache.parquet",
-          contentUrl: tabelaUrl(MANIFEST_URL, m, nome),
-        },
-      ],
-    },
+    conjuntoDados(nome, t, info, COLUNA_DESCRICAO[nome], {
+      pagina,
+      parquet: tabelaUrl(MANIFEST_URL, m, nome),
+      atualizado: t.source.loaded_at ?? m.built_at,
+    }),
   ];
 });
 ---
@@ -67,12 +51,23 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
   {tabelas.map(([nome, t]) => (
     <section id={nome}>
       <h2>
-        <code>{nome}</code>{" "}
-        <span class="sub">
-          {fmtInt(t.rows)} linhas · {fmtBytes(t.bytes)}
-        </span>
+        {TABELAS[nome] ? (
+          <>
+            {TABELAS[nome].titulo}{" "}
+            <span class="sub">
+              <code>{nome}</code> · {fmtInt(t.rows)} linhas · {fmtBytes(t.bytes)}
+            </span>
+          </>
+        ) : (
+          <>
+            <code>{nome}</code>{" "}
+            <span class="sub">
+              {fmtInt(t.rows)} linhas · {fmtBytes(t.bytes)}
+            </span>
+          </>
+        )}
       </h2>
-      {TABELA_DESCRICAO[nome] && <p>{TABELA_DESCRICAO[nome]}</p>}
+      {TABELAS[nome] && <p>{TABELAS[nome].descricao}</p>}
       <p class="note">
         Origem: <a href={t.source.url}>{t.source.name}</a>
         {t.source.loaded_at && <>, dados de {fmtData(t.source.loaded_at)}</>}.

@@ -11,19 +11,23 @@ import * as colunasAlimentos from "./alimentos/colunas";
 import { meta as alimentos } from "./alimentos/meta";
 import * as colunasSaneantes from "./saneantes/colunas";
 import { meta as saneantes } from "./saneantes/meta";
-import type { Corredor } from "./tipos";
+import type { Corredor, InfoTabela } from "./tipos";
 
-export type { Corredor, IdCorredor } from "./tipos";
+export type { Corredor, IdCorredor, InfoTabela } from "./tipos";
 
 export const CORREDORES: Corredor[] = [alimentos, saneantes];
 
-/** Descrições de tabelas e colunas de todos os corredores, para o dicionário de dados. */
-export const TABELA_DESCRICAO: Record<string, string> = {
-  ...colunasAlimentos.TABELA_DESCRICAO,
-  ...colunasSaneantes.TABELA_DESCRICAO,
+/** Tabelas e colunas que o dicionário de dados descreve, de todos os corredores. */
+export const TABELAS: Record<string, InfoTabela> = {
+  ...colunasAlimentos.TABELAS,
+  ...colunasSaneantes.TABELAS,
   // de todos os corredores (cada um vê as do seu tipoProduto; ver lib/medidas.ts)
-  produtos_irregulares:
-    "Medidas de fiscalização da ANVISA contra produtos irregulares de todas as áreas (suspensão, proibição, recolhimento, interdição, apreensão, inutilização): uma linha por dossiê, ação, atividade e produto.",
+  produtos_irregulares: {
+    titulo: "Medidas de fiscalização da ANVISA contra produtos irregulares",
+    descricao:
+      "Medidas de fiscalização da ANVISA contra produtos irregulares de todas as áreas (suspensão, proibição, recolhimento, interdição, apreensão, inutilização): uma linha por dossiê, ação, atividade e produto.",
+    palavras: ["fiscalização", "produtos irregulares", "recolhimento", "proibição", "suspensão"],
+  },
 };
 export const COLUNA_DESCRICAO: Record<string, Record<string, string>> = {
   ...colunasAlimentos.COLUNA_DESCRICAO,
