@@ -9,7 +9,7 @@ import { cliqueInterno, montarUrl } from "../../components/composables/useUrlSta
 import Destaque from "../../components/Destaque.vue";
 import Icone from "../../components/Icone.vue";
 
-const props = defineProps<{ p: Saneante; termo?: string | null }>();
+const props = defineProps<{ p: Saneante; termo?: string | null; medidas?: number }>();
 const emit = defineEmits<{ abrir: [id: string] }>();
 
 const ativo = computed(() => props.p.situacao_registro === "Ativo");
@@ -38,6 +38,13 @@ function abrir(ev: MouseEvent): void {
           ><Icone nome="gota" />{{ val.curto }}</span
         >
       </div>
+      <p
+        v-if="medidas"
+        class="aviso-curto"
+        title="Medidas de fiscalização contra a empresa, não necessariamente sobre este produto"
+      >
+        <Icone nome="alerta" /> Empresa com medidas da ANVISA ({{ medidas }})
+      </p>
       <p class="cartao-rodape">
         <span>Processo {{ fmtProcesso(p.nu_processo) }}</span>
         <span>Expediente {{ p.nu_expediente }}</span>

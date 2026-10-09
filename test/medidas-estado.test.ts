@@ -11,13 +11,20 @@ interface Pedido {
   responder: (m: Medida[]) => void;
 }
 
-const { pedidos } = vi.hoisted(() => ({ pedidos: [] as Pedido[] }));
+const { pedidos, contagens } = vi.hoisted(() => ({
+  pedidos: [] as Pedido[],
+  contagens: [] as { tipo: number; cnpjs: string[]; responder: (n: Map<string, number>) => void }[],
+}));
 
 vi.mock("../src/lib/medidas", () => ({
   MEDIDAS_POR_PAGINA: 20,
   buscarMedidas: (tipo: number, q: Consulta, pagina: number) =>
     new Promise<Medida[]>((responder) => {
       pedidos.push({ tipo, q, pagina, responder });
+    }),
+  medidasPorEmpresa: (tipo: number, cnpjs: string[]) =>
+    new Promise<Map<string, number>>((responder) => {
+      contagens.push({ tipo, cnpjs, responder });
     }),
 }));
 
@@ -48,6 +55,7 @@ afterEach(() => {
   escopo.stop();
   escopo = effectScope();
   pedidos.length = 0;
+  contagens.length = 0;
 });
 const montar = () => escopo.run(() => useMedidas())!;
 
@@ -110,5 +118,36 @@ describe("useMedidas", () => {
     await p2;
     expect(m.itens.value).toHaveLength(25);
     expect(m.temMais.value).toBe(false);
+  });
+
+  it("marcas dos cartões: cada página só pergunta pelas empresas novas, e tudo some na troca de corredor", async () => {
+    const m = montar();
+    const a = "11111111000111";
+    const b = "22222222000122";
+    const p1 = m.marcar(3, [a, a, null]);
+    expect(contagens[0]!.cnpjs).toEqual([a]);
+    contagens[0]!.responder(new Map([[a, 2]]));
+    await p1;
+    const p2 = m.marcar(3, [a, b]);
+    expect(contagens[1]!.cnpjs).toEqual([b]);
+    contagens[1]!.responder(new Map());
+    await p2;
+    expect([...m.porEmpresa.value]).toEqual([[a, 2]]);
+    await m.marcar(3, [a, b]);
+    expect(contagens).toHaveLength(2);
+
+    const atrasada = m.marcar(3, ["33333333000133"]);
+    m.limparMarcas();
+    contagens[2]!.responder(new Map([["33333333000133", 5]]));
+    await atrasada;
+    expect(m.porEmpresa.value.size).toBe(0);
+    void m.marcar(6, [a]);
+    expect(contagens[3]).toMatchObject({ tipo: 6, cnpjs: [a] });
+  });
+
+  it("sem tipo no corredor, não marca", async () => {
+    const m = montar();
+    await m.marcar(undefined, ["11111111000111"]);
+    expect(contagens).toHaveLength(0);
   });
 });

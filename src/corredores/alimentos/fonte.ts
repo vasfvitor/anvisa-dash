@@ -269,5 +269,6 @@ export const fonte: Fonte<Produto> = {
     return gruposAtivos("produtos");
   },
   idDe: (p) => String(p.co_seq_produto),
+  cnpjDe: (p) => p.nu_cnpj_empresa,
   complementar: resumosDe,
 };

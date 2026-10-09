@@ -140,4 +140,5 @@ export const fonte: Fonte<Saneante> = {
     return gruposAtivos("san");
   },
   idDe: (s) => s.id,
+  cnpjDe: (s) => s.nu_cnpj_empresa,
 };

@@ -3,7 +3,7 @@
 // fora de ordem e a troca de corredor descartam o que ainda está a caminho.
 import { computed, ref, shallowRef } from "vue";
 import type { Consulta } from "../../lib/detect";
-import { buscarMedidas, MEDIDAS_POR_PAGINA, type Medida } from "../../lib/medidas";
+import { buscarMedidas, MEDIDAS_POR_PAGINA, medidasPorEmpresa, type Medida } from "../../lib/medidas";
 import { vezes } from "../../lib/vez";
 
 export function useMedidas() {
@@ -16,6 +16,13 @@ export function useMedidas() {
   let pagina = 0;
   let ultima = "";
   const vez = vezes();
+
+  /** medidas por CNPJ das empresas dos cartões listados (só as que têm) */
+  const porEmpresa = shallowRef(new Map<string, number>());
+  /** CNPJs já perguntados, com ou sem medidas; várias páginas perguntam ao mesmo tempo, então não há
+   * "vez" aqui: só a troca de corredor (limpar) invalida, pela geração */
+  const perguntados = new Set<string>();
+  let geracao = 0;
 
   async function pedir(t: number, q: Consulta, p: number): Promise<void> {
     const minhaVez = vez.nova();
@@ -35,6 +42,29 @@ export function useMedidas() {
     } finally {
       if (minhaVez()) carregando.value = false;
     }
+  }
+
+  /** Conta as medidas das empresas dos cartões que ainda não foram perguntadas (cada página da lista). */
+  async function marcar(tipoProduto: number | undefined, cnpjs: (string | null)[]): Promise<void> {
+    if (!tipoProduto) return;
+    const faltam = [...new Set(cnpjs)].filter((c): c is string => !!c && !perguntados.has(c));
+    if (!faltam.length) return;
+    for (const c of faltam) perguntados.add(c);
+    const minha = geracao;
+    try {
+      const n = await medidasPorEmpresa(tipoProduto, faltam);
+      if (minha === geracao && n.size) porEmpresa.value = new Map([...porEmpresa.value, ...n]);
+    } catch {
+      // sem a marca, o cartão continua igual; as próximas páginas perguntam de novo
+      if (minha === geracao) for (const c of faltam) perguntados.delete(c);
+    }
+  }
+
+  /** Esquece as marcas dos cartões e as perguntas a caminho (troca de corredor: são de outra área). */
+  function limparMarcas(): void {
+    geracao++;
+    perguntados.clear();
+    porEmpresa.value = new Map();
   }
 
   /** Esquece as medidas e o que estiver a caminho (troca de corredor, busca sem medidas). */
@@ -66,5 +96,5 @@ export function useMedidas() {
 
   const temMais = computed(() => itens.value.length < total.value && itens.value.length >= MEDIDAS_POR_PAGINA);
 
-  return { itens, total, carregando, buscada, temMais, buscar, mais, limpar };
+  return { itens, total, carregando, buscada, temMais, porEmpresa, buscar, mais, marcar, limpar, limparMarcas };
 }

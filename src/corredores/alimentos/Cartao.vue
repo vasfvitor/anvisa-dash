@@ -12,7 +12,7 @@ import Icone from "../../components/Icone.vue";
 import ResumoAlergia from "./ResumoAlergia.vue";
 
 // extra: o resumo de alergênicos, que chega depois da lista
-const props = defineProps<{ p: Produto; termo?: string | null; extra?: Resumo }>();
+const props = defineProps<{ p: Produto; termo?: string | null; extra?: Resumo; medidas?: number }>();
 const emit = defineEmits<{ abrir: [id: string] }>();
 
 const liberado = computed(() => ativo(props.p));
@@ -47,6 +47,13 @@ function abrir(ev: MouseEvent): void {
       </p>
       <ResumoAlergia v-if="extra" :r="extra" compacto />
       <p v-if="indeferido(p)" class="aviso-curto"><Icone nome="alerta" /> Petição indeferida pela ANVISA</p>
+      <p
+        v-if="medidas"
+        class="aviso-curto"
+        title="Medidas de fiscalização contra a empresa, não necessariamente sobre este produto"
+      >
+        <Icone nome="alerta" /> Empresa com medidas da ANVISA ({{ medidas }})
+      </p>
       <p class="cartao-rodape">
         <span
           >{{ p.tipo_regularizacao

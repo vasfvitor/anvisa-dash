@@ -39,7 +39,18 @@ function buscar(forcar: boolean): void {
 function limpar(): void {
   b.limpar();
   m.limpar();
+  m.limparMarcas();
 }
+
+// cada página da lista (inclusive "mostrar mais") pergunta pelas empresas que ainda não conhece
+watch(
+  () => b.produtos,
+  (lista) =>
+    void m.marcar(
+      corredor.value.tipoProduto,
+      lista.map((p) => fonte.value.cnpjDe(p)),
+    ),
+);
 
 useNavegacao(estado, { trocou: motor.trocou, subir: motor.subir, limpar, buscar });
 
@@ -206,6 +217,7 @@ const titulo = computed(() => {
           :p="p"
           :termo="termo"
           :extra="b.extras.get(fonte.idDe(p))"
+          :medidas="m.porEmpresa.get(fonte.cnpjDe(p) ?? '')"
           :style="{ '--i': i % 30 }"
           @abrir="abrir"
         />

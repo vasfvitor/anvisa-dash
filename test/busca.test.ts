@@ -35,6 +35,7 @@ function fonteFalsa() {
     numeros: () => Promise.resolve({ produtos: 0, ativos: 0, empresas: 0 }),
     grupos: () => Promise.resolve([]),
     idDe: (l) => l.id,
+    cnpjDe: () => null,
   };
   return { fonte, pedidos, facetas: () => facetas };
 }
