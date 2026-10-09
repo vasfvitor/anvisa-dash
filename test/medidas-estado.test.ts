@@ -1,0 +1,114 @@
+// useMedidas com buscarMedidas de mentira: o teste decide quando e com o quê cada pedido responde.
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { effectScope } from "vue";
+import type { Consulta } from "../src/lib/detect";
+import type { Medida } from "../src/lib/medidas";
+
+interface Pedido {
+  tipo: number;
+  q: Consulta;
+  pagina: number;
+  responder: (m: Medida[]) => void;
+}
+
+const { pedidos } = vi.hoisted(() => ({ pedidos: [] as Pedido[] }));
+
+vi.mock("../src/lib/medidas", () => ({
+  MEDIDAS_POR_PAGINA: 20,
+  buscarMedidas: (tipo: number, q: Consulta, pagina: number) =>
+    new Promise<Medida[]>((responder) => {
+      pedidos.push({ tipo, q, pagina, responder });
+    }),
+}));
+
+const { useMedidas } = await import("../src/components/composables/useMedidas");
+
+/** `n` medidas a partir de `de`, todas com o total da busca. */
+const medidas = (n: number, total: number, de = 0): Medida[] =>
+  Array.from({ length: n }, (_, i) => ({
+    id: String(de + i),
+    dossie: de + i,
+    produto: "x",
+    empresa: null,
+    cnpj: null,
+    registro: null,
+    processo: null,
+    risco: null,
+    acoes: [],
+    atividades: [],
+    dt_primeira: "2026-01-01",
+    dt_ultima: "2026-01-01",
+    total,
+  }));
+
+const texto = (valor: string): Consulta => ({ modo: "texto", valor });
+
+let escopo = effectScope();
+afterEach(() => {
+  escopo.stop();
+  escopo = effectScope();
+  pedidos.length = 0;
+});
+const montar = () => escopo.run(() => useMedidas())!;
+
+describe("useMedidas", () => {
+  it("a mesma consulta no mesmo corredor não pede de novo (filtros não mudam as medidas)", async () => {
+    const m = montar();
+    const p = m.buscar(3, texto("biojet"));
+    pedidos[0]!.responder(medidas(2, 2));
+    await p;
+    await m.buscar(3, texto("biojet"));
+    expect(pedidos).toHaveLength(1);
+    void m.buscar(6, texto("biojet"));
+    expect(pedidos).toHaveLength(2);
+    expect(pedidos[1]!.tipo).toBe(6);
+  });
+
+  it("sem tipo, sem consulta ou navegando por grupo: limpa e não pede", async () => {
+    const m = montar();
+    const p = m.buscar(3, texto("biojet"));
+    pedidos[0]!.responder(medidas(2, 2));
+    await p;
+    await m.buscar(undefined, texto("biojet"));
+    expect(m.itens.value).toEqual([]);
+    await m.buscar(3, { modo: "todos", valor: "" });
+    await m.buscar(3, null);
+    expect(pedidos).toHaveLength(1);
+  });
+
+  it("limpar descarta o que ainda está a caminho (troca de corredor)", async () => {
+    const m = montar();
+    const p = m.buscar(6, texto("whey"));
+    m.limpar();
+    pedidos[0]!.responder(medidas(3, 3));
+    await p;
+    expect(m.itens.value).toEqual([]);
+    expect(m.buscada.value).toBeNull();
+    expect(m.carregando.value).toBe(false);
+  });
+
+  it("resposta atrasada de uma consulta antiga é descartada", async () => {
+    const m = montar();
+    const a = m.buscar(3, texto("cloro"));
+    const b = m.buscar(3, texto("biojet"));
+    pedidos[1]!.responder(medidas(1, 1, 100));
+    pedidos[0]!.responder(medidas(5, 5));
+    await Promise.all([a, b]);
+    expect(m.itens.value).toEqual(medidas(1, 1, 100));
+    expect(m.buscada.value).toEqual(texto("biojet"));
+  });
+
+  it("mais traz a página seguinte da mesma consulta", async () => {
+    const m = montar();
+    const p1 = m.buscar(6, texto("suplemento"));
+    pedidos[0]!.responder(medidas(20, 25));
+    await p1;
+    expect(m.temMais.value).toBe(true);
+    const p2 = m.mais();
+    expect(pedidos[1]).toMatchObject({ tipo: 6, pagina: 1, q: texto("suplemento") });
+    pedidos[1]!.responder(medidas(5, 25, 20));
+    await p2;
+    expect(m.itens.value).toHaveLength(25);
+    expect(m.temMais.value).toBe(false);
+  });
+});

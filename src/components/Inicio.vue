@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, shallowRef } from "vue";
+import { computed, onMounted, shallowRef, watch } from "vue";
 import type { Corredor } from "../corredores";
 import type { Fonte, Numeros, ValorFaceta } from "../lib/fonte";
-import { fmtInt } from "../lib/format";
+import { fmtCnpj, fmtInt } from "../lib/format";
+import { recentes, type Medida } from "../lib/medidas";
 import { legivel } from "../lib/texto";
 import Icone from "./Icone.vue";
+import MedidaCartao from "./MedidaCartao.vue";
 
-const props = defineProps<{ corredor: Corredor; fonte: Fonte }>();
+const props = defineProps<{ corredor: Corredor; fonte: Fonte; pronto: boolean }>();
 const emit = defineEmits<{ exemplo: [valor: string]; grupo: [valor: string] }>();
 
 // só esta tela usa os números gerais e os grupos: consulta ao aparecer, não na partida do app
@@ -28,6 +30,25 @@ onMounted(() => {
     );
 });
 const principais = computed(() => grupos.value.slice(0, 12));
+
+// as últimas medidas de fiscalização do corredor, depois que ele fica pronto (não disputam o download)
+const medidas = shallowRef<Medida[]>([]);
+let pedidas = false;
+watch(
+  () => props.pronto,
+  (pronto) => {
+    const tipo = props.corredor.tipoProduto;
+    if (!pronto || !tipo || pedidas) return;
+    pedidas = true;
+    recentes(tipo).then(
+      (m) => (medidas.value = m),
+      () => {
+        // sem as medidas, a abertura só não mostra a seção
+      },
+    );
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -72,6 +93,14 @@ const principais = computed(() => grupos.value.slice(0, 12));
         <button v-for="c in principais" :key="c.valor" type="button" class="chip" @click="emit('grupo', c.valor)">
           {{ legivel(c.valor) }} <span class="chip-n">{{ fmtInt(c.n) }}</span>
         </button>
+      </div>
+    </template>
+
+    <template v-if="medidas.length">
+      <h2>Medidas recentes da ANVISA</h2>
+      <p class="note">Suspensões, proibições, recolhimentos e apreensões publicados nos últimos dados abertos.</p>
+      <div class="medidas-lista">
+        <MedidaCartao v-for="m in medidas" :key="m.id" :m="m" @empresa="(c: string) => emit('exemplo', fmtCnpj(c))" />
       </div>
     </template>
 

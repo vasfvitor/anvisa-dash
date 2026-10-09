@@ -11,11 +11,13 @@ import CaixaBusca from "./CaixaBusca.vue";
 import { useBusca } from "./composables/useBusca";
 import { useCorredorPronto } from "./composables/useCorredorPronto";
 import { useEstado } from "./composables/useEstado";
+import { useMedidas } from "./composables/useMedidas";
 import { useNavegacao } from "./composables/useNavegacao";
 import { TELAS } from "../corredores/telas";
 import Facetas from "./Facetas.vue";
 import Icone from "./Icone.vue";
 import Inicio from "./Inicio.vue";
+import MedidasBloco from "./MedidasBloco.vue";
 
 const estado = useEstado(buscar);
 const { corredor, entrada, filtros, produto, consulta } = estado;
@@ -24,13 +26,26 @@ const fonte = computed(() => FONTES[corredor.value.id]);
 const telas = computed(() => TELAS[corredor.value.id]);
 const motor = reactive(useCorredorPronto(corredor));
 const b = reactive(useBusca(fonte));
+const m = reactive(useMedidas());
 const pronto = computed(() => motor.status === "pronto");
 
+// todo caminho que busca passa por aqui (digitação, Enter, filtro, voltar, troca de corredor, carga)
 function buscar(forcar: boolean): void {
-  if (pronto.value) void b.buscar(consulta.value, filtros.value, forcar);
+  if (!pronto.value) return;
+  void b.buscar(consulta.value, filtros.value, forcar);
+  void m.buscar(corredor.value.tipoProduto, consulta.value);
 }
 
-useNavegacao(estado, { trocou: motor.trocou, subir: motor.subir, limpar: b.limpar, buscar });
+function limpar(): void {
+  b.limpar();
+  m.limpar();
+}
+
+useNavegacao(estado, { trocou: motor.trocou, subir: motor.subir, limpar, buscar });
+
+// as medidas só aparecem junto da lista da mesma busca (não as de um termo novo sobre a lista antiga)
+const medidasDaBusca = computed(() => m.itens.length > 0 && JSON.stringify(m.buscada) === JSON.stringify(b.buscada));
+const semResultados = computed(() => !b.total && !b.carregando);
 
 onMounted(async () => {
   estado.lerDaUrl();
@@ -163,7 +178,16 @@ const titulo = computed(() => {
         <template v-if="b.total">{{ titulo }}</template>
         <template v-else-if="!b.carregando">Nenhum {{ corredor.item[0] }} encontrado</template>
       </h2>
-      <div v-if="!b.total && !b.carregando" class="vazio">
+      <MedidasBloco
+        v-if="medidasDaBusca && semResultados"
+        :itens="m.itens"
+        :total="m.total"
+        :carregando="m.carregando"
+        :tem-mais="m.temMais"
+        @mais="m.mais()"
+        @empresa="(c: string) => buscarPor(fmtCnpj(c))"
+      />
+      <div v-if="semResultados" class="vazio">
         <Icone nome="pote" />
         <p v-if="filtros.situacao === 'ativo'">
           Só aparecem os liberados agora.
@@ -191,11 +215,28 @@ const titulo = computed(() => {
           {{ b.carregando ? "Carregando…" : `Mostrar mais (${fmtInt(b.produtos.length)} de ${fmtInt(b.total)})` }}
         </button>
       </p>
+      <MedidasBloco
+        v-if="medidasDaBusca && !semResultados"
+        :itens="m.itens"
+        :total="m.total"
+        :carregando="m.carregando"
+        :tem-mais="m.temMais"
+        @mais="m.mais()"
+        @empresa="(c: string) => buscarPor(fmtCnpj(c))"
+      />
     </template>
     <p v-else-if="pronto" class="estado" role="status">Buscando…</p>
   </template>
 
-  <Inicio v-else :key="corredor.id" :corredor="corredor" :fonte="fonte" @exemplo="buscarPor" @grupo="explorar" />
+  <Inicio
+    v-else
+    :key="corredor.id"
+    :corredor="corredor"
+    :fonte="fonte"
+    :pronto="pronto"
+    @exemplo="buscarPor"
+    @grupo="explorar"
+  />
 
   <p v-if="motor.origem?.loaded_at" class="note fonte">
     Dados abertos da ANVISA de {{ fmtData(motor.origem.loaded_at) }} (<a :href="motor.origem.url">{{

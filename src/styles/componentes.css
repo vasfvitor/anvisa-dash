@@ -1530,3 +1530,80 @@ a.badge:hover {
   width: 0.95rem;
   height: 0.95rem;
 }
+
+/* ---------------------------------------------------------------- medidas de fiscalização
+   Um cartão por dossiê e produto, que abre no lugar (<details>). A faixa vermelha à esquerda diz que é
+   uma medida, não um produto liberado; o material vem dos tokens, então cada corredor o veste. */
+.medidas {
+  margin: 2rem 0 1rem;
+}
+.medidas-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.3rem;
+}
+.medidas-titulo .icone {
+  width: 1.2rem;
+  height: 1.2rem;
+  color: var(--off);
+}
+.medidas-lista {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0.8rem 0;
+}
+.medida {
+  background: var(--superficie);
+  border: 1.5px solid var(--contorno-suave);
+  border-left: 5px solid var(--off);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra-superficie);
+  padding: 0.8rem 1rem;
+}
+.medida > summary {
+  display: grid;
+  gap: 0.3rem;
+  cursor: pointer;
+  list-style: none;
+}
+.medida > summary::-webkit-details-marker {
+  display: none;
+}
+.medida > summary:focus-visible {
+  outline: 2px solid var(--pop);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.medida[open] > summary {
+  margin-bottom: 0.7rem;
+}
+.medida-topo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+.medida-produto {
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+}
+.medida-data {
+  font-family: var(--fonte-mono);
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.medida-empresa {
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+.medida-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.medida .ficha {
+  margin: 0 0 0.5rem;
+}
