@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, shallowRef } from "vue";
 import type { Corredor } from "../lib/corredores";
-import type { Fonte, Item, Numeros, ValorFaceta } from "../lib/fontes/comum";
+import type { Fonte, Numeros, ValorFaceta } from "../lib/fontes/comum";
 import { fmtInt } from "../lib/format";
 import { legivel } from "../lib/texto";
 import Icone from "./Icone.vue";
 
-const props = defineProps<{ corredor: Corredor; fonte: Fonte<Item> }>();
+const props = defineProps<{ corredor: Corredor; fonte: Fonte }>();
 const emit = defineEmits<{ exemplo: [valor: string]; grupo: [valor: string] }>();
 
 // só esta tela usa os números gerais e os grupos: consulta ao aparecer, não na partida do app
@@ -15,12 +15,16 @@ const grupos = shallowRef<ValorFaceta[]>([]);
 onMounted(() => {
   props.fonte.numeros().then(
     (n) => (totais.value = n),
-    () => {},
+    () => {
+      // sem os números a abertura só não mostra o painel; o erro da tabela aparece na busca
+    },
   );
   if (!props.corredor.atalhos)
     props.fonte.grupos().then(
       (c) => (grupos.value = c),
-      () => {},
+      () => {
+        // idem: sem os grupos, a abertura fica sem os atalhos
+      },
     );
 });
 const principais = computed(() => grupos.value.slice(0, 12));

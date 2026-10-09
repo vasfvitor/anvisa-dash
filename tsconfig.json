@@ -1,5 +1,9 @@
 {
   "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    // o código já trata índice de array e de Record como possivelmente ausente (os `!` são de propósito)
+    "noUncheckedIndexedAccess": true
+  },
   "include": [".astro/types.d.ts", "**/*"],
   "exclude": ["dist"]
 }

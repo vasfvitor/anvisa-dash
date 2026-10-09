@@ -88,7 +88,7 @@ export function resumirAlergia(
   for (const x of [...contem, ...podeConter]) naoContem.delete(x);
   for (const x of contem) podeConter.delete(x);
 
-  const distintos = (xs: (string | null)[]) => new Set(xs.filter((x) => x && x.trim())).size;
+  const distintos = (xs: (string | null)[]) => new Set(xs.filter((x) => x?.trim())).size;
   const ordenar = (s: Set<string>) => [...s].sort((a, b) => a.localeCompare(b, "pt-BR"));
   return {
     gluten: sinal(gluten),

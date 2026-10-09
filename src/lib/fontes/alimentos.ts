@@ -244,7 +244,9 @@ export const alimentos: Fonte<Produto> = {
    */
   async preparar() {
     await produtos();
-    void resumo().catch(() => {});
+    resumo().catch(() => {
+      // segundo plano: resumosDe tenta de novo quando os cartões pedirem
+    });
   },
   buscar,
   facetas,

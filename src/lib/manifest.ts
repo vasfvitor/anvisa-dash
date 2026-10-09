@@ -41,7 +41,9 @@ export function parseManifest(raw: unknown): Manifest {
   if (!m || typeof m !== "object") throw new Error("manifest inválido: não é um objeto");
   if (m.schema_version !== 1) throw new Error(`manifest com schema_version ${m.schema_version} (esperado 1)`);
   if (!m.tables || typeof m.tables !== "object") throw new Error("manifest inválido: sem tables");
-  for (const [nome, t] of Object.entries(m.tables)) {
+  // o JSON ainda não foi validado: cada tabela pode vir sem campos ou nula
+  const tabelas: Record<string, Partial<Tabela> | null> = m.tables;
+  for (const [nome, t] of Object.entries(tabelas)) {
     // o nome vira identificador SQL (CREATE VIEW), que não pode ser parâmetro: só aceita o seguro
     if (!NOME_TABELA.test(nome)) throw new Error(`manifest: nome de tabela inválido ${JSON.stringify(nome)}`);
     if (typeof t?.path !== "string") throw new Error(`manifest: tabela ${nome} sem path`);

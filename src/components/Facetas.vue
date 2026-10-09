@@ -5,8 +5,8 @@ import type { Facetas, Filtros, Situacao } from "../lib/fontes/comum";
 import { SITUACAO, TIPOS } from "../lib/situacao";
 import { legivel } from "../lib/texto";
 
-const filtros = defineModel<Filtros>({ required: true });
 const props = defineProps<{ contagens: Facetas; rotuloGrupo: string }>();
+const filtros = defineModel<Filtros>({ required: true });
 const todosGrupos = ref(false);
 
 const n = (dim: keyof Facetas, valor: string) => props.contagens[dim].find((x) => x.valor === valor)?.n ?? 0;
@@ -30,7 +30,7 @@ const grupos = computed(() => {
 });
 const escondidas = computed(() => props.contagens.grupo.length - grupos.value.length);
 
-function alternar<K extends "grupo" | "tipo">(campo: K, valor: string): void {
+function alternar(campo: "grupo" | "tipo", valor: string): void {
   filtros.value[campo] = filtros.value[campo] === valor ? "" : valor;
 }
 </script>

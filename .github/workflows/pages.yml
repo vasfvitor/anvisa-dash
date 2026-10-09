@@ -48,6 +48,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # formatação e lint antes de tudo: falham rápido e sem rede (lint roda astro sync antes)
+      - run: pnpm format:check
+
+      - run: pnpm lint
+
       - run: pnpm test
 
       - name: Configurar Pages

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from "vue";
 import { detectar, MODO_ROTULO, type Consulta } from "../lib/detect";
 import { fmtCnpj, fmtProcesso, plural } from "../lib/format";
 import type { Sugestao } from "../lib/fontes/comum";
@@ -7,7 +7,6 @@ import { legivel } from "../lib/texto";
 import Destaque from "./Destaque.vue";
 import Icone from "./Icone.vue";
 
-const entrada = defineModel<string>({ required: true });
 const props = defineProps<{
   consulta: Consulta | null;
   pronto: boolean;
@@ -17,8 +16,9 @@ const props = defineProps<{
   sugerir: (texto: string) => Promise<Sugestao[]>;
 }>();
 const emit = defineEmits<{ confirmar: []; marca: [rotulo: string]; empresa: [cnpj: string] }>();
+const entrada = defineModel<string>({ required: true });
 
-const campo = ref<HTMLInputElement | null>(null);
+const campo = useTemplateRef<HTMLInputElement>("campo-busca");
 const lista = shallowRef<Sugestao[]>([]);
 const ativa = ref(-1);
 const aberta = ref(false);
@@ -36,14 +36,16 @@ watch([entrada, () => props.pronto], () => {
     lista.value = [];
     return;
   }
-  espera = setTimeout(async () => {
-    const minha = ++vez;
-    const r = await props.sugerir(t).catch(() => [] as Sugestao[]);
-    if (minha !== vez) return;
-    lista.value = r;
-    ativa.value = -1;
-  }, 120);
+  espera = setTimeout(() => void pedirSugestoes(t), 120);
 });
+
+async function pedirSugestoes(t: string): Promise<void> {
+  const minha = ++vez;
+  const r = await props.sugerir(t).catch(() => [] as Sugestao[]);
+  if (minha !== vez) return;
+  lista.value = r;
+  ativa.value = -1;
+}
 
 function escolher(s: Sugestao): void {
   aberta.value = false;
@@ -80,7 +82,7 @@ function enviar(): void {
 
 // "/" em qualquer lugar da página foca a busca, como em muitos sites de consulta
 function atalho(ev: KeyboardEvent): void {
-  const alvo = ev.target as HTMLElement | null;
+  const alvo = ev.target instanceof Element ? ev.target : null;
   if (ev.key !== "/" || alvo?.closest("input, textarea, select, [contenteditable]")) return;
   ev.preventDefault();
   campo.value?.focus();
@@ -108,7 +110,7 @@ function lida(c: Consulta): string {
       <Icone nome="lupa" />
       <input
         id="busca-q"
-        ref="campo"
+        ref="campo-busca"
         v-model="entrada"
         class="field"
         type="search"

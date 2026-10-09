@@ -159,7 +159,7 @@ const linkAnvisa = computed(() =>
   <div class="produto-pagina">
     <nav class="produto-nav">
       <button type="button" class="btn" @click="emit('voltar')"><Icone nome="volta" /> Voltar</button>
-      <span class="produto-acoes" v-if="p">
+      <span v-if="p" class="produto-acoes">
         <button type="button" class="btn" @click="compartilhar">
           <Icone :nome="compartilhado ? 'certo' : 'compartilhar'" />
           {{ compartilhado ? "Link copiado" : "Compartilhar" }}
@@ -202,7 +202,7 @@ const linkAnvisa = computed(() =>
         <p class="produto-empresa">
           <Icone nome="fabrica" />
           {{ legivel(p.no_razao_social_empresa, "nome") }} ·
-          <a href="#" @click.prevent="emit('empresa', p.nu_cnpj_empresa)" title="Ver todos os produtos desta empresa">
+          <a href="#" title="Ver todos os produtos desta empresa" @click.prevent="emit('empresa', p.nu_cnpj_empresa)">
             CNPJ {{ fmtCnpj(p.nu_cnpj_empresa) }}
           </a>
         </p>

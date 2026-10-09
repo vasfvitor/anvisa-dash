@@ -7,7 +7,7 @@ import { POR_PAGINA, type Facetas, type Filtros, type Fonte, type Item } from ".
 
 const SEM_FACETAS: Facetas = { situacao: [], tipo: [], grupo: [] };
 
-export function useBusca(fonte: Ref<Fonte<Item>>) {
+export function useBusca(fonte: Ref<Fonte>) {
   const entrada = ref("");
   /** marca escolhida numa sugestão; digitar de novo a desfaz */
   const marca = ref("");
@@ -31,13 +31,15 @@ export function useBusca(fonte: Ref<Fonte<Item>>) {
   let ultima = "";
 
   /** Pede o complemento dos que ainda não têm; a tabela dele pode ainda estar baixando. */
-  function completar(f: Fonte<Item>, lista: Item[]): void {
+  function completar(f: Fonte, lista: Item[]): void {
     if (!f.complementar) return;
-    const faltam = lista.map(f.idDe).filter((id) => !extras.value.has(id));
+    const faltam = lista.map((p) => f.idDe(p)).filter((id) => !extras.value.has(id));
     if (!faltam.length) return;
     f.complementar(faltam).then(
       (novos) => (extras.value = new Map([...extras.value, ...novos])),
-      () => {},
+      () => {
+        // o complemento é opcional: sem ele o cartão só não mostra o resumo
+      },
     );
   }
 

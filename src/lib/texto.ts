@@ -51,7 +51,7 @@ const SIGLAS = new Set([
 // "com" fica de fora: em razão social é quase sempre "comércio" ("IND E COM")
 const LIGACOES = new Set(["de", "da", "do", "das", "dos", "e", "em", "para", "a", "o", "ou", "na", "no"]);
 
-const TOKEN = /[\p{L}\p{N}][\p{L}\p{N}.\/'&-]*/gu;
+const TOKEN = /[\p{L}\p{N}][\p{L}\p{N}./'&-]*/gu;
 
 function temMinuscula(s: string): boolean {
   return /\p{Ll}/u.test(s);
@@ -93,7 +93,9 @@ export interface Trecho {
 export function destacar(texto: string, termo: string | null | undefined): Trecho[] {
   const alvo = termo ? normalizar(termo.trim()) : "";
   if (!alvo || !texto) return [{ texto, achado: false }];
-  // normaliza caractere a caractere para saber onde cada um cai no texto original
+  // normaliza caractere a caractere para saber onde cada um cai no texto original; por ponto de código
+  // de propósito: um acento combinado ("e" + U+0301) some na normalização e o "e" fica com a posição
+  // eslint-disable-next-line @typescript-eslint/no-misused-spread
   const chars = [...texto];
   let norm = "";
   const origem: number[] = [];

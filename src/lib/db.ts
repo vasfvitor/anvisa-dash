@@ -61,7 +61,7 @@ async function abrir(): Promise<Banco> {
 
 /** Sobe o motor uma vez; chamadas seguintes recebem a mesma promessa. Falhou, a próxima tenta de novo. */
 export async function iniciar(): Promise<Manifest> {
-  banco ??= abrir().catch((e) => {
+  banco ??= abrir().catch((e: unknown) => {
     banco = null;
     throw e;
   });
@@ -129,7 +129,7 @@ export async function carregar(nome: string): Promise<void> {
   const chave = `${b.manifest.build_id}/${nome}`;
   let p = carregadas.get(chave);
   if (!p) {
-    p = baixar(b, nome).catch(async (e) => {
+    p = baixar(b, nome).catch(async (e: unknown) => {
       if ((e as { status?: number }).status !== 404) throw e;
       const novo = await fetchManifest(MANIFEST_URL, { fresh: true });
       if (novo.build_id === b.manifest.build_id) throw e;
@@ -156,7 +156,9 @@ export async function consultar(tabelas: string[], sql: string, params: Valor[] 
   const stmt = await conn.prepare(sql);
   try {
     const res = await stmt.query(...params);
-    return res.toArray().map((r) => r.toJSON() as Linha);
+    // sem o esquema das colunas, o Arrow tipa cada linha como any; daqui só se usa o toJSON()
+    const linhas: Iterable<{ toJSON(): Linha }> = res;
+    return Array.from(linhas, (r) => r.toJSON());
   } finally {
     await stmt.close();
   }

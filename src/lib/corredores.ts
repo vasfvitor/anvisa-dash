@@ -182,7 +182,7 @@ export function rotaDo(c: Corredor): string {
 export function corredorDaUrl(pathname: string): Corredor {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   const resto = pathname.startsWith(base) ? pathname.slice(base.length) : pathname;
-  const slug = resto.split("/").filter(Boolean)[0] ?? "";
+  const slug = resto.split("/").find(Boolean) ?? "";
   return CORREDORES.find((c) => c.slug === slug) ?? CORREDOR_PADRAO;
 }
 

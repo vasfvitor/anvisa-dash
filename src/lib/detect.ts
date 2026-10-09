@@ -31,7 +31,7 @@ export function detectar(entrada: string): Consulta | null {
   const t = entrada.trim();
   if (!t) return null;
   // só pontuação de documento (. / - espaço) em volta dos dígitos: "Whey 100" continua texto
-  if (/^[\d.\/\-\s]+$/.test(t)) {
+  if (/^[\d./\-\s]+$/.test(t)) {
     const d = soDigitos(t);
     if (d.length === 14) return { modo: "cnpj", valor: d };
     if (d.length >= 6 && d.length <= 17) return { modo: "numero", valor: d };

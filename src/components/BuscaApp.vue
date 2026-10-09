@@ -158,7 +158,9 @@ async function trocarCorredor(
         aplicar();
         return nextTick();
       });
-      vt.ready.catch(() => {});
+      vt.ready.catch(() => {
+        // animação pulada: a troca já aconteceu
+      });
       await vt.updateCallbackDone;
     } catch {
       if (corredor.value.id !== novo.id) aplicar();
@@ -168,7 +170,7 @@ async function trocarCorredor(
 }
 
 async function aoClicarPlaca(ev: MouseEvent): Promise<void> {
-  const a = (ev.target as Element | null)?.closest?.<HTMLAnchorElement>("a[data-corredor-link]");
+  const a = ev.target instanceof Element ? ev.target.closest<HTMLAnchorElement>("a[data-corredor-link]") : null;
   if (!a || !cliqueInterno(ev)) return;
   ev.preventDefault();
   clearTimeout(espera);
@@ -188,17 +190,21 @@ async function aoNavegar(): Promise<void> {
   if (!produto.value) buscarAgora(true);
 }
 
+// ouvintes do DOM não esperam promessa: os erros já viram estado (motor.erro, b.erro)
+const naNavegacao = () => void aoNavegar();
+const noClique = (ev: MouseEvent) => void aoClicarPlaca(ev);
+
 onMounted(async () => {
   aplicarUrl();
   marcarPlacas(corredor.value.id);
-  window.addEventListener("popstate", aoNavegar);
-  document.addEventListener("click", aoClicarPlaca);
+  window.addEventListener("popstate", naNavegacao);
+  document.addEventListener("click", noClique);
   await motor.subir();
   if (!produto.value) buscarAgora();
 });
 onBeforeUnmount(() => {
-  window.removeEventListener("popstate", aoNavegar);
-  document.removeEventListener("click", aoClicarPlaca);
+  window.removeEventListener("popstate", naNavegacao);
+  document.removeEventListener("click", noClique);
   clearTimeout(espera);
 });
 
