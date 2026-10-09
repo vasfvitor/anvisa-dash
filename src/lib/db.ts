@@ -71,8 +71,8 @@ export async function iniciar(): Promise<Manifest> {
 // tabelas já carregadas, por build; um build novo carrega de novo
 let carregadas = new Map<string, Promise<void>>();
 
-async function obter(u: string, cache: RequestCache, tabela: string, total: number): Promise<Uint8Array> {
-  const res = await fetch(u, { cache });
+async function obter(u: string, tabela: string, total: number): Promise<Uint8Array> {
+  const res = await fetch(u);
   if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status} em ${u}`), { status: res.status });
   if (!res.body || !total) return new Uint8Array(await res.arrayBuffer());
   // lê em pedaços para informar o progresso; o total vem do manifest porque o Content-Length é o
@@ -104,12 +104,7 @@ function inteiro(buf: Uint8Array, bytes: number | undefined): boolean {
 async function baixar(b: Banco, nome: string): Promise<void> {
   const u = tabelaUrl(MANIFEST_URL, b.manifest, nome);
   const bytes = b.manifest.tables[nome]?.bytes;
-  let buf = await obter(u, "default", nome, bytes ?? 0);
-  // Uma resposta parcial em cache (de uma visita à versão que lia por Range) faz o Chrome devolver
-  // 200 com só aqueles bytes: o Pages manda gzip na resposta inteira e identidade na parcial, e o
-  // cache mistura as duas (reproduzido em 2026-10-06: Range bytes=0-0, depois fetch → 200 com 1 byte).
-  // Nesse caso baixa de novo ignorando o cache, o que também conserta a entrada.
-  if (!inteiro(buf, bytes)) buf = await obter(u, "reload", nome, bytes ?? 0);
+  const buf = await obter(u, nome, bytes ?? 0);
   if (!inteiro(buf, bytes)) throw new Error(`arquivo incompleto: ${buf.length} de ${bytes} bytes em ${u}`);
   // nome do buffer com o build: um build novo não sobrescreve o que consultas em andamento leem
   const arquivo = `${b.manifest.build_id}_${nome}.parquet`;

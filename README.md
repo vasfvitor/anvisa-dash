@@ -32,8 +32,7 @@ Coisas medidas que o código assume (build de 2026-10-06):
 
 ## Corredores
 
-Cada fonte de dados é um corredor: `/` (alimentos e suplementos) e `/limpeza/` (saneantes; `/saneantes/`
-redireciona para lá). Os textos falam a língua de quem compra (liberado, encerrado, limpeza); o termo técnico
+Cada fonte de dados é um corredor: `/` (alimentos e suplementos) e `/limpeza/` (saneantes). Os textos falam a língua de quem compra (liberado, encerrado, limpeza); o termo técnico
 fica no hover e nos dados técnicos. Para criar outro:
 
 1. uma entrada em `src/lib/corredores.ts` (nome, número, rota, tabela, textos, exemplos, ícones);

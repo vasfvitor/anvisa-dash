@@ -226,8 +226,6 @@ const noClique = (ev: MouseEvent) => void aoClicarPlaca(ev);
 
 onMounted(async () => {
   await vindoDaUrl(aplicarUrl);
-  // link antigo (?inativos=1) ou com espaços sobrando: corrige a URL sem criar entrada no histórico
-  gravarUrl(estado());
   marcarPlacas(corredor.value.id);
   window.addEventListener("popstate", naNavegacao);
   document.addEventListener("click", noClique);

@@ -22,8 +22,7 @@ export function lerUrl(): EstadoUrl {
     marca: p.get("marca") ?? "",
     grupo: p.get("cat") ?? "",
     tipo: p.get("tipo") ?? "",
-    // inativos=1 é o formato antigo dos links compartilhados
-    situacao: sit && SITUACOES.includes(sit) ? sit : p.get("inativos") === "1" ? "todos" : FILTROS_PADRAO.situacao,
+    situacao: sit && SITUACOES.includes(sit) ? sit : FILTROS_PADRAO.situacao,
     // ids são só dígitos (co_seq_produto, nu_expediente com zeros à esquerda)
     produto: id && /^\d{1,20}$/.test(id) ? id : null,
   };
