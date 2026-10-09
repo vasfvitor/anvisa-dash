@@ -26,9 +26,18 @@ describe("manifest", () => {
   it("recusa schema_version desconhecido", () => {
     expect(() => parseManifest({ ...base, schema_version: 2 })).toThrow(/schema_version 2/);
   });
-  it("recusa nome de tabela que não é identificador seguro", () => {
-    const tables = { 'x"; DROP': base.tables.alimentos };
-    expect(() => parseManifest({ ...base, tables })).toThrow(/nome de tabela inválido/);
+  it("deixa de fora a tabela que não sabe usar e mantém as outras", () => {
+    const { alimentos } = base.tables;
+    const tables = {
+      alimentos,
+      'x"; DROP': alimentos,
+      sem_path: { ...alimentos, path: undefined },
+      sem_origem: { ...alimentos, source: undefined },
+      nula: null,
+    };
+    const m = parseManifest({ ...base, tables });
+    expect(Object.keys(m.tables)).toEqual(["alimentos"]);
+    expect(() => tabelaUrl("https://x/manifest.json", m, "sem_path")).toThrow();
   });
   it("tabela ausente", () => {
     expect(() => tabelaUrl("https://x/manifest.json", parseManifest(base), "nao_existe")).toThrow();

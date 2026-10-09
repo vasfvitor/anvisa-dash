@@ -36,7 +36,11 @@ export interface Manifest {
 
 const NOME_TABELA = /^[a-z_][a-z0-9_]*$/;
 
-/** Valida o que o app usa; um schema_version novo pede revisão do código, então falha alto. */
+/**
+ * Valida o que o app usa. Um schema_version novo pede revisão do código, então falha alto; já uma
+ * tabela que o app não sabe usar (nome inseguro, sem path ou sem origem) fica de fora em silêncio:
+ * o pipeline publica tabelas novas antes de o site conhecê-las.
+ */
 export function parseManifest(raw: unknown): Manifest {
   const m = raw as Partial<Manifest> | null;
   if (!m || typeof m !== "object") throw new Error("manifest inválido: não é um objeto");
@@ -44,12 +48,13 @@ export function parseManifest(raw: unknown): Manifest {
   if (!m.tables || typeof m.tables !== "object") throw new Error("manifest inválido: sem tables");
   // o JSON ainda não foi validado: cada tabela pode vir sem campos ou nula
   const tabelas: Record<string, Partial<Tabela> | null> = m.tables;
+  const usaveis: Record<string, Tabela> = {};
   for (const [nome, t] of Object.entries(tabelas)) {
-    // o nome vira identificador SQL (CREATE VIEW), que não pode ser parâmetro: só aceita o seguro
-    if (!NOME_TABELA.test(nome)) throw new Error(`manifest: nome de tabela inválido ${JSON.stringify(nome)}`);
-    if (typeof t?.path !== "string") throw new Error(`manifest: tabela ${nome} sem path`);
+    // o nome vira identificador SQL (CREATE VIEW), que não pode ser parâmetro: só entra o seguro
+    if (!NOME_TABELA.test(nome) || typeof t?.path !== "string" || typeof t.source !== "object") continue;
+    usaveis[nome] = t as Tabela;
   }
-  return m as Manifest;
+  return { ...(m as Manifest), tables: usaveis };
 }
 
 /** URL absoluta do Parquet de uma tabela, resolvida a partir da URL do manifest. */
