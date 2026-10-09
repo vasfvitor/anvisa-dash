@@ -55,19 +55,10 @@ jobs:
 
       - run: pnpm test
 
-      - name: Configurar Pages
-        id: pages
-        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-
       # check e build leem o manifest de produção (PUBLIC_MANIFEST_URL vazio usa o padrão de config.ts)
       - run: pnpm check
 
       - name: Build
-        env:
-          # configure-pages já sabe origem e subcaminho (inclusive domínio próprio);
-          # o fallback mantém o caminho de projeto se os outputs vierem vazios.
-          SITE_URL: ${{ steps.pages.outputs.origin || format('https://{0}.github.io', github.repository_owner) }}
-          SITE_BASE: ${{ steps.pages.outputs.base_path || format('/{0}', github.event.repository.name) }}
         run: pnpm build
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

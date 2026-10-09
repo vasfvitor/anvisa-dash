@@ -81,6 +81,7 @@ PUBLIC_MANIFEST_URL=http://localhost:8000/manifest.json pnpm dev
 `.github/workflows/pages.yml` testa, checa e publica no GitHub Pages a cada push em `main` e
 diariamente às 22:30 UTC, depois do pipeline de dados (21:00 UTC). O rebuild diário só atualiza
 dicionário, "sobre" e rodapé, porque a busca lê o manifest ao vivo. Em Settings → Pages, use a fonte
-"GitHub Actions".
+"GitHub Actions" e o domínio próprio `contem.abelhaninja.de` (o mesmo de `site` em `astro.config.mjs`;
+o endereço `github.io` redireciona para ele).
 
 Código sob a licença MIT (`LICENSE`). Os dados são da ANVISA, e este site não tem vínculo com ela.
