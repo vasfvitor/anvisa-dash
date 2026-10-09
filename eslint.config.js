@@ -27,7 +27,7 @@ const modulosDoBuild = [
 ];
 const proibidosNoBuild = [
   {
-    regex: "(^|/)(db|sql|fontes|telas)$|(^|/)composables/|^@duckdb/|(^|/)(?!lib/)[^/.]+/fonte$",
+    regex: "(^|/)(db|sql|fontes|telas|medidas)$|(^|/)composables/|^@duckdb/|(^|/)(?!lib/)[^/.]+/fonte$",
     message: "Só no navegador (DuckDB, SQL, ilha): o build não carrega isso.",
   },
 ];

@@ -54,4 +54,5 @@ export const meta: Corredor = {
   ],
   dica: "Nem todo alimento passa pela ANVISA: arroz, pão e biscoito comum, por exemplo, não precisam de registro. Tente a marca, a empresa ou o número do rótulo.",
   recipiente: "o pote",
+  tipoProduto: 6,
 };

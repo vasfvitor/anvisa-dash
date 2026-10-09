@@ -42,4 +42,9 @@ export interface Corredor {
   dica: string;
   /** o que enche no carregamento ("o pote", "o balde") */
   recipiente: string;
+  /**
+   * co_tipo_produto destes produtos em produtos_irregulares (medidas de fiscalização da ANVISA: 6 é
+   * Alimento, 3 Saneantes, 2 Cosmético…); sem ele, o corredor não mostra medidas
+   */
+  tipoProduto?: number;
 }

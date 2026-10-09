@@ -5,6 +5,7 @@ import { onBeforeUnmount, ref, shallowRef, type Ref } from "vue";
 import type { Corredor } from "../../corredores";
 import { aoProgresso, iniciar } from "../../lib/db";
 import { FONTES } from "../../corredores/fontes";
+import { prepararMedidas } from "../../lib/medidas";
 import type { Origem } from "../../lib/manifest";
 import { vezes } from "../../lib/vez";
 
@@ -48,7 +49,13 @@ export function useCorredorPronto(corredor: Ref<Corredor>) {
       tamanho.value = t?.bytes ?? 0;
       if (!t) throw new Error(`os dados de ${c.nome.toLowerCase()} ainda não foram publicados`);
       await FONTES[c.id].preparar();
-      if (minhaVez()) status.value = "pronto";
+      if (!minhaVez()) return;
+      status.value = "pronto";
+      // as medidas de fiscalização (uma tabela para todos os corredores) baixam depois, sem segurar a busca
+      if (c.tipoProduto)
+        prepararMedidas().catch(() => {
+          // sem medidas o corredor funciona; cada consulta delas tenta de novo
+        });
     } catch (e) {
       if (!minhaVez()) return;
       status.value = "erro";

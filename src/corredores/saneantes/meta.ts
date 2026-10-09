@@ -66,4 +66,5 @@ export const meta: Corredor = {
   ],
   dica: "Todo produto de limpeza vendido no Brasil precisa estar registrado ou notificado na ANVISA, e o rótulo diz qual. Tente o nome da empresa ou o número do rótulo; se não achar de jeito nenhum, desconfie.",
   recipiente: "o balde",
+  tipoProduto: 3,
 };
