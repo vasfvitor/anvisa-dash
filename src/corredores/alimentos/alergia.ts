@@ -3,8 +3,8 @@
 //   alergenicos:   "Contém derivado de - Leite#Soja | Pode conter - Ovos | Não contém - Amendoim#Nozes |"
 // Rótulos encontrados nos dados de 2026-10-06: Não contém, Pode conter, Contém derivado de, Contém.
 // Em 2,5% dos produtos ativos as apresentações divergem; aí o resumo junta tudo e marca `varia`.
-import { fatiar } from "./format";
-import { normalizar } from "./texto";
+import { fatiar } from "../../lib/format";
+import { normalizar } from "../../lib/texto";
 
 export interface Grupo {
   rotulo: string;

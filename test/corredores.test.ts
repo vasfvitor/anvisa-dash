@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CORREDORES, corredorDaUrl, corredorPorId, rotaDo } from "../src/lib/corredores";
+import { CORREDORES, corredorDaUrl, corredorPorId, rotaDo } from "../src/corredores";
 
 describe("corredores", () => {
   it("o caminho escolhe o corredor; desconhecido cai no padrão", () => {

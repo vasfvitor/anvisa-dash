@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, shallowRef } from "vue";
-import type { Corredor } from "../lib/corredores";
+import type { Corredor } from "../corredores";
 import type { Fonte, Numeros, ValorFaceta } from "../lib/fonte";
 import { fmtInt } from "../lib/format";
 import { legivel } from "../lib/texto";

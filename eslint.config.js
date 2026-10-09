@@ -17,6 +17,21 @@ import tseslint from "typescript-eslint";
 // sem isso as regras no-unsafe-* ficam desligadas em todos os arquivos, não só nos que mexem em componentes
 configureVueProject({ allowComponentTypeUnsafety: false });
 
+/** Módulos lidos pelas páginas Astro no build: só dados e formatação. */
+const modulosDoBuild = [
+  "src/corredores/index.ts",
+  "src/corredores/tipos.ts",
+  "src/corredores/*/meta.ts",
+  "src/corredores/*/colunas.ts",
+  "src/lib/{config,detect,fonte,format,manifest,marca,texto}.ts",
+];
+const proibidosNoBuild = [
+  {
+    regex: "(^|/)(db|sql|fontes|telas)$|(^|/)composables/|^@duckdb/|(^|/)(?!lib/)[^/.]+/fonte$",
+    message: "Só no navegador (DuckDB, SQL, ilha): o build não carrega isso.",
+  },
+];
+
 export default defineConfigWithVueTs(
   { ignores: ["dist/", ".astro/", "node_modules/", "public/", ".claude/", ".idea/", ".vscode/"] },
   js.configs.recommended,
@@ -71,6 +86,21 @@ export default defineConfigWithVueTs(
       "vue/prefer-use-template-ref": "error",
       "vue/require-explicit-slots": "error",
       "vue/require-typed-ref": "error",
+    },
+  },
+  // O que roda no build (páginas, layout, registro dos corredores) não pode puxar o DuckDB, o SQL nem a ilha:
+  // só existem no navegador. lib/fonte.ts é o contrato sem dependências; corredores/*/fonte.ts é o SQL.
+  {
+    files: ["src/pages/**", "src/layouts/**", "src/components/*.astro", ...modulosDoBuild],
+    rules: { "no-restricted-imports": ["error", { patterns: proibidosNoBuild }] },
+  },
+  {
+    files: modulosDoBuild,
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { patterns: [...proibidosNoBuild, { regex: "\\.vue$", message: "Componente Vue é da ilha, não do build." }] },
+      ],
     },
   },
   ...astro.configs.recommended,

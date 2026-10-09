@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from "vue";
-import { saneantes, type Saneante } from "../lib/fontes/saneantes";
-import { fmtCnpj, fmtData, fmtProcesso } from "../lib/format";
-import { situacaoDe } from "../lib/situacao";
-import { legivel } from "../lib/texto";
-import { validade } from "../lib/validade";
-import { useCopia } from "./composables/useCopia";
-import Copiar from "./Copiar.vue";
-import Icone from "./Icone.vue";
+import { fonte, type Saneante } from "./fonte";
+import { fmtCnpj, fmtData, fmtProcesso } from "../../lib/format";
+import { situacaoDe } from "../../lib/situacao";
+import { legivel } from "../../lib/texto";
+import { validade } from "./validade";
+import { useCopia } from "../../components/composables/useCopia";
+import Copiar from "../../components/Copiar.vue";
+import Icone from "../../components/Icone.vue";
 
 const props = defineProps<{ id: string }>();
 const emit = defineEmits<{ voltar: []; empresa: [cnpj: string]; titulo: [texto: string] }>();
@@ -19,7 +19,7 @@ const { copiado: compartilhado, compartilhar } = useCopia();
 // o BuscaApp monta esta página de novo a cada produto (:key), então ela carrega uma vez só
 async function carregar(): Promise<void> {
   try {
-    p.value = await saneantes.porId(props.id);
+    p.value = await fonte.porId(props.id);
   } catch (e) {
     erro.value = e instanceof Error ? e.message : String(e);
   } finally {

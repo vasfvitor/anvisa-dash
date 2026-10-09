@@ -2,7 +2,7 @@
 // Medido em 2026-10-06 (produtos ativos com mais de uma apresentação): ingredientes variam em ~13%,
 // alergênicos em 2,5%; o resto quase sempre é igual. Mostrar o comum uma vez e só a diferença por
 // apresentação poupa a pessoa de comparar blocos repetidos.
-import { fmtCnpj, fatiar } from "./format";
+import { fmtCnpj, fatiar } from "../../lib/format";
 
 // valores que a ANVISA usa no lugar de "sem informação"
 const VAZIOS = new Set(["", "*******", "NAO POSSUI FORMA FISICA NO SIVS"]);

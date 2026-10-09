@@ -20,8 +20,8 @@ vi.mock("../src/lib/db", () => ({
   },
 }));
 
-const { alimentos, predicado: predicadoAlimentos } = await import("../src/lib/fontes/alimentos");
-const { saneantes, predicado: predicadoSaneantes } = await import("../src/lib/fontes/saneantes");
+const { fonte: alimentos, predicado: predicadoAlimentos } = await import("../src/corredores/alimentos/fonte");
+const { fonte: saneantes, predicado: predicadoSaneantes } = await import("../src/corredores/saneantes/fonte");
 const { onde } = await import("../src/lib/sql");
 
 /** SQL com cada `?` trocado pelo valor (texto entre aspas), em uma linha. */

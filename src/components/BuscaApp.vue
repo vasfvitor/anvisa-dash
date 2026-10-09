@@ -3,7 +3,7 @@
 // useNavegacao, resultados em useBusca, motor e download em useCorredorPronto.
 import { computed, onMounted, reactive, shallowRef, watch, watchEffect } from "vue";
 import { MODO_ROTULO } from "../lib/detect";
-import { FONTES } from "../lib/fontes";
+import { FONTES } from "../corredores/fontes";
 import { fmtBytes, fmtCnpj, fmtData, fmtInt, plural } from "../lib/format";
 import { tituloPagina } from "../lib/marca";
 import { legivel } from "../lib/texto";
@@ -12,7 +12,7 @@ import { useBusca } from "./composables/useBusca";
 import { useCorredorPronto } from "./composables/useCorredorPronto";
 import { useEstado } from "./composables/useEstado";
 import { useNavegacao } from "./composables/useNavegacao";
-import { TELAS } from "./corredores";
+import { TELAS } from "../corredores/telas";
 import Facetas from "./Facetas.vue";
 import Icone from "./Icone.vue";
 import Inicio from "./Inicio.vue";

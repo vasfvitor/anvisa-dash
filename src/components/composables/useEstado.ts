@@ -3,7 +3,7 @@
 // escolhas deliberadas (Enter, filtro, produto), replace na digitação. Não há observadores sobre a
 // entrada nem sobre os filtros: só as ações gravam e buscam, então aplicar a URL não volta para ela.
 import { computed, onBeforeUnmount, ref, shallowRef } from "vue";
-import { corredorDaUrl, rotaDo, type Corredor } from "../../lib/corredores";
+import { corredorDaUrl, rotaDo, type Corredor } from "../../corredores";
 import { detectar, type Consulta } from "../../lib/detect";
 import { FILTROS_PADRAO, type Filtros } from "../../lib/fonte";
 import { gravarUrl, lerUrl } from "./useUrlState";

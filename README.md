@@ -32,13 +32,21 @@ Coisas medidas que o código assume (build de 2026-10-06):
 
 ## Corredores
 
-Cada fonte de dados é um corredor: `/` (alimentos e suplementos) e `/limpeza/` (saneantes). Os textos falam a língua de quem compra (liberado, encerrado, limpeza); o termo técnico
-fica no hover e nos dados técnicos. Para criar outro:
+Cada fonte de dados é um corredor: `/` (alimentos e suplementos) e `/limpeza/` (saneantes). Os textos
+falam a língua de quem compra (liberado, encerrado, limpeza); o termo técnico fica no hover e nos dados
+técnicos. Cada corredor é uma pasta em `src/corredores/`; para criar outro:
 
-1. uma entrada em `src/lib/corredores.ts` (nome, número, rota, tabela, textos, exemplos, ícones);
-2. um módulo em `src/lib/fontes/` que implementa `Fonte` (`comum.ts`) e entra em `fontes/index.ts`;
-3. um cartão e uma página em `src/components/corredores.ts`;
-4. as cores em `[data-corredor="…"]` e na placa em `src/styles/global.css`.
+1. `meta.ts`: o registro (nome, número, rota, tabela, textos, exemplos, ícones; tipo em `tipos.ts`), que
+   entra em `CORREDORES` (`src/corredores/index.ts`);
+2. `fonte.ts`: a fonte de dados, que implementa `Fonte` (`src/lib/fonte.ts`) com o SQL compartilhado de
+   `src/lib/sql.ts` e entra em `fontes.ts`;
+3. `Cartao.vue` e `Pagina.vue`: o cartão da lista e a página de detalhe, que entram em `telas.ts`;
+4. `colunas.ts` (opcional): descrições para o dicionário de dados;
+5. as cores em `[data-corredor="…"]` e na placa em `src/styles/global.css`.
+
+As páginas Astro rodam no build e só podem ler o registro (`index.ts`, `tipos.ts`, `meta.ts`,
+`colunas.ts`); o DuckDB, o SQL e os componentes da ilha só existem no navegador, e o ESLint barra o
+import no lugar errado.
 
 A página é gerada por `src/pages/[...corredor].astro`. A troca de corredor não recarrega: a ilha
 intercepta o clique na placa, troca `html[data-corredor]` numa View Transition (círculo a partir do

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { lerUrl, montarUrl } from "../src/components/composables/useUrlState";
-import { CORREDORES, corredorDaUrl, rotaDo } from "../src/lib/corredores";
+import { CORREDORES, corredorDaUrl, rotaDo } from "../src/corredores";
 
 /** Separa caminho e query de uma URL montada, para relê-la com lerUrl. */
 function partes(u: string): { caminho: string; search: string } {

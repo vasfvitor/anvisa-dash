@@ -2,9 +2,9 @@
 // cada corredor baixa a tabela dele (com progresso) e monta as tabelas derivadas. O que já foi baixado
 // fica em memória, então voltar a um corredor é instantâneo.
 import { onBeforeUnmount, ref, shallowRef, type Ref } from "vue";
-import type { Corredor } from "../../lib/corredores";
+import type { Corredor } from "../../corredores";
 import { aoProgresso, iniciar } from "../../lib/db";
-import { FONTES } from "../../lib/fontes";
+import { FONTES } from "../../corredores/fontes";
 import type { Origem } from "../../lib/manifest";
 import { vezes } from "../../lib/vez";
 

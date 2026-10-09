@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { consenso, empresas, vazio } from "../src/lib/apresentacoes";
+import { consenso, empresas, vazio } from "../src/corredores/alimentos/apresentacoes";
 
 describe("consenso", () => {
   it("separa comum de variável e ignora placeholders", () => {

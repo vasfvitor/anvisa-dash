@@ -1,7 +1,7 @@
 // Troca de corredor sem recarregar e o voltar/avançar do navegador. As placas do cabeçalho são links de
 // verdade (estáticos, fora da ilha, funcionam sem JavaScript); aqui o clique nelas vira uma troca animada.
 import { nextTick, onBeforeUnmount, onMounted } from "vue";
-import { corredorDaUrl, corredorPorId, type Corredor } from "../../lib/corredores";
+import { corredorDaUrl, corredorPorId, type Corredor } from "../../corredores";
 import type { Estado } from "./useEstado";
 import { cliqueInterno } from "./useUrlState";
 

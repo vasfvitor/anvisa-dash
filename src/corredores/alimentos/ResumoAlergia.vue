@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { nomeCurto, type ResumoAlergia, type Sinal } from "../lib/alergia";
-import Icone from "./Icone.vue";
+import { nomeCurto, type ResumoAlergia, type Sinal } from "./alergia";
+import Icone from "../../components/Icone.vue";
 
 const props = defineProps<{ r: ResumoAlergia; compacto?: boolean }>();
 const verNaoContem = ref(false);

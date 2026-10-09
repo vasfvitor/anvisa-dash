@@ -4,11 +4,21 @@
 // - resumo: alergênicos e intolerâncias de cada produto, da tabela de detalhes (chega depois: a busca
 //   não espera por ela; os cartões pedem o resumo dos produtos listados com resumosDe);
 // - sugestoes: marcas e empresas com a contagem de produtos, para sugerir enquanto a pessoa digita.
-import { deJson, resumirAlergia, type ResumoAlergia } from "../alergia";
-import { carregar, consultar } from "../db";
-import type { Consulta } from "../detect";
-import { POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../fonte";
-import { contarFacetas, contarNumeros, derivar, gruposAtivos, onde, sugerirEm, termo, TS, type Trecho } from "../sql";
+import { deJson, resumirAlergia, type ResumoAlergia } from "./alergia";
+import { carregar, consultar } from "../../lib/db";
+import type { Consulta } from "../../lib/detect";
+import { POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../../lib/fonte";
+import {
+  contarFacetas,
+  contarNumeros,
+  derivar,
+  gruposAtivos,
+  onde,
+  sugerirEm,
+  termo,
+  TS,
+  type Trecho,
+} from "../../lib/sql";
 
 /** Tabela principal da busca e a de detalhe por apresentação, no manifest. */
 const TABELA = "alimentos";
@@ -231,7 +241,7 @@ export async function buscarApresentacoes(id: number): Promise<Apresentacao[]> {
   return consultar<Apresentacao>([TABELA, TABELA_DETALHE], sql, [id]);
 }
 
-export const alimentos: Fonte<Produto> = {
+export const fonte: Fonte<Produto> = {
   /**
    * Prepara o necessário para buscar e já começa, sem esperar, a baixar a tabela de detalhes do
    * resumo de alergênicos. As sugestões são montadas no primeiro uso, para não disputar o worker com

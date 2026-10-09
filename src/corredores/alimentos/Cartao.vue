@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ResumoAlergia as Resumo } from "../lib/alergia";
-import { fmtData, plural } from "../lib/format";
-import { ativo, indeferido, marcasParaBusca } from "../lib/produto";
-import type { Produto } from "../lib/fontes/alimentos";
-import { situacaoDe } from "../lib/situacao";
-import { legivel } from "../lib/texto";
-import { cliqueInterno, montarUrl } from "./composables/useUrlState";
-import Destaque from "./Destaque.vue";
-import Icone from "./Icone.vue";
+import type { ResumoAlergia as Resumo } from "./alergia";
+import { fmtData, plural } from "../../lib/format";
+import { ativo, indeferido, marcasParaBusca } from "./produto";
+import type { Produto } from "./fonte";
+import { situacaoDe } from "../../lib/situacao";
+import { legivel } from "../../lib/texto";
+import { cliqueInterno, montarUrl } from "../../components/composables/useUrlState";
+import Destaque from "../../components/Destaque.vue";
+import Icone from "../../components/Icone.vue";
 import ResumoAlergia from "./ResumoAlergia.vue";
 
 // extra: o resumo de alergênicos, que chega depois da lista

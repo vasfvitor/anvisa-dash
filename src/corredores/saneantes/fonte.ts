@@ -2,10 +2,19 @@
 // sem apresentações, marcas, categoria ou alergênicos. Medido em 2026-10-07: 144.384 linhas e 144.378
 // expedientes distintos (6 registros repetidos: a tabela derivada fica com um por expediente). Situação
 // e validade são independentes: há saneantes ativos com vencimento já passado e inativos com data futura.
-import { carregar, consultar } from "../db";
-import type { Consulta } from "../detect";
-import { POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../fonte";
-import { contarFacetas, contarNumeros, derivar, gruposAtivos, onde, sugerirEm, termo, type Trecho } from "../sql";
+import { carregar, consultar } from "../../lib/db";
+import type { Consulta } from "../../lib/detect";
+import { POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../../lib/fonte";
+import {
+  contarFacetas,
+  contarNumeros,
+  derivar,
+  gruposAtivos,
+  onde,
+  sugerirEm,
+  termo,
+  type Trecho,
+} from "../../lib/sql";
 
 const TABELA = "saneantes";
 
@@ -113,7 +122,7 @@ async function porId(id: string): Promise<Saneante | null> {
   return s ?? null;
 }
 
-export const saneantes: Fonte<Saneante> = {
+export const fonte: Fonte<Saneante> = {
   preparar: tabela,
   buscar,
   facetas,

@@ -1,6 +1,6 @@
 // Como mostrar a validade da liberação de um saneante. O grupo (Em dia, Vencida, Sem data) vem do SQL, calculado
 // com a data do dia, para o selo bater com a faceta.
-import { fmtData, fmtMesAno, toDate } from "./format";
+import { fmtData, fmtMesAno, toDate } from "../../lib/format";
 
 export interface Validade {
   classe: "ok" | "perigo" | "neutro";

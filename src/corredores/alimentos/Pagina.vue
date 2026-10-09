@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from "vue";
-import { resumirAlergia } from "../lib/alergia";
-import { consenso, empresas, vazio } from "../lib/apresentacoes";
-import { fatiar, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas, plural } from "../lib/format";
-import { ativo as estaAtivo, indeferido as foiIndeferido, marcaPrincipal } from "../lib/produto";
-import { alimentos, buscarApresentacoes, type Apresentacao, type Produto } from "../lib/fontes/alimentos";
-import { situacaoDe } from "../lib/situacao";
-import { legivel } from "../lib/texto";
-import { useCopia } from "./composables/useCopia";
-import Copiar from "./Copiar.vue";
-import Icone from "./Icone.vue";
+import { resumirAlergia } from "./alergia";
+import { consenso, empresas, vazio } from "./apresentacoes";
+import { fatiar, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas, plural } from "../../lib/format";
+import { ativo as estaAtivo, indeferido as foiIndeferido, marcaPrincipal } from "./produto";
+import { buscarApresentacoes, fonte, type Apresentacao, type Produto } from "./fonte";
+import { situacaoDe } from "../../lib/situacao";
+import { legivel } from "../../lib/texto";
+import { useCopia } from "../../components/composables/useCopia";
+import Copiar from "../../components/Copiar.vue";
+import Icone from "../../components/Icone.vue";
 import ResumoAlergia from "./ResumoAlergia.vue";
 
 const props = defineProps<{ id: string }>();
@@ -24,7 +24,7 @@ const { copiado: compartilhado, compartilhar } = useCopia();
 // o BuscaApp monta esta página de novo a cada produto (:key), então ela carrega uma vez só
 async function carregar(): Promise<void> {
   try {
-    const produto = await alimentos.porId(props.id);
+    const produto = await fonte.porId(props.id);
     p.value = produto;
     carregando.value = false;
     // o detalhe pode exigir baixar a segunda tabela: o topo aparece antes

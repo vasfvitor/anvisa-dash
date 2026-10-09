@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alergenicos, intolerancias, nomeCurto, resumirAlergia } from "../src/lib/alergia";
+import { alergenicos, intolerancias, nomeCurto, resumirAlergia } from "../src/corredores/alimentos/alergia";
 
 const A1 =
   "Contém derivado de - Leites de todas as espécies de animais mamíferos#Soja | Não contém - Amendoim#Ovos#Trigo |";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validade } from "../src/lib/validade";
+import { validade } from "../src/corredores/saneantes/validade";
 
 describe("validade de um saneante", () => {
   it("em dia", () => {
@@ -18,6 +18,7 @@ describe("validade de um saneante", () => {
   it("sem data", () => {
     const v = validade("Sem data", null);
     expect(v.classe).toBe("neutro");
+    expect(v.curto).toBe("Sem data de vencimento");
     expect(v.estranha).toBe(false);
   });
 
