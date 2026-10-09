@@ -11,6 +11,9 @@ html {
 }
 body {
   margin: 0;
+  /* palavra mais larga que a tela (TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV, URLs) quebra em vez de
+     alargar a página; não muda a largura mínima de flex e tabelas */
+  overflow-wrap: break-word;
   color: var(--fg);
   background-color: var(--bg);
   /* fundo do corredor: pontilhado (verso de etiqueta) ou bolhas */
@@ -77,8 +80,6 @@ code {
 .note {
   font-size: 0.88rem;
   color: var(--muted);
-  /* nomes de arquivo da origem (TA_CONSULTA_…_RESULTADO.CSV) passam da largura do celular */
-  overflow-wrap: break-word;
 }
 .lead {
   font-size: 1.08rem;
