@@ -1,0 +1,48 @@
+/* Cores, letras e o material das superfícies do corredor padrão (alimentos), também nas páginas sem corredor. */
+:root {
+  color-scheme: light;
+  --fg: #1d1b16;
+  --muted: #6b655a;
+  --card: #fffdf8;
+  --chip-fg: #3a352c;
+  --ok: #17643f;
+  --ok-bg: #dcf1e3;
+  --off: #a3261d;
+  --off-bg: #fbe2dd;
+  --warn: #875600;
+  --warn-bg: #fdefcb;
+  --sombra: #1d1b16;
+
+  /* a marca fica sempre na Fraunces; os títulos mudam de letra com o corredor */
+  --fonte-marca: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --fonte-titulo: var(--fonte-marca);
+  --fonte-texto: "Figtree Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fonte-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+  --raio: 16px;
+  --mola: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* corredor 1, alimentos e suplementos (padrão, também nas páginas sem corredor): papel quente,
+     laranja de cápsula, verde de folha, fundo pontilhado */
+  --bg: #f6f1e6;
+  --line: #e2dac9;
+  --chip-bg: #efe8da;
+  --accent: #0f6b57;
+  --accent-fg: #f6f1e6;
+  --pop: #f2602f;
+  --pop-suave: #ffe3d6;
+  --mark: #ffe66d;
+  --padrao: radial-gradient(rgb(29 27 22 / 0.075) 1.1px, transparent 1.5px);
+  --padrao-tam: 22px 22px;
+
+  /* o material das superfícies, que cada corredor troca: aqui papel e tinta (contorno escuro, sombra dura
+     só no hover, cantos pouco arredondados); na limpeza, plástico (sem contorno, brilho e sombra macia) */
+  --superficie: var(--card);
+  --contorno: var(--fg);
+  --contorno-suave: var(--line);
+  --contorno-botao: var(--fg);
+  --sombra-superficie: none;
+  --raio-controle: var(--raio);
+  --raio-botao: 10px;
+  --chip-ativo: var(--fg);
+  --chip-ativo-fg: var(--bg);
+}

@@ -1,0 +1,139 @@
+/* Elementos HTML e o esqueleto da página. */
+/* ---------------------------------------------------------------- base */
+* {
+  box-sizing: border-box;
+}
+html {
+  font: 16.5px/1.55 var(--fonte-texto);
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  color: var(--fg);
+  background-color: var(--bg);
+  /* fundo do corredor: pontilhado (verso de etiqueta) ou bolhas */
+  background-image: var(--padrao);
+  background-size: var(--padrao-tam);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+main {
+  width: 100%;
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 4rem;
+  flex: 1;
+}
+a {
+  color: var(--accent);
+  text-underline-offset: 0.18em;
+}
+::selection {
+  background: var(--mark);
+  color: #1d1b16;
+}
+h1,
+h2,
+h3 {
+  font-family: var(--fonte-titulo);
+  font-variation-settings: "SOFT" 100;
+  letter-spacing: -0.015em;
+}
+h1 {
+  font-size: 2rem;
+  line-height: 1.08;
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+}
+h2 {
+  font-size: 1.3rem;
+  margin: 2rem 0 0.75rem;
+  font-weight: 650;
+}
+h3 {
+  font-size: 1.05rem;
+  margin: 1.25rem 0 0.5rem;
+}
+code,
+.mono {
+  font-family: var(--fonte-mono);
+  font-size: 0.86em;
+}
+code {
+  overflow-wrap: anywhere;
+}
+.muted {
+  color: var(--muted);
+}
+.sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: normal;
+  font-family: var(--fonte-texto);
+}
+.note {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+.lead {
+  font-size: 1.08rem;
+  max-width: 44rem;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+mark {
+  background: var(--mark);
+  color: inherit;
+  border-radius: 0.2em;
+  padding: 0 0.08em;
+  box-decoration-break: clone;
+}
+kbd {
+  font-family: var(--fonte-mono);
+  font-size: 0.78em;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 0.3rem;
+  padding: 0 0.35em;
+  background: var(--card);
+}
+.skip {
+  position: absolute;
+  left: -999px;
+  top: 0.5rem;
+  background: var(--card);
+  color: var(--fg);
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  z-index: 50;
+}
+.skip:focus {
+  left: 0.5rem;
+}
+
+.icone {
+  width: 1.15em;
+  height: 1.15em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -0.2em;
+  flex: none;
+}
+.icone.mini {
+  width: 0.95em;
+  height: 0.95em;
+  color: var(--pop);
+}

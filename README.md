@@ -42,7 +42,8 @@ técnicos. Cada corredor é uma pasta em `src/corredores/`; para criar outro:
    `src/lib/sql.ts` e entra em `fontes.ts`;
 3. `Cartao.vue` e `Pagina.vue`: o cartão da lista e a página de detalhe, que entram em `telas.ts`;
 4. `colunas.ts` (opcional): descrições para o dicionário de dados;
-5. as cores em `[data-corredor="…"]` e na placa em `src/styles/global.css`.
+5. o CSS em `src/styles/corredores/<id>.css`, importado em `src/styles/global.css`: paleta e material
+   (os tokens de `tokens.css`) em `[data-corredor="…"]`, a cor da placa e o que muda de caráter.
 
 As páginas Astro rodam no build e só podem ler o registro (`index.ts`, `tipos.ts`, `meta.ts`,
 `colunas.ts`); o DuckDB, o SQL e os componentes da ilha só existem no navegador, e o ESLint barra o

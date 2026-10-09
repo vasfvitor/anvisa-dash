@@ -1,0 +1,111 @@
+/* Ajustes para telas estreitas. Antes dos corredores: as regras de [data-corredor] ganham por especificidade. */
+/* ---------------------------------------------------------------- celular */
+@media (max-width: 40rem) {
+  html {
+    font-size: 16px;
+  }
+  main {
+    padding-top: 0.75rem;
+  }
+  header.site .inner {
+    gap: 0.6rem 0.8rem;
+    padding: 0.6rem 1rem 0.7rem;
+    flex-wrap: wrap;
+  }
+  header.site .nav-site {
+    gap: 0.75rem;
+  }
+  .corredores {
+    order: 3;
+    width: 100%;
+  }
+  .placa {
+    flex: 1;
+    justify-content: center;
+  }
+  .placa::before,
+  .placa::after {
+    display: none;
+  }
+  .placa .longo {
+    display: none;
+  }
+  .placa .curto {
+    display: inline;
+  }
+  .placa-tec {
+    display: none;
+  }
+  .logo {
+    font-size: 1.4rem;
+  }
+  .busca .btn {
+    padding: 0 0.85rem;
+  }
+  .busca .btn span {
+    display: none;
+  }
+  .busca .field {
+    box-shadow: 3px 3px 0 var(--sombra);
+  }
+  .numeros {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .numeros div {
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    align-items: baseline;
+    gap: 0.6rem;
+    padding: 0.6rem 0.9rem;
+  }
+  .numeros dd {
+    font-size: 1.5rem;
+  }
+  .o-que {
+    grid-template-columns: 1fr;
+  }
+  .ficha {
+    grid-template-columns: 1fr;
+  }
+  .ficha dt {
+    border-bottom: 0;
+    padding-bottom: 0;
+    font-size: 0.82rem;
+  }
+  /* facetas: uma linha rolável por dimensão, para os resultados aparecerem logo */
+  .faceta {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -1rem;
+    padding: 0.1rem 1rem;
+  }
+  .faceta::-webkit-scrollbar {
+    display: none;
+  }
+  .faceta .chip {
+    flex: none;
+  }
+  .faceta-nome {
+    min-width: auto;
+    flex: none;
+  }
+  .sugestao-n {
+    display: none;
+  }
+  .produto-cabecalho {
+    padding: 1.1rem 1.1rem 1rem;
+    box-shadow: 4px 4px 0 var(--accent);
+  }
+  .secao {
+    padding: 0.95rem 1rem 1rem;
+  }
+  table {
+    font-size: 0.88rem;
+  }
+  th,
+  td {
+    padding: 0.4rem 0.4rem;
+  }
+}
