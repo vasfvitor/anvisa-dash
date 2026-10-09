@@ -1,0 +1,116 @@
+// As páginas de empresa (/empresa/<cnpj>/): o que cada uma mostra e como as linhas das tabelas viram uma
+// empresa. Puro: o build lê as linhas no DuckDB (dados.ts) e entrega aqui; os testes usam linhas falsas.
+import type { IdCorredor } from "../../corredores/tipos";
+
+export const CNPJ = /^\d{14}$/;
+
+export interface LinhaAlimento {
+  id: number;
+  nome: string;
+  /** separadas por ";", como na origem */
+  marcas: string | null;
+  categoria: string | null;
+  ativo: boolean;
+  tipo: string;
+  processo: string;
+  registro: string | null;
+  /** AAAA-MM-DD da primeira regularização */
+  desde: string | null;
+  apresentacoes: number;
+}
+
+export interface LinhaSaneante {
+  /** nu_expediente, o id na URL (com zeros à esquerda) */
+  id: string;
+  nome: string;
+  ativo: boolean;
+  tipo: string;
+  processo: string;
+  registro: string | null;
+  /** AAAA-MM-DD do vencimento da liberação */
+  vencimento: string | null;
+  /** Em dia, Vencida ou Sem data */
+  grupo: string;
+}
+
+export interface LinhaMedida {
+  corredor: IdCorredor;
+  produto: string;
+  acoes: string[];
+  /** AAAA-MM-DD da publicação mais recente */
+  data: string;
+}
+
+/** Cada linha como sai da consulta: com o CNPJ e o nome da empresa que a agrupa. */
+interface DaEmpresa {
+  cnpj: string;
+  empresa: string;
+}
+
+export interface Entrada {
+  alimentos: (LinhaAlimento & DaEmpresa)[];
+  saneantes: (LinhaSaneante & DaEmpresa)[];
+  medidas: (LinhaMedida & DaEmpresa)[];
+}
+
+export interface Empresa {
+  cnpj: string;
+  nome: string;
+  alimentos: LinhaAlimento[];
+  saneantes: LinhaSaneante[];
+  medidas: LinhaMedida[];
+}
+
+const porNome = (a: { ativo: boolean; nome: string }, b: { ativo: boolean; nome: string }) =>
+  Number(b.ativo) - Number(a.ativo) || a.nome.localeCompare(b.nome, "pt-BR");
+
+/**
+ * Uma empresa por CNPJ com produto (as medidas entram só nas que têm página). O nome é o mais frequente
+ * nos produtos: a razão social varia na grafia entre processos. Liberados primeiro, depois por nome;
+ * medidas da mais recente para a mais antiga.
+ */
+export function agrupar(e: Entrada): Map<string, Empresa> {
+  const empresas = new Map<string, Empresa>();
+  const nomes = new Map<string, Map<string, number>>();
+
+  const da = (cnpj: string, nome: string): Empresa | undefined => {
+    if (!CNPJ.test(cnpj)) return undefined;
+    let emp = empresas.get(cnpj);
+    if (!emp) {
+      emp = { cnpj, nome, alimentos: [], saneantes: [], medidas: [] };
+      empresas.set(cnpj, emp);
+      nomes.set(cnpj, new Map());
+    }
+    const conta = nomes.get(cnpj)!;
+    conta.set(nome, (conta.get(nome) ?? 0) + 1);
+    return emp;
+  };
+
+  for (const { cnpj, empresa, ...linha } of e.alimentos) da(cnpj, empresa)?.alimentos.push(linha);
+  for (const { cnpj, empresa, ...linha } of e.saneantes) da(cnpj, empresa)?.saneantes.push(linha);
+  for (const m of e.medidas) {
+    empresas.get(m.cnpj)?.medidas.push({ corredor: m.corredor, produto: m.produto, acoes: m.acoes, data: m.data });
+  }
+
+  for (const emp of empresas.values()) {
+    // o mais frequente; no empate, o primeiro em ordem alfabética (estável entre builds)
+    const [maior] = [...nomes.get(emp.cnpj)!].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "pt-BR"));
+    emp.nome = maior![0];
+    emp.alimentos.sort(porNome);
+    emp.saneantes.sort(porNome);
+    emp.medidas.sort((a, b) => b.data.localeCompare(a.data) || a.produto.localeCompare(b.produto, "pt-BR"));
+  }
+  return empresas;
+}
+
+/** Contagens para o título, a descrição e o cabeçalho da página. */
+export function resumo(emp: Empresa) {
+  const ativos = (l: { ativo: boolean }[]) => l.filter((x) => x.ativo).length;
+  return {
+    alimentos: emp.alimentos.length,
+    alimentosAtivos: ativos(emp.alimentos),
+    saneantes: emp.saneantes.length,
+    saneantesAtivos: ativos(emp.saneantes),
+    medidas: emp.medidas.length,
+  };
+}
