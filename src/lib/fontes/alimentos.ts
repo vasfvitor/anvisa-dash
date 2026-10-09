@@ -216,7 +216,10 @@ async function resumosDe(ids: string[]): Promise<Map<string, ResumoAlergia>> {
     `SELECT co_seq_produto, alergenicos_json, intolerancias_json FROM resumo WHERE co_seq_produto IN (${validos.join(",")})`,
   )) as { co_seq_produto: number; alergenicos_json: string | null; intolerancias_json: string | null }[];
   return new Map(
-    linhas.map((l) => [String(l.co_seq_produto), resumirAlergia(deJson(l.alergenicos_json), deJson(l.intolerancias_json))]),
+    linhas.map((l) => [
+      String(l.co_seq_produto),
+      resumirAlergia(deJson(l.alergenicos_json), deJson(l.intolerancias_json)),
+    ]),
   );
 }
 

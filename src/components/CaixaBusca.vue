@@ -137,7 +137,9 @@ function lida(c: Consulta): string {
           @mousedown.prevent="escolher(s)"
           @mousemove="ativa = i"
         >
-          <span class="sugestao-tipo" :class="s.tipo"><Icone :nome="s.tipo === 'marca' ? 'etiqueta' : 'fabrica'" /></span>
+          <span class="sugestao-tipo" :class="s.tipo"
+            ><Icone :nome="s.tipo === 'marca' ? 'etiqueta' : 'fabrica'"
+          /></span>
           <span class="sugestao-nome">
             <Destaque :texto="s.tipo === 'empresa' ? legivel(s.rotulo, 'nome') : s.rotulo" :termo="entrada" />
             <small>{{ s.tipo === "marca" ? "marca" : "empresa" }}</small>
@@ -151,7 +153,9 @@ function lida(c: Consulta): string {
     <button class="btn primary" type="submit" aria-label="Buscar"><Icone nome="seta" /><span>Buscar</span></button>
   </form>
   <p class="lida" aria-live="polite">
-    <template v-if="consulta">Buscando por: <strong>{{ lida(consulta) }}</strong></template>
+    <template v-if="consulta"
+      >Buscando por: <strong>{{ lida(consulta) }}</strong></template
+    >
     <template v-else>Dica: aperte <kbd>/</kbd> para buscar de qualquer lugar.</template>
   </p>
 </template>

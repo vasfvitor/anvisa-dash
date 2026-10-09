@@ -52,7 +52,8 @@ onBeforeUnmount(() => (document.title = tituloOriginal));
       <button type="button" class="btn" @click="emit('voltar')"><Icone nome="volta" /> Voltar</button>
       <span v-if="p" class="produto-acoes">
         <button type="button" class="btn" @click="compartilhar">
-          <Icone :nome="compartilhado ? 'certo' : 'compartilhar'" /> {{ compartilhado ? "Link copiado" : "Compartilhar" }}
+          <Icone :nome="compartilhado ? 'certo' : 'compartilhar'" />
+          {{ compartilhado ? "Link copiado" : "Compartilhar" }}
         </button>
       </span>
     </nav>
@@ -74,7 +75,11 @@ onBeforeUnmount(() => (document.title = tituloOriginal));
         <p class="produto-empresa">
           <Icone nome="fabrica" />
           {{ legivel(p.no_razao_social_empresa, "nome") }} ·
-          <a href="#" title="Ver todos os produtos de limpeza desta empresa" @click.prevent="emit('empresa', p.nu_cnpj_empresa)">
+          <a
+            href="#"
+            title="Ver todos os produtos de limpeza desta empresa"
+            @click.prevent="emit('empresa', p.nu_cnpj_empresa)"
+          >
             CNPJ {{ fmtCnpj(p.nu_cnpj_empresa) }}
           </a>
         </p>
@@ -82,17 +87,24 @@ onBeforeUnmount(() => (document.title = tituloOriginal));
 
       <div v-if="!ativo" class="aviso" role="note">
         <Icone nome="alerta" />
-        <div><strong>Liberação encerrada.</strong> A ANVISA não lista mais este produto como liberado (regularização
-        inativa). Ele aparece aqui como histórico; se ainda está à venda, procure a versão atual pelo nome ou pela empresa.</div>
+        <div>
+          <strong>Liberação encerrada.</strong> A ANVISA não lista mais este produto como liberado (regularização
+          inativa). Ele aparece aqui como histórico; se ainda está à venda, procure a versão atual pelo nome ou pela
+          empresa.
+        </div>
       </div>
 
       <section v-if="val" class="secao">
         <h2><Icone nome="gota" />Até quando vale</h2>
         <div class="selos-validade">
-          <span class="selo grande" :class="val.classe === 'neutro' ? '' : val.classe"><Icone nome="gota" />{{ val.curto }}</span>
+          <span class="selo grande" :class="val.classe === 'neutro' ? '' : val.classe"
+            ><Icone nome="gota" />{{ val.curto }}</span
+          >
         </div>
         <p>{{ val.longo }}</p>
-        <p v-if="val.estranha" class="note">A data parece fora do comum, mas é a que a ANVISA publica nos dados abertos.</p>
+        <p v-if="val.estranha" class="note">
+          A data parece fora do comum, mas é a que a ANVISA publica nos dados abertos.
+        </p>
         <p v-if="ativo && val.classe === 'perigo'" class="note">
           A ANVISA ainda lista o produto como liberado, mas a data de vencimento já passou. Pode ser uma renovação em
           andamento ou um dado desatualizado; confira na consulta oficial.
@@ -111,16 +123,30 @@ onBeforeUnmount(() => (document.title = tituloOriginal));
           <dt>Expediente</dt>
           <dd>{{ p.nu_expediente }} <Copiar :valor="p.nu_expediente" rotulo="expediente" /></dd>
           <dt>Empresa</dt>
-          <dd>{{ p.no_razao_social_empresa }} · {{ fmtCnpj(p.nu_cnpj_empresa) }} <Copiar :valor="p.nu_cnpj_empresa" rotulo="CNPJ" /></dd>
+          <dd>
+            {{ p.no_razao_social_empresa }} · {{ fmtCnpj(p.nu_cnpj_empresa) }}
+            <Copiar :valor="p.nu_cnpj_empresa" rotulo="CNPJ" />
+          </dd>
           <dt>Categoria</dt>
-          <dd>Saneante <span class="note">(o nome técnico da ANVISA para produtos de limpeza, desinfecção e controle de pragas)</span></dd>
+          <dd>
+            Saneante
+            <span class="note"
+              >(o nome técnico da ANVISA para produtos de limpeza, desinfecção e controle de pragas)</span
+            >
+          </dd>
           <dt>Situação</dt>
-          <dd>{{ sit.tecnico }} <span class="note">({{ sit.dica }})</span></dd>
+          <dd>
+            {{ sit.tecnico }} <span class="note">({{ sit.dica }})</span>
+          </dd>
           <dt>Tipo</dt>
           <dd>
             {{ p.tipo_regularizacao }}
             <span class="note">
-              {{ notificado ? "(comunicado à ANVISA, sem análise prévia de registro)" : "(registro concedido pela ANVISA após análise)" }}
+              {{
+                notificado
+                  ? "(comunicado à ANVISA, sem análise prévia de registro)"
+                  : "(registro concedido pela ANVISA após análise)"
+              }}
             </span>
           </dd>
           <template v-if="p.dt_vencimento">

@@ -57,7 +57,10 @@ function sinal(valores: Set<string>): Sinal {
 }
 
 /** Junta as declarações de todas as apresentações de um produto. */
-export function resumirAlergia(listaAlergenicos: (string | null)[], listaIntolerancias: (string | null)[]): ResumoAlergia {
+export function resumirAlergia(
+  listaAlergenicos: (string | null)[],
+  listaIntolerancias: (string | null)[],
+): ResumoAlergia {
   const gluten = new Set<string>();
   const lactose = new Set<string>();
   for (const s of new Set(listaIntolerancias)) {

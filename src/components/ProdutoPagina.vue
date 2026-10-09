@@ -62,11 +62,19 @@ const comDetalhe = computed(() => (aps.value ?? []).filter((a) => a.tem_detalhe)
 const semDetalhe = computed(() => (aps.value ?? []).length - comDetalhe.value.length);
 // o resumo sai das próprias apresentações, que trazem a tabela de detalhes junto
 const resumo = computed(() =>
-  aps.value ? resumirAlergia(comDetalhe.value.map((a) => a.alergenicos), comDetalhe.value.map((a) => a.intolerancias)) : null,
+  aps.value
+    ? resumirAlergia(
+        comDetalhe.value.map((a) => a.alergenicos),
+        comDetalhe.value.map((a) => a.intolerancias),
+      )
+    : null,
 );
 
 // formatadores dos campos de apresentação
-const lista = (s: string) => fatiar(s, "|").map((x) => legivel(x).replace(/^./, (c) => c.toLowerCase())).join(", ");
+const lista = (s: string) =>
+  fatiar(s, "|")
+    .map((x) => legivel(x).replace(/^./, (c) => c.toLowerCase()))
+    .join(", ");
 /** "Primária - pote | Secundária - caixa" → "pote (primária), caixa (secundária)" */
 const nivel = (s: string) =>
   fatiar(s, "|")
@@ -102,7 +110,12 @@ const CAMPOS: DefCampo[] = [
 const valor = (c: DefCampo, v: unknown): string => (vazio(v) ? "—" : c.fmt(String(v)));
 const SITUACAO = CAMPOS.find((c) => c.campo === "situacao_apresentacao")!;
 
-const cons = computed(() => consenso(comDetalhe.value, CAMPOS.map((c) => c.campo)));
+const cons = computed(() =>
+  consenso(
+    comDetalhe.value,
+    CAMPOS.map((c) => c.campo),
+  ),
+);
 const usoComum = computed(() => CAMPOS.filter((c) => c.naFicha && cons.value.comum[c.campo] !== undefined));
 const variamCurtos = computed(() => CAMPOS.filter((c) => c.curto && cons.value.variam.includes(c.campo)));
 const variamLongos = computed(() => CAMPOS.filter((c) => !c.curto && cons.value.variam.includes(c.campo)));
@@ -136,7 +149,9 @@ const datas = computed(() =>
 );
 
 const linkAnvisa = computed(() =>
-  p.value ? `https://consultas.anvisa.gov.br/#/alimentos/${p.value.nu_processo}/?numeroProcesso=${p.value.nu_processo}` : "",
+  p.value
+    ? `https://consultas.anvisa.gov.br/#/alimentos/${p.value.nu_processo}/?numeroProcesso=${p.value.nu_processo}`
+    : "",
 );
 </script>
 
@@ -146,7 +161,8 @@ const linkAnvisa = computed(() =>
       <button type="button" class="btn" @click="emit('voltar')"><Icone nome="volta" /> Voltar</button>
       <span class="produto-acoes" v-if="p">
         <button type="button" class="btn" @click="compartilhar">
-          <Icone :nome="compartilhado ? 'certo' : 'compartilhar'" /> {{ compartilhado ? "Link copiado" : "Compartilhar" }}
+          <Icone :nome="compartilhado ? 'certo' : 'compartilhar'" />
+          {{ compartilhado ? "Link copiado" : "Compartilhar" }}
         </button>
         <a class="btn" :href="linkAnvisa" target="_blank" rel="noopener"><Icone nome="externo" /> Ver na ANVISA</a>
       </span>
@@ -164,8 +180,11 @@ const linkAnvisa = computed(() =>
         <div class="produto-status">
           <span class="situacao grande" :class="ativo ? 'ok' : 'off'" :title="sit.dica">{{ sit.longo }}</span>
           <span class="mono">
-            {{ p.tipo_regularizacao }}<template v-if="p.dt_regularizacao"> em {{ fmtData(p.dt_regularizacao) }}</template>
-            <template v-if="!notificado && p.dt_vencimento_registro"> · válido até {{ fmtMesAno(p.dt_vencimento_registro) }}</template>
+            {{ p.tipo_regularizacao
+            }}<template v-if="p.dt_regularizacao"> em {{ fmtData(p.dt_regularizacao) }}</template>
+            <template v-if="!notificado && p.dt_vencimento_registro">
+              · válido até {{ fmtMesAno(p.dt_vencimento_registro) }}</template
+            >
           </span>
         </div>
         <h1>{{ titulo }}</h1>
@@ -177,7 +196,8 @@ const linkAnvisa = computed(() =>
           </button>
         </p>
         <p class="produto-nome">
-          {{ legivel(p.no_produto) }}<span v-if="p.ds_categoria_produto" class="muted"> · {{ legivel(p.ds_categoria_produto) }}</span>
+          {{ legivel(p.no_produto)
+          }}<span v-if="p.ds_categoria_produto" class="muted"> · {{ legivel(p.ds_categoria_produto) }}</span>
         </p>
         <p class="produto-empresa">
           <Icone nome="fabrica" />
@@ -190,13 +210,19 @@ const linkAnvisa = computed(() =>
 
       <div v-if="indeferido" class="aviso perigo" role="note">
         <Icone nome="alerta" />
-        <div><strong>Petição indeferida.</strong> A ANVISA publicou o indeferimento do pedido deste produto
-        (“{{ p.ds_situacao_assunto_doc }}”).</div>
+        <div>
+          <strong>Petição indeferida.</strong> A ANVISA publicou o indeferimento do pedido deste produto (“{{
+            p.ds_situacao_assunto_doc
+          }}”).
+        </div>
       </div>
       <div v-else-if="!ativo" class="aviso" role="note">
         <Icone nome="alerta" />
-        <div><strong>Liberação encerrada.</strong> A ANVISA não lista mais este produto como liberado (regularização
-        inativa). Ele aparece aqui como histórico; se ainda está à venda, procure a versão atual pela marca ou pela empresa.</div>
+        <div>
+          <strong>Liberação encerrada.</strong> A ANVISA não lista mais este produto como liberado (regularização
+          inativa). Ele aparece aqui como histórico; se ainda está à venda, procure a versão atual pela marca ou pela
+          empresa.
+        </div>
       </div>
 
       <section v-if="resumo?.temDados || (resumo && ativo)" class="secao">
@@ -220,7 +246,9 @@ const linkAnvisa = computed(() =>
       <section v-if="alegacoes.length" class="secao">
         <h2><Icone nome="brilho" />Alegações funcionais</h2>
         <ul class="alegacoes">
-          <li v-for="a in alegacoes" :key="a"><Icone nome="certo" /><span>{{ a }}</span></li>
+          <li v-for="a in alegacoes" :key="a">
+            <Icone nome="certo" /><span>{{ a }}</span>
+          </li>
         </ul>
       </section>
 
@@ -235,7 +263,9 @@ const linkAnvisa = computed(() =>
       </section>
 
       <section id="apresentacoes" class="secao">
-        <h2><Icone nome="caixas" />Apresentações <span class="sub">{{ p.n_apresentacoes }}</span></h2>
+        <h2>
+          <Icone nome="caixas" />Apresentações <span class="sub">{{ p.n_apresentacoes }}</span>
+        </h2>
         <p v-if="!aps" class="note" role="status">Carregando apresentações…</p>
         <template v-else>
           <p v-if="aps.length > 1 && !variamCurtos.length && !variamLongos.length" class="note">
@@ -260,7 +290,9 @@ const linkAnvisa = computed(() =>
                       {{ a.tem_detalhe ? valor(SITUACAO, a.situacao_apresentacao) : "detalhe não publicado" }}
                     </td>
                     <td>
-                      <template v-if="a.nu_registro">{{ a.nu_registro }} <Copiar :valor="a.nu_registro" rotulo="registro" /></template>
+                      <template v-if="a.nu_registro"
+                        >{{ a.nu_registro }} <Copiar :valor="a.nu_registro" rotulo="registro"
+                      /></template>
                       <template v-else>—</template>
                     </td>
                   </tr>
@@ -295,7 +327,8 @@ const linkAnvisa = computed(() =>
             <dd>
               <ul class="empresas">
                 <li v-for="e in f.lista" :key="e.nome + e.codigo">
-                  {{ legivel(e.nome, "nome") }}<span v-if="e.local" class="muted"> · {{ legivel(e.local, "nome") }}</span>
+                  {{ legivel(e.nome, "nome")
+                  }}<span v-if="e.local" class="muted"> · {{ legivel(e.local, "nome") }}</span>
                   <span v-if="f.comCodigo && e.codigo" class="muted"> · {{ e.codigo }}</span>
                 </li>
               </ul>
@@ -317,9 +350,14 @@ const linkAnvisa = computed(() =>
             </dd>
           </template>
           <dt>Empresa</dt>
-          <dd>{{ p.no_razao_social_empresa }} · {{ fmtCnpj(p.nu_cnpj_empresa) }} <Copiar :valor="p.nu_cnpj_empresa" rotulo="CNPJ" /></dd>
+          <dd>
+            {{ p.no_razao_social_empresa }} · {{ fmtCnpj(p.nu_cnpj_empresa) }}
+            <Copiar :valor="p.nu_cnpj_empresa" rotulo="CNPJ" />
+          </dd>
           <dt>Situação</dt>
-          <dd>{{ sit.tecnico }} <span class="note">({{ sit.dica }})</span></dd>
+          <dd>
+            {{ sit.tecnico }} <span class="note">({{ sit.dica }})</span>
+          </dd>
           <dt>Tipo</dt>
           <dd>
             {{ p.tipo_regularizacao }}

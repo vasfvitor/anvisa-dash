@@ -76,7 +76,9 @@ function alternar<K extends "grupo" | "tipo">(campo: K, valor: string): void {
       >
         {{ legivel(c.valor) }} <span class="chip-n">{{ fmtInt(c.n) }}</span>
       </button>
-      <button v-if="escondidas > 0" type="button" class="chip mais" @click="todosGrupos = true">+{{ escondidas }}</button>
+      <button v-if="escondidas > 0" type="button" class="chip mais" @click="todosGrupos = true">
+        +{{ escondidas }}
+      </button>
       <button v-else-if="todosGrupos" type="button" class="chip mais" @click="todosGrupos = false">menos</button>
     </div>
   </div>

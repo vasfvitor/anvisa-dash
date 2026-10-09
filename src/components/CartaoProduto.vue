@@ -48,7 +48,10 @@ function abrir(ev: MouseEvent): void {
       <ResumoAlergia v-if="extra" :r="extra" compacto />
       <p v-if="indeferido(p)" class="aviso-curto"><Icone nome="alerta" /> Petição indeferida pela ANVISA</p>
       <p class="cartao-rodape">
-        <span>{{ p.tipo_regularizacao }}<template v-if="p.dt_regularizacao"> em {{ fmtData(p.dt_regularizacao) }}</template></span>
+        <span
+          >{{ p.tipo_regularizacao
+          }}<template v-if="p.dt_regularizacao"> em {{ fmtData(p.dt_regularizacao) }}</template></span
+        >
         <span>{{ plural(p.n_apresentacoes, "apresentação", "apresentações") }}</span>
         <Icone nome="seta" class="seta" />
       </p>

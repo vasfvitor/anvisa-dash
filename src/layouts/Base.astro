@@ -55,14 +55,20 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     </script>
   </head>
   <body>
-    <a class="skip" href="#conteudo">Ir para o conteúdo</a>
+    <a class="skip" href="#conteudo">
+      Ir para o conteúdo
+    </a>
     <header class="site">
       <div class="inner">
         <Logo />
         <Corredores atual={corredor} />
         <nav class="nav-site" aria-label="Sobre o site">
-          <a href={url("/dicionario/")} aria-current={ativo("/dicionario/")}>Dados</a>
-          <a href={url("/sobre/")} aria-current={ativo("/sobre/")}>Sobre</a>
+          <a href={url("/dicionario/")} aria-current={ativo("/dicionario/")}>
+            Dados
+          </a>
+          <a href={url("/sobre/")} aria-current={ativo("/sobre/")}>
+            Sobre
+          </a>
         </nav>
       </div>
     </header>
@@ -71,13 +77,20 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     </main>
     <footer class="site">
       <div class="rotulo-rodape">
-        <p class="rotulo-titulo"><Logo /> <span>{SLOGAN}</span></p>
+        <p class="rotulo-titulo">
+          <Logo /> <span>{SLOGAN}</span>
+        </p>
         <dl>
           <div>
             <dt>Fonte</dt>
             <dd>
               Dados abertos da ANVISA{fonte?.loaded_at && <> de {fmtData(fonte.loaded_at)}</>}
-              {fonte && <> · <a href={fonte.url}>{fonte.name}</a></>}
+              {fonte && (
+                <>
+                  {" "}
+                  · <a href={fonte.url}>{fonte.name}</a>
+                </>
+              )}
             </dd>
           </div>
           <div>
@@ -86,7 +99,9 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
           </div>
           <div>
             <dt>Contém</dt>
-            <dd>Nenhum servidor: a busca roda inteira no seu navegador. <Icone nome="capsula" class="mini" /></dd>
+            <dd>
+              Nenhum servidor: a busca roda inteira no seu navegador. <Icone nome="capsula" class="mini" />
+            </dd>
           </div>
         </dl>
       </div>

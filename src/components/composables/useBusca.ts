@@ -97,5 +97,20 @@ export function useBusca(fonte: Ref<Fonte<Item>>) {
 
   const temMais = computed(() => produtos.value.length < total.value && produtos.value.length >= POR_PAGINA);
 
-  return { entrada, marca, filtros, consulta, produtos, total, contagens, extras, carregando, erro, buscada, temMais, buscar, limpar };
+  return {
+    entrada,
+    marca,
+    filtros,
+    consulta,
+    produtos,
+    total,
+    contagens,
+    extras,
+    carregando,
+    erro,
+    buscada,
+    temMais,
+    buscar,
+    limpar,
+  };
 }

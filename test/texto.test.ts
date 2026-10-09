@@ -29,7 +29,11 @@ describe("destacar", () => {
     ]);
   });
   it("várias ocorrências e termo vazio", () => {
-    expect(destacar("a whey e WHEY", "whey").filter((t) => t.achado).map((t) => t.texto)).toEqual(["whey", "WHEY"]);
+    expect(
+      destacar("a whey e WHEY", "whey")
+        .filter((t) => t.achado)
+        .map((t) => t.texto),
+    ).toEqual(["whey", "WHEY"]);
     expect(destacar("abc", "")).toEqual([{ texto: "abc", achado: false }]);
   });
 });

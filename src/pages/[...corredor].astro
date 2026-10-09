@@ -17,54 +17,57 @@ const visivel = CORREDORES.map((c) => `[data-corredor="${c.id}"] .hero[data-hero
 
 <Base title={corredor.titulo} description={corredor.descricao} corredor={corredor.id}>
   <style is:inline set:html={`.hero{display:none}${visivel}{display:block}`}></style>
-  {
-    CORREDORES.map((c) => (
-      <section class="hero" data-hero={c.id}>
-        <div class="hero-deco" aria-hidden="true">
-          {c.deco.map((nome, i) => (
-            <span class={`deco deco-${i}`}>
-              <Icone nome={nome} />
-            </span>
-          ))}
-          <svg class="carimbo" viewBox="0 0 120 120">
-            <defs>
-              <path id={`carimbo-circulo-${c.id}`} d="M60 60m-45 0a45 45 0 1 1 90 0a45 45 0 1 1-90 0" />
-            </defs>
-            <circle cx="60" cy="60" r="56" class="carimbo-borda" />
-            <text>
-              <textPath href={`#carimbo-circulo-${c.id}`} textLength="281" lengthAdjust="spacing">
-                {c.hero.carimbo}
-              </textPath>
-            </text>
-            <svg x="36" y="36" width="48" height="48" class="carimbo-icone">
-              <use href={url(`/icones.svg#${c.icone}`)} />
-            </svg>
-          </svg>
-        </div>
-        <p class="hero-selo">
-          <Icone nome="lupa" /> {c.hero.selo}
-        </p>
-        <h1>
-          {c.hero.linha1.antes}
-          <em>{c.hero.linha1.destaque}</em>
-          {c.hero.linha1.depois}
-          <br />
-          {c.hero.linha2.antes}
-          <span class="sublinhado">
-            {c.hero.linha2.destaque}
-            <svg viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M2 8c40-6 90-7 196-2" />
-            </svg>
+  {CORREDORES.map((c) => (
+    <section class="hero" data-hero={c.id}>
+      <div class="hero-deco" aria-hidden="true">
+        {c.deco.map((nome, i) => (
+          <span class={`deco deco-${i}`}>
+            <Icone nome={nome} />
           </span>
-          {c.hero.linha2.depois}
-        </h1>
-        <p class="lead">{c.hero.lead}</p>
-      </section>
-    ))
-  }
+        ))}
+        <svg class="carimbo" viewBox="0 0 120 120">
+          <defs>
+            <path id={`carimbo-circulo-${c.id}`} d="M60 60m-45 0a45 45 0 1 1 90 0a45 45 0 1 1-90 0" />
+          </defs>
+          <circle cx="60" cy="60" r="56" class="carimbo-borda" />
+          <text>
+            <textPath href={`#carimbo-circulo-${c.id}`} textLength="281" lengthAdjust="spacing">
+              {c.hero.carimbo}
+            </textPath>
+          </text>
+          <svg x="36" y="36" width="48" height="48" class="carimbo-icone">
+            <use href={url(`/icones.svg#${c.icone}`)} />
+          </svg>
+        </svg>
+      </div>
+      <p class="hero-selo">
+        <Icone nome="lupa" /> {c.hero.selo}
+      </p>
+      <h1>
+        {c.hero.linha1.antes}
+        <em>{c.hero.linha1.destaque}</em>
+        {c.hero.linha1.depois}
+        <br />
+        {c.hero.linha2.antes}
+        <span class="sublinhado">
+          {c.hero.linha2.destaque}
+          <svg viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M2 8c40-6 90-7 196-2" />
+          </svg>
+        </span>
+        {c.hero.linha2.depois}
+      </h1>
+      <p class="lead">{c.hero.lead}</p>
+    </section>
+  ))}
   <!-- DuckDB-WASM não roda no servidor: a ilha só existe no navegador -->
   <BuscaApp client:only="vue">
-    <div slot="fallback" class="busca-esqueleto" aria-hidden="true"><span></span><span></span></div>
+    <div slot="fallback" class="busca-esqueleto" aria-hidden="true">
+      <span></span>
+      <span></span>
+    </div>
   </BuscaApp>
-  <noscript><p class="estado erro">A busca precisa de JavaScript: ela roda inteira no seu navegador.</p></noscript>
+  <noscript>
+    <p class="estado erro">A busca precisa de JavaScript: ela roda inteira no seu navegador.</p>
+  </noscript>
 </Base>

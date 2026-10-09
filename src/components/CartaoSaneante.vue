@@ -34,7 +34,9 @@ function abrir(ev: MouseEvent): void {
       <p class="cartao-empresa"><Destaque :texto="legivel(p.no_razao_social_empresa, 'nome')" :termo="termo" /></p>
       <div class="alergia compacta">
         <span class="selo" :title="TIPOS">{{ p.tipo_regularizacao }}</span>
-        <span class="selo" :class="val.classe === 'neutro' ? '' : val.classe"><Icone nome="gota" />{{ val.curto }}</span>
+        <span class="selo" :class="val.classe === 'neutro' ? '' : val.classe"
+          ><Icone nome="gota" />{{ val.curto }}</span
+        >
       </div>
       <p class="cartao-rodape">
         <span>Processo {{ fmtProcesso(p.nu_processo) }}</span>

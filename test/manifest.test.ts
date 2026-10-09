@@ -6,7 +6,13 @@ const base = {
   build_id: "20261006T231312Z",
   built_at: "2026-10-06T23:13:12Z",
   tables: {
-    alimentos: { path: "data/20261006T231312Z/alimentos.parquet", rows: 1, bytes: 1, columns: [], source: { name: "x", url: "y" } },
+    alimentos: {
+      path: "data/20261006T231312Z/alimentos.parquet",
+      rows: 1,
+      bytes: 1,
+      columns: [],
+      source: { name: "x", url: "y" },
+    },
   },
 };
 

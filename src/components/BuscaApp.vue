@@ -128,7 +128,10 @@ watch(corredor, (c) => produto.value || (document.title = tituloPagina(c.titulo)
  * fonte nova (o que já foi baixado continua em memória). Com View Transitions, a página nova aparece
  * num círculo que cresce a partir do clique, como a cor do corredor tomando conta.
  */
-async function trocarCorredor(novo: Corredor, opcoes: { origem?: { x: number; y: number }; push: boolean }): Promise<void> {
+async function trocarCorredor(
+  novo: Corredor,
+  opcoes: { origem?: { x: number; y: number }; push: boolean },
+): Promise<void> {
   if (novo.id === corredor.value.id) return;
   const aplicar = () => {
     corredor.value = novo;
@@ -169,7 +172,10 @@ async function aoClicarPlaca(ev: MouseEvent): Promise<void> {
   if (!a || !cliqueInterno(ev)) return;
   ev.preventDefault();
   clearTimeout(espera);
-  await trocarCorredor(corredorPorId(a.dataset.corredorLink ?? ""), { origem: { x: ev.clientX, y: ev.clientY }, push: true });
+  await trocarCorredor(corredorPorId(a.dataset.corredorLink ?? ""), {
+    origem: { x: ev.clientX, y: ev.clientY },
+    push: true,
+  });
   buscarAgora(true);
 }
 
@@ -210,7 +216,8 @@ const titulo = computed(() => {
   const [um, varios] = corredor.value.item;
   const itens = plural(b.total.value, um, varios);
   const primeiro = b.produtos.value[0] as { no_razao_social_empresa?: string } | undefined;
-  if (q.modo === "cnpj" && primeiro?.no_razao_social_empresa) return `${itens} de ${legivel(primeiro.no_razao_social_empresa, "nome")}`;
+  if (q.modo === "cnpj" && primeiro?.no_razao_social_empresa)
+    return `${itens} de ${legivel(primeiro.no_razao_social_empresa, "nome")}`;
   if (q.modo === "marca") return `${itens} da marca ${q.valor}`;
   if (q.modo === "texto") return `${itens} para “${q.valor}”`;
   if (q.modo === "todos") return `${itens} · ${corredor.value.grupo}: ${legivel(filtros.grupo)}`;
@@ -231,15 +238,31 @@ const titulo = computed(() => {
     @empresa="(c) => buscarPor(fmtCnpj(c))"
   />
 
-  <div v-if="motor.status.value === 'iniciando' || motor.status.value === 'baixando'" class="carregamento" role="status">
+  <div
+    v-if="motor.status.value === 'iniciando' || motor.status.value === 'baixando'"
+    class="carregamento"
+    role="status"
+  >
     <!-- um pote enchendo: o nível acompanha o download da tabela do corredor -->
-    <svg class="pote-carregando" :class="{ indeterminado: motor.status.value === 'iniciando' }" viewBox="0 0 64 80" aria-hidden="true">
+    <svg
+      class="pote-carregando"
+      :class="{ indeterminado: motor.status.value === 'iniciando' }"
+      viewBox="0 0 64 80"
+      aria-hidden="true"
+    >
       <defs>
         <path id="pote-forma" d="M14 20h36a4 4 0 0 1 4 4v44a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8V24a4 4 0 0 1 4-4Z" />
         <clipPath id="pote-dentro"><use href="#pote-forma" /></clipPath>
       </defs>
       <g clip-path="url(#pote-dentro)">
-        <g class="nivel" :style="motor.status.value === 'baixando' ? { transform: `translateY(${76 - 58 * motor.progresso.value}px)` } : undefined">
+        <g
+          class="nivel"
+          :style="
+            motor.status.value === 'baixando'
+              ? { transform: `translateY(${76 - 58 * motor.progresso.value}px)` }
+              : undefined
+          "
+        >
           <path class="onda" d="M0 0q8-5 16 0t16 0 16 0 16 0 16 0 16 0V80H0Z" />
         </g>
       </g>
@@ -249,8 +272,14 @@ const titulo = computed(() => {
     </svg>
     <p>
       <strong v-if="motor.status.value === 'iniciando'">Abrindo o corredor {{ corredor.numero }}…</strong>
-      <strong v-else>Enchendo {{ corredor.recipiente }}: {{ Math.round(motor.progresso.value * 100) }}% de {{ fmtBytes(motor.tamanho.value) }}</strong>
-      <span class="muted">Os dados de {{ corredor.nome.toLowerCase() }} vêm da ANVISA só na primeira visita; depois ficam guardados no navegador.</span>
+      <strong v-else
+        >Enchendo {{ corredor.recipiente }}: {{ Math.round(motor.progresso.value * 100) }}% de
+        {{ fmtBytes(motor.tamanho.value) }}</strong
+      >
+      <span class="muted"
+        >Os dados de {{ corredor.nome.toLowerCase() }} vêm da ANVISA só na primeira visita; depois ficam guardados no
+        navegador.</span
+      >
     </p>
   </div>
   <div v-else-if="motor.status.value === 'erro'" class="estado erro" role="alert">
@@ -300,7 +329,11 @@ const titulo = computed(() => {
       </div>
       <p v-if="b.temMais.value" class="mais">
         <button class="btn" type="button" :disabled="b.carregando.value" @click="b.buscar(true)">
-          {{ b.carregando.value ? "Carregando…" : `Mostrar mais (${fmtInt(b.produtos.value.length)} de ${fmtInt(b.total.value)})` }}
+          {{
+            b.carregando.value
+              ? "Carregando…"
+              : `Mostrar mais (${fmtInt(b.produtos.value.length)} de ${fmtInt(b.total.value)})`
+          }}
         </button>
       </p>
     </template>
@@ -310,7 +343,9 @@ const titulo = computed(() => {
   <Inicio v-else :key="corredor.id" :corredor="corredor" :fonte="fonte" @exemplo="buscarPor" @grupo="explorar" />
 
   <p v-if="motor.fonte.value?.loaded_at" class="note fonte">
-    Dados abertos da ANVISA de {{ fmtData(motor.fonte.value.loaded_at) }}
-    (<a :href="motor.fonte.value.url">{{ motor.fonte.value.name }}</a>).
+    Dados abertos da ANVISA de {{ fmtData(motor.fonte.value.loaded_at) }} (<a :href="motor.fonte.value.url">{{
+      motor.fonte.value.name
+    }}</a
+    >).
   </p>
 </template>

@@ -8,4 +8,6 @@ interface Props {
 const { nome, class: classe } = Astro.props;
 ---
 
-<svg class:list={["icone", classe]} aria-hidden="true"><use href={url(`/icones.svg#${nome}`)} /></svg>
+<svg class:list={["icone", classe]} aria-hidden="true">
+  <use href={url(`/icones.svg#${nome}`)} />
+</svg>

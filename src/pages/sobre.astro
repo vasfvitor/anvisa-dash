@@ -11,10 +11,10 @@ const fontes = Object.entries(m.tables);
 <Base title="Sobre" description="De onde vêm os dados, quando são atualizados e como a consulta funciona.">
   <h1>Sobre</h1>
   <p class="lead">
-    Consulta independente de produtos liberados pela ANVISA, organizada em corredores, como num supermercado: o
-    corredor 1 tem alimentos e suplementos e o corredor 2, produtos de limpeza (água sanitária, detergente,
-    desinfetante, inseticida…), que a ANVISA chama de saneantes. Você pode buscar por nome, marca, empresa, CNPJ ou
-    pelo número que vem no rótulo.
+    Consulta independente de produtos liberados pela ANVISA, organizada em corredores, como num supermercado: o corredor
+    1 tem alimentos e suplementos e o corredor 2, produtos de limpeza (água sanitária, detergente, desinfetante,
+    inseticida…), que a ANVISA chama de saneantes. Você pode buscar por nome, marca, empresa, CNPJ ou pelo número que
+    vem no rótulo.
   </p>
 
   <h2>Por que “contém.”</h2>
@@ -26,23 +26,24 @@ const fontes = Object.entries(m.tables);
 
   <h2>Corredores</h2>
   <p>
-    Cada fonte de dados é um corredor, com cores próprias. Trocar de corredor leva a sua busca junto: um CNPJ
-    buscado nos alimentos mostra os produtos de limpeza da mesma empresa. Na limpeza, a validade é a data de
-    vencimento da liberação publicada pela ANVISA; há produtos liberados com a data já vencida e datas que parecem
-    fora do comum (até o ano 3033), mostradas como foram publicadas.
+    Cada fonte de dados é um corredor, com cores próprias. Trocar de corredor leva a sua busca junto: um CNPJ buscado
+    nos alimentos mostra os produtos de limpeza da mesma empresa. Na limpeza, a validade é a data de vencimento da
+    liberação publicada pela ANVISA; há produtos liberados com a data já vencida e datas que parecem fora do comum (até
+    o ano 3033), mostradas como foram publicadas.
   </p>
 
   <h2>De onde vêm os dados</h2>
-  <p>Os dados são os arquivos abertos publicados pela ANVISA em <a href="https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/">dados.anvisa.gov.br</a>:</p>
+  <p>
+    Os dados são os arquivos abertos publicados pela ANVISA em{" "}
+    <a href="https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/">dados.anvisa.gov.br</a>:
+  </p>
   <ul>
-    {
-      fontes.map(([nome, t]) => (
-        <li>
-          <a href={t.source.url}>{t.source.name}</a>
-          {t.source.loaded_at && <>, dados de {fmtData(t.source.loaded_at)}</>} (tabela <code>{nome}</code>)
-        </li>
-      ))
-    }
+    {fontes.map(([nome, t]) => (
+      <li>
+        <a href={t.source.url}>{t.source.name}</a>
+        {t.source.loaded_at && <>, dados de {fmtData(t.source.loaded_at)}</>} (tabela <code>{nome}</code>)
+      </li>
+    ))}
   </ul>
   <p>
     A ANVISA atualiza esses arquivos nos dias úteis, por volta das 12h30 (horário de Brasília). Às 18h um processo
@@ -52,10 +53,11 @@ const fontes = Object.entries(m.tables);
 
   <h2>Como a busca funciona</h2>
   <p>
-    Não há servidor. A busca roda no seu navegador com o <a href="https://duckdb.org/docs/api/wasm/overview">DuckDB-WASM</a>,
-    sobre os arquivos Parquet. Na primeira visita o navegador baixa cerca de 5 MB do motor e 3,3 MB da tabela de
-    produtos; ao abrir as apresentações de um produto, mais 1,5 MB da tabela de detalhes. Depois disso todas as
-    buscas rodam no seu navegador, sem rede, e os arquivos ficam no cache.
+    Não há servidor. A busca roda no seu navegador com o{" "}
+    <a href="https://duckdb.org/docs/api/wasm/overview">DuckDB-WASM</a>, sobre os arquivos Parquet. Na primeira visita o
+    navegador baixa cerca de 5 MB do motor e 3,3 MB da tabela de produtos; ao abrir as apresentações de um produto, mais
+    1,5 MB da tabela de detalhes. Depois disso todas as buscas rodam no seu navegador, sem rede, e os arquivos ficam no
+    cache.
   </p>
   <ul>
     <li>
@@ -69,7 +71,7 @@ const fontes = Object.entries(m.tables);
 
   <h2>Aviso</h2>
   <p>
-    Este site não tem vínculo com a ANVISA. As informações são reproduzidas como publicadas nos dados abertos e
-    podem estar defasadas ou incompletas. Para qualquer decisão, confira a consulta oficial da ANVISA.
+    Este site não tem vínculo com a ANVISA. As informações são reproduzidas como publicadas nos dados abertos e podem
+    estar defasadas ou incompletas. Para qualquer decisão, confira a consulta oficial da ANVISA.
   </p>
 </Base>

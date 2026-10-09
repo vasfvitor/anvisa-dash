@@ -120,7 +120,9 @@ async function facetas(q: Consulta, f: Filtros): Promise<Facetas> {
 
 async function porId(id: string): Promise<Saneante | null> {
   await tabela();
-  const [s] = (await consultar([], `SELECT ${COLUNAS}, 1 AS total FROM san WHERE id = ?`, [id])) as unknown as Saneante[];
+  const [s] = (await consultar([], `SELECT ${COLUNAS}, 1 AS total FROM san WHERE id = ?`, [
+    id,
+  ])) as unknown as Saneante[];
   return s ?? null;
 }
 

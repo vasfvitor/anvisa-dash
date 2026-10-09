@@ -24,17 +24,25 @@ function curta(itens: string[], max = 2): string {
 
 <template>
   <div v-if="r.temDados && compacto" class="alergia compacta" aria-label="Glúten, lactose e alergênicos">
-    <span v-for="i in intolerancias" :key="i.texto" class="selo" :class="i.classe"><Icone :nome="i.icone" />{{ i.texto }}</span>
-    <span v-if="r.contem.length" class="selo perigo" :title="`Contém: ${r.contem.join(', ')}`">Contém {{ curta(r.contem) }}</span>
+    <span v-for="i in intolerancias" :key="i.texto" class="selo" :class="i.classe"
+      ><Icone :nome="i.icone" />{{ i.texto }}</span
+    >
+    <span v-if="r.contem.length" class="selo perigo" :title="`Contém: ${r.contem.join(', ')}`"
+      >Contém {{ curta(r.contem) }}</span
+    >
     <span v-if="r.podeConter.length" class="selo atencao" :title="`Pode conter: ${r.podeConter.join(', ')}`">
       Pode conter {{ curta(r.podeConter, 1) }}
     </span>
-    <span v-if="!r.contem.length && !r.podeConter.length && r.naoContem.length" class="selo ok">Sem alergênicos declarados</span>
+    <span v-if="!r.contem.length && !r.podeConter.length && r.naoContem.length" class="selo ok"
+      >Sem alergênicos declarados</span
+    >
   </div>
 
   <div v-else-if="r.temDados" class="alergia completa">
     <div class="selos">
-      <span v-for="i in intolerancias" :key="i.texto" class="selo grande" :class="i.classe"><Icone :nome="i.icone" />{{ i.texto }}</span>
+      <span v-for="i in intolerancias" :key="i.texto" class="selo grande" :class="i.classe"
+        ><Icone :nome="i.icone" />{{ i.texto }}</span
+      >
     </div>
     <dl class="ficha">
       <template v-if="r.contem.length">
@@ -59,6 +67,9 @@ function curta(itens: string[], max = 2): string {
         </dd>
       </template>
     </dl>
-    <p v-if="r.varia" class="note">As apresentações deste produto declaram valores diferentes; acima está a soma de todas. Veja cada uma em “Apresentações”.</p>
+    <p v-if="r.varia" class="note">
+      As apresentações deste produto declaram valores diferentes; acima está a soma de todas. Veja cada uma em
+      “Apresentações”.
+    </p>
   </div>
 </template>

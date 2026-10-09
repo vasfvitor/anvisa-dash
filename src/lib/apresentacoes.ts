@@ -22,7 +22,12 @@ export function consenso<T extends object>(lista: T[], campos: (keyof T)[]): Con
   const comum: Partial<T> = {};
   const variam: (keyof T)[] = [];
   for (const c of campos) {
-    const valores = new Set(lista.map((x) => x[c]).filter((v) => !vazio(v)).map((v) => String(v).trim()));
+    const valores = new Set(
+      lista
+        .map((x) => x[c])
+        .filter((v) => !vazio(v))
+        .map((v) => String(v).trim()),
+    );
     if (valores.size === 1) {
       const v = lista.find((x) => !vazio(x[c]))![c];
       comum[c] = v;

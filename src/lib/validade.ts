@@ -13,11 +13,26 @@ export interface Validade {
 export function validade(grupo: string, dt: string | null): Validade {
   const d = toDate(dt);
   if (!d) {
-    return { classe: "neutro", curto: "Sem data de vencimento", longo: "A ANVISA não informa até quando a liberação deste produto vale.", estranha: false };
+    return {
+      classe: "neutro",
+      curto: "Sem data de vencimento",
+      longo: "A ANVISA não informa até quando a liberação deste produto vale.",
+      estranha: false,
+    };
   }
   const estranha = d.getUTCFullYear() > 2100;
   if (grupo === "Vencida") {
-    return { classe: "perigo", curto: `Liberação venceu em ${fmtMesAno(dt)}`, longo: `A liberação na ANVISA venceu em ${fmtData(dt)}.`, estranha };
+    return {
+      classe: "perigo",
+      curto: `Liberação venceu em ${fmtMesAno(dt)}`,
+      longo: `A liberação na ANVISA venceu em ${fmtData(dt)}.`,
+      estranha,
+    };
   }
-  return { classe: "ok", curto: `Liberado até ${fmtMesAno(dt)}`, longo: `A liberação na ANVISA vale até ${fmtData(dt)}.`, estranha };
+  return {
+    classe: "ok",
+    curto: `Liberado até ${fmtMesAno(dt)}`,
+    longo: `A liberação na ANVISA vale até ${fmtData(dt)}.`,
+    estranha,
+  };
 }

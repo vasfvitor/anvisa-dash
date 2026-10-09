@@ -11,28 +11,26 @@ const { atual } = Astro.props;
 ---
 
 <nav class="corredores" aria-label="Corredores">
-  {
-    CORREDORES.map((c) => (
-      <a
-        class="placa"
-        href={rotaDo(c)}
-        data-corredor-link={c.id}
-        data-placa={c.id}
-        aria-current={atual === c.id ? "page" : undefined}
-        title={`Corredor ${c.numero}: ${c.nome}${c.tecnico ? ` (na ANVISA, ${c.tecnico})` : ""}`}
-      >
-        <span class="placa-num">{c.numero}</span>
-        <Icone nome={c.icone} />
-        <span class="placa-nome">
-          <span class="longo">{c.nome}</span>
-          <span class="curto">{c.curto}</span>
+  {CORREDORES.map((c) => (
+    <a
+      class="placa"
+      href={rotaDo(c)}
+      data-corredor-link={c.id}
+      data-placa={c.id}
+      aria-current={atual === c.id ? "page" : undefined}
+      title={`Corredor ${c.numero}: ${c.nome}${c.tecnico ? ` (na ANVISA, ${c.tecnico})` : ""}`}
+    >
+      <span class="placa-num">{c.numero}</span>
+      <Icone nome={c.icone} />
+      <span class="placa-nome">
+        <span class="longo">{c.nome}</span>
+        <span class="curto">{c.curto}</span>
+      </span>
+      {c.tecnico && (
+        <span class="placa-tec" aria-hidden="true">
+          na ANVISA: <em>{c.tecnico}</em>
         </span>
-        {c.tecnico && (
-          <span class="placa-tec" aria-hidden="true">
-            na ANVISA: <em>{c.tecnico}</em>
-          </span>
-        )}
-      </a>
-    ))
-  }
+      )}
+    </a>
+  ))}
 </nav>
