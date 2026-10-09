@@ -1,288 +1,108 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue";
-import { corredorDaUrl, corredorPorId, rotaDo, type Corredor } from "../lib/corredores";
+// A ilha da busca: só liga as peças. Estado e URL em useEstado, troca de corredor e voltar/avançar em
+// useNavegacao, resultados em useBusca, motor e download em useCorredorPronto.
+import { computed, onMounted, reactive, shallowRef, watch, watchEffect } from "vue";
 import { MODO_ROTULO } from "../lib/detect";
-import { FILTROS_PADRAO } from "../lib/fonte";
 import { FONTES } from "../lib/fontes";
 import { fmtBytes, fmtCnpj, fmtData, fmtInt, plural } from "../lib/format";
 import { tituloPagina } from "../lib/marca";
 import { legivel } from "../lib/texto";
 import CaixaBusca from "./CaixaBusca.vue";
 import { useBusca } from "./composables/useBusca";
-import { useDuckDB } from "./composables/useDuckDB";
-import { cliqueInterno, gravarUrl, lerUrl, type EstadoUrl } from "./composables/useUrlState";
+import { useCorredorPronto } from "./composables/useCorredorPronto";
+import { useEstado } from "./composables/useEstado";
+import { useNavegacao } from "./composables/useNavegacao";
 import { TELAS } from "./corredores";
 import Facetas from "./Facetas.vue";
 import Icone from "./Icone.vue";
 import Inicio from "./Inicio.vue";
 
-const corredor = shallowRef<Corredor>(corredorDaUrl(location.pathname));
+const estado = useEstado(buscar);
+const { corredor, entrada, filtros, produto, consulta } = estado;
+const { digitar, confirmar, buscarPor, filtrar, explorar, abrir, voltar } = estado;
 const fonte = computed(() => FONTES[corredor.value.id]);
 const telas = computed(() => TELAS[corredor.value.id]);
-const motor = useDuckDB(corredor);
-const b = useBusca(fonte);
-const { entrada, marca, filtros } = b;
-const produto = ref<string | null>(null);
-/** se a página do produto foi aberta de dentro do app, "voltar" é o voltar do navegador */
-const abertoDaqui = ref(false);
-const pronto = computed(() => motor.status.value === "pronto");
+const motor = reactive(useCorredorPronto(corredor));
+const b = reactive(useBusca(fonte));
+const pronto = computed(() => motor.status === "pronto");
 
-function estado(): Partial<EstadoUrl> {
-  return { q: entrada.value, marca: marca.value, ...filtros, produto: produto.value };
+function buscar(forcar: boolean): void {
+  if (pronto.value) void b.buscar(consulta.value, filtros.value, forcar);
 }
 
-function aplicarUrl(): void {
-  const e = lerUrl();
-  marca.value = e.marca;
-  entrada.value = e.marca || e.q;
-  Object.assign(filtros, { grupo: e.grupo, tipo: e.tipo, situacao: e.situacao });
-  produto.value = e.produto;
+useNavegacao(estado, { trocou: motor.trocou, subir: motor.subir, limpar: b.limpar, buscar });
+
+onMounted(async () => {
+  estado.lerDaUrl();
+  await motor.subir();
+  if (!produto.value) buscar(false);
+});
+
+async function tentarDeNovo(): Promise<void> {
+  await motor.subir();
+  buscar(true);
 }
 
 // A página estática tem uma abertura que só faz sentido na tela inicial. O script inline do Base
 // marca corredor e tela pela URL antes da primeira pintura; daqui em diante a ilha atualiza.
-const tela = computed(() => (produto.value ? "produto" : b.consulta.value ? "busca" : "inicio"));
+const tela = computed(() => (produto.value ? "produto" : consulta.value ? "busca" : "inicio"));
 watch(tela, (t) => (document.documentElement.dataset.tela = t), { immediate: true });
 
-let espera: ReturnType<typeof setTimeout> | undefined;
-
-/**
- * Estado que vem da URL (carga da página, voltar/avançar) não volta para a URL nem dispara busca pelos
- * observadores: quem aplica decide o que gravar e quando buscar. Os observadores rodam depois, antes da
- * próxima pintura, então a marca só sai depois de um nextTick.
- */
-let daUrl = false;
-
-async function vindoDaUrl<T>(aplicar: () => T | Promise<T>): Promise<T> {
-  daUrl = true;
-  try {
-    const r = await aplicar();
-    await nextTick();
-    return r;
-  } finally {
-    daUrl = false;
-  }
-}
-
-function buscarAgora(forcar = false): void {
-  if (pronto.value) void b.buscar(false, forcar);
-}
-
-function confirmar(): void {
-  clearTimeout(espera);
-  produto.value = null;
-  gravarUrl(estado(), true);
-  buscarAgora(true);
-}
-
-// digitar desfaz a marca escolhida; a busca espera a pausa e só substitui a URL
-watch(entrada, (v) => {
-  clearTimeout(espera);
-  if (daUrl) return;
-  if (marca.value && v !== marca.value) marca.value = "";
-  espera = setTimeout(() => {
-    if (produto.value) return;
-    gravarUrl(estado());
-    buscarAgora();
-  }, 250);
+// Título da aba: o do produto aberto quando a página dele já o informou; senão, o do corredor. A chave
+// impede que o título de um produto apareça na página de outro enquanto ela carrega.
+const chaveProduto = computed(() => (produto.value ? `${corredor.value.id}-${produto.value}` : ""));
+const tituloProduto = shallowRef({ chave: "", texto: "" });
+watchEffect(() => {
+  const t = tituloProduto.value;
+  const doProduto = chaveProduto.value && t.chave === chaveProduto.value ? t.texto : "";
+  document.title = tituloPagina(doProduto || corredor.value.titulo);
 });
-
-// filtro é uma escolha deliberada: entra no histórico
-watch(
-  () => ({ ...filtros }),
-  () => {
-    if (daUrl) return;
-    gravarUrl(estado(), true);
-    buscarAgora();
-  },
-);
-
-/** Busca escolhida por clique (sugestão, exemplo, empresa): põe o texto na caixa e busca já. */
-function buscarPor(texto: string, comoMarca = false): void {
-  marca.value = comoMarca ? texto : "";
-  entrada.value = texto;
-  confirmar();
-  window.scrollTo({ top: 0 });
+function guardarTitulo(texto: string): void {
+  tituloProduto.value = { chave: chaveProduto.value, texto };
 }
-
-function explorar(grupo: string): void {
-  marca.value = "";
-  entrada.value = "";
-  filtros.grupo = grupo;
-}
-
-function abrirProduto(id: string): void {
-  produto.value = id;
-  abertoDaqui.value = true;
-  gravarUrl(estado(), true);
-  window.scrollTo({ top: 0 });
-}
-
-function voltar(): void {
-  if (abertoDaqui.value) {
-    history.back();
-    return;
-  }
-  produto.value = null;
-  gravarUrl(estado(), true);
-  buscarAgora();
-}
-
-// ---------------------------------------------------------------------------------------------
-// corredores
-
-/** Marca a placa do corredor ativo no cabeçalho (estático, fora da ilha). */
-function marcarPlacas(id: string): void {
-  for (const a of document.querySelectorAll<HTMLAnchorElement>("[data-corredor-link]")) {
-    if (a.dataset.corredorLink === id) a.setAttribute("aria-current", "page");
-    else a.removeAttribute("aria-current");
-  }
-}
-
-const reduzido = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-// título da aba do corredor; "post" para rodar depois de uma página de produto desmontar e devolver o dela
-watch(corredor, (c) => produto.value || (document.title = tituloPagina(c.titulo)), { flush: "post" });
-
-/**
- * Troca de corredor sem recarregar: leva o termo e zera filtros, marca e produto aberto. Com View
- * Transitions, a página nova aparece num círculo que cresce a partir do clique, como a cor do corredor
- * tomando conta. `depois` roda logo depois de zerar, dentro da mesma atualização (voltar/avançar aplica
- * ali o estado da URL; a animação roda a atualização mais tarde, então aplicar antes seria desfeito).
- * Devolve se trocou; quem chama prepara a fonte nova com motor.subir().
- */
-async function trocarCorredor(
-  novo: Corredor,
-  opcoes: { origem?: { x: number; y: number }; push: boolean; depois?: () => void },
-): Promise<boolean> {
-  if (novo.id === corredor.value.id) {
-    opcoes.depois?.();
-    return false;
-  }
-  const aplicar = () => {
-    corredor.value = novo;
-    document.documentElement.dataset.corredor = novo.id;
-    marcarPlacas(novo.id);
-    marca.value = "";
-    produto.value = null;
-    abertoDaqui.value = false;
-    Object.assign(filtros, FILTROS_PADRAO);
-    b.limpar();
-    opcoes.depois?.();
-    if (opcoes.push) gravarUrl(estado(), true, rotaDo(novo));
-  };
-  const h = document.documentElement;
-  if ("startViewTransition" in document && !reduzido()) {
-    const { x, y } = opcoes.origem ?? { x: innerWidth / 2, y: 0 };
-    h.style.setProperty("--vt-x", `${x}px`);
-    h.style.setProperty("--vt-y", `${y}px`);
-    h.style.setProperty("--vt-r", `${Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))}px`);
-    // A função de atualização roda depois de capturar a tela antiga (assíncrona): esperar por ela
-    // antes de preparar a fonte nova, senão a preparação ainda vê o corredor anterior. Se o navegador
-    // pular a animação (aba em segundo plano), ela roda do mesmo jeito; só `ready` rejeita.
-    try {
-      const vt = document.startViewTransition(() => {
-        aplicar();
-        return nextTick();
-      });
-      vt.ready.catch(() => {
-        // animação pulada: a troca já aconteceu
-      });
-      await vt.updateCallbackDone;
-    } catch {
-      if (corredor.value.id !== novo.id) aplicar();
-    }
-  } else aplicar();
-  return true;
-}
-
-async function aoClicarPlaca(ev: MouseEvent): Promise<void> {
-  const a = ev.target instanceof Element ? ev.target.closest<HTMLAnchorElement>("a[data-corredor-link]") : null;
-  if (!a || !cliqueInterno(ev)) return;
-  ev.preventDefault();
-  clearTimeout(espera);
-  const trocou = await trocarCorredor(corredorPorId(a.dataset.corredorLink ?? ""), {
-    origem: { x: ev.clientX, y: ev.clientY },
-    push: true,
-  });
-  if (trocou) await motor.subir();
-  buscarAgora(true);
-}
-
-/** Voltar/avançar: o estado inteiro vem da URL, inclusive o corredor; nada é gravado no histórico. */
-async function aoNavegar(): Promise<void> {
-  clearTimeout(espera);
-  const trocou = await vindoDaUrl(() => {
-    abertoDaqui.value = false;
-    return trocarCorredor(corredorDaUrl(location.pathname), { push: false, depois: aplicarUrl });
-  });
-  if (trocou) await motor.subir();
-  if (!produto.value) buscarAgora(true);
-}
-
-// ouvintes do DOM não esperam promessa: os erros já viram estado (motor.erro, b.erro)
-const naNavegacao = () => void aoNavegar();
-const noClique = (ev: MouseEvent) => void aoClicarPlaca(ev);
-
-onMounted(async () => {
-  await vindoDaUrl(aplicarUrl);
-  marcarPlacas(corredor.value.id);
-  window.addEventListener("popstate", naNavegacao);
-  document.addEventListener("click", noClique);
-  await motor.subir();
-  if (!produto.value) buscarAgora();
-});
-onBeforeUnmount(() => {
-  window.removeEventListener("popstate", naNavegacao);
-  document.removeEventListener("click", noClique);
-  clearTimeout(espera);
-});
 
 // ---------------------------------------------------------------------------------------------
 // textos
 
 const termo = computed(() => {
-  const q = b.buscada.value;
+  const q = b.buscada;
   return q && (q.modo === "texto" || q.modo === "marca") ? q.valor : null;
 });
 
 const titulo = computed(() => {
-  const q = b.buscada.value;
+  const q = b.buscada;
   if (!q) return "";
   const [um, varios] = corredor.value.item;
-  const itens = plural(b.total.value, um, varios);
-  const primeiro = b.produtos.value[0] as { no_razao_social_empresa?: string } | undefined;
+  const itens = plural(b.total, um, varios);
+  const primeiro = b.produtos[0] as { no_razao_social_empresa?: string } | undefined;
   if (q.modo === "cnpj" && primeiro?.no_razao_social_empresa)
     return `${itens} de ${legivel(primeiro.no_razao_social_empresa, "nome")}`;
   if (q.modo === "marca") return `${itens} da marca ${q.valor}`;
   if (q.modo === "texto") return `${itens} para “${q.valor}”`;
-  if (q.modo === "todos") return `${itens} · ${corredor.value.grupo}: ${legivel(filtros.grupo)}`;
+  if (q.modo === "todos") return `${itens} · ${corredor.value.grupo}: ${legivel(filtros.value.grupo)}`;
   return `${itens} · ${MODO_ROTULO[q.modo]}`;
 });
 </script>
 
 <template>
   <CaixaBusca
-    v-model="entrada"
-    :consulta="b.consulta.value"
+    :model-value="entrada"
+    :consulta="consulta"
     :pronto="pronto"
     :placeholder="corredor.placeholder"
     :rotulo-texto="corredor.rotuloTexto"
     :sugerir="fonte.sugerir"
+    @update:model-value="digitar"
     @confirmar="confirmar"
     @marca="(m) => buscarPor(m, true)"
     @empresa="(c) => buscarPor(fmtCnpj(c))"
   />
 
-  <div
-    v-if="motor.status.value === 'iniciando' || motor.status.value === 'baixando'"
-    class="carregamento"
-    role="status"
-  >
+  <div v-if="motor.status === 'iniciando' || motor.status === 'baixando'" class="carregamento" role="status">
     <!-- um pote enchendo: o nível acompanha o download da tabela do corredor -->
     <svg
       class="pote-carregando"
-      :class="{ indeterminado: motor.status.value === 'iniciando' }"
+      :class="{ indeterminado: motor.status === 'iniciando' }"
       viewBox="0 0 64 80"
       aria-hidden="true"
     >
@@ -293,11 +113,7 @@ const titulo = computed(() => {
       <g clip-path="url(#pote-dentro)">
         <g
           class="nivel"
-          :style="
-            motor.status.value === 'baixando'
-              ? { transform: `translateY(${76 - 58 * motor.progresso.value}px)` }
-              : undefined
-          "
+          :style="motor.status === 'baixando' ? { transform: `translateY(${76 - 58 * motor.progresso}px)` } : undefined"
         >
           <path class="onda" d="M0 0q8-5 16 0t16 0 16 0 16 0 16 0 16 0V80H0Z" />
         </g>
@@ -307,10 +123,10 @@ const titulo = computed(() => {
       <rect class="etiqueta" x="17" y="40" width="30" height="15" rx="2" />
     </svg>
     <p>
-      <strong v-if="motor.status.value === 'iniciando'">Abrindo o corredor {{ corredor.numero }}…</strong>
+      <strong v-if="motor.status === 'iniciando'">Abrindo o corredor {{ corredor.numero }}…</strong>
       <strong v-else
-        >Enchendo {{ corredor.recipiente }}: {{ Math.round(motor.progresso.value * 100) }}% de
-        {{ fmtBytes(motor.tamanho.value) }}</strong
+        >Enchendo {{ corredor.recipiente }}: {{ Math.round(motor.progresso * 100) }}% de
+        {{ fmtBytes(motor.tamanho) }}</strong
       >
       <span class="muted"
         >Os dados de {{ corredor.nome.toLowerCase() }} vêm da ANVISA só na primeira visita; depois ficam guardados no
@@ -318,9 +134,9 @@ const titulo = computed(() => {
       >
     </p>
   </div>
-  <div v-else-if="motor.status.value === 'erro'" class="estado erro" role="alert">
-    <p>Não foi possível abrir este corredor: {{ motor.erro.value }}</p>
-    <button class="btn" type="button" @click="motor.subir().then(() => b.buscar(false, true))">Tentar de novo</button>
+  <div v-else-if="motor.status === 'erro'" class="estado erro" role="alert">
+    <p>Não foi possível abrir este corredor: {{ motor.erro }}</p>
+    <button class="btn" type="button" @click="tentarDeNovo">Tentar de novo</button>
   </div>
 
   <component
@@ -330,46 +146,49 @@ const titulo = computed(() => {
     :key="`${corredor.id}-${produto}`"
     @voltar="voltar"
     @empresa="(c: string) => buscarPor(fmtCnpj(c))"
+    @titulo="guardarTitulo"
   />
 
-  <template v-else-if="b.consulta.value">
-    <Facetas v-if="b.buscada.value" v-model="filtros" :contagens="b.contagens.value" :rotulo-grupo="corredor.grupo" />
-    <p v-if="b.erro.value" class="estado erro" role="alert">Erro na busca: {{ b.erro.value }}</p>
-    <template v-else-if="b.buscada.value">
+  <template v-else-if="consulta">
+    <Facetas
+      v-if="b.buscada"
+      :model-value="filtros"
+      :contagens="b.contagens"
+      :rotulo-grupo="corredor.grupo"
+      @update:model-value="filtrar"
+    />
+    <p v-if="b.erro" class="estado erro" role="alert">Erro na busca: {{ b.erro }}</p>
+    <template v-else-if="b.buscada">
       <h2 class="resultado-titulo" aria-live="polite">
-        <template v-if="b.total.value">{{ titulo }}</template>
-        <template v-else-if="!b.carregando.value">Nenhum {{ corredor.item[0] }} encontrado</template>
+        <template v-if="b.total">{{ titulo }}</template>
+        <template v-else-if="!b.carregando">Nenhum {{ corredor.item[0] }} encontrado</template>
       </h2>
-      <div v-if="!b.total.value && !b.carregando.value" class="vazio">
+      <div v-if="!b.total && !b.carregando" class="vazio">
         <Icone nome="pote" />
         <p v-if="filtros.situacao === 'ativo'">
           Só aparecem os liberados agora.
-          <a href="#" @click.prevent="filtros.situacao = 'todos'">Incluir os encerrados</a>
+          <a href="#" @click.prevent="filtrar({ ...filtros, situacao: 'todos' })">Incluir os encerrados</a>
         </p>
         <p v-if="filtros.grupo || filtros.tipo">
-          <a href="#" @click.prevent="Object.assign(filtros, { grupo: '', tipo: '' })">Limpar os filtros</a>
+          <a href="#" @click.prevent="filtrar({ ...filtros, grupo: '', tipo: '' })">Limpar os filtros</a>
         </p>
         <p class="note">{{ corredor.dica }}</p>
       </div>
-      <div class="lista" :class="{ esmaecida: b.carregando.value }">
+      <div class="lista" :class="{ esmaecida: b.carregando }">
         <component
           :is="telas.cartao"
-          v-for="(p, i) in b.produtos.value"
+          v-for="(p, i) in b.produtos"
           :key="fonte.idDe(p)"
           :p="p"
           :termo="termo"
-          :extra="b.extras.value.get(fonte.idDe(p))"
+          :extra="b.extras.get(fonte.idDe(p))"
           :style="{ '--i': i % 30 }"
-          @abrir="abrirProduto"
+          @abrir="abrir"
         />
       </div>
-      <p v-if="b.temMais.value" class="mais">
-        <button class="btn" type="button" :disabled="b.carregando.value" @click="b.buscar(true)">
-          {{
-            b.carregando.value
-              ? "Carregando…"
-              : `Mostrar mais (${fmtInt(b.produtos.value.length)} de ${fmtInt(b.total.value)})`
-          }}
+      <p v-if="b.temMais" class="mais">
+        <button class="btn" type="button" :disabled="b.carregando" @click="b.mais()">
+          {{ b.carregando ? "Carregando…" : `Mostrar mais (${fmtInt(b.produtos.length)} de ${fmtInt(b.total)})` }}
         </button>
       </p>
     </template>
@@ -378,9 +197,9 @@ const titulo = computed(() => {
 
   <Inicio v-else :key="corredor.id" :corredor="corredor" :fonte="fonte" @exemplo="buscarPor" @grupo="explorar" />
 
-  <p v-if="motor.origem.value?.loaded_at" class="note fonte">
-    Dados abertos da ANVISA de {{ fmtData(motor.origem.value.loaded_at) }} (<a :href="motor.origem.value.url">{{
-      motor.origem.value.name
+  <p v-if="motor.origem?.loaded_at" class="note fonte">
+    Dados abertos da ANVISA de {{ fmtData(motor.origem.loaded_at) }} (<a :href="motor.origem.url">{{
+      motor.origem.name
     }}</a
     >).
   </p>

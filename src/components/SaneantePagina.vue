@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
+import { computed, ref, shallowRef, watch } from "vue";
 import { saneantes, type Saneante } from "../lib/fontes/saneantes";
 import { fmtCnpj, fmtData, fmtProcesso } from "../lib/format";
-import { tituloPagina } from "../lib/marca";
 import { situacaoDe } from "../lib/situacao";
 import { legivel } from "../lib/texto";
 import { validade } from "../lib/validade";
@@ -11,28 +10,23 @@ import Copiar from "./Copiar.vue";
 import Icone from "./Icone.vue";
 
 const props = defineProps<{ id: string }>();
-const emit = defineEmits<{ voltar: []; empresa: [cnpj: string] }>();
+const emit = defineEmits<{ voltar: []; empresa: [cnpj: string]; titulo: [texto: string] }>();
 
 const p = shallowRef<Saneante | null>(null);
 const carregando = ref(true);
 const erro = ref("");
 const { copiado: compartilhado, compartilhar } = useCopia();
-let vez = 0;
-
+// o BuscaApp monta esta página de novo a cada produto (:key), então ela carrega uma vez só
 async function carregar(): Promise<void> {
-  const minha = ++vez;
-  carregando.value = true;
-  erro.value = "";
   try {
-    const s = await saneantes.porId(props.id);
-    if (minha === vez) p.value = s;
+    p.value = await saneantes.porId(props.id);
   } catch (e) {
-    if (minha === vez) erro.value = e instanceof Error ? e.message : String(e);
+    erro.value = e instanceof Error ? e.message : String(e);
   } finally {
-    if (minha === vez) carregando.value = false;
+    carregando.value = false;
   }
 }
-watch(() => props.id, carregar, { immediate: true });
+void carregar();
 
 const ativo = computed(() => p.value?.situacao_registro === "Ativo");
 const sit = computed(() => situacaoDe(ativo.value));
@@ -41,9 +35,7 @@ const val = computed(() => (p.value ? validade(p.value.grupo, p.value.dt_vencime
 // o nome do saneante costuma trazer a marca ("RAID ELÉTRICO LÍQUIDO JOHNSON"): iniciais maiúsculas
 const titulo = computed(() => (p.value ? legivel(p.value.no_produto, "nome") : ""));
 
-const tituloOriginal = document.title;
-watch(titulo, (t) => t && (document.title = tituloPagina(t)));
-onBeforeUnmount(() => (document.title = tituloOriginal));
+watch(titulo, (t) => t && emit("titulo", t));
 </script>
 
 <template>

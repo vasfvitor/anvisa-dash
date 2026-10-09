@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { effectScope, shallowRef } from "vue";
 import { useBusca } from "../src/components/composables/useBusca";
 import type { Consulta } from "../src/lib/detect";
-import { POR_PAGINA, type Fonte, type Item } from "../src/lib/fonte";
+import { FILTROS_PADRAO, POR_PAGINA, type Filtros, type Fonte, type Item } from "../src/lib/fonte";
 
 interface Linha extends Item {
   id: string;
@@ -11,6 +11,7 @@ interface Linha extends Item {
 
 interface Pedido {
   q: Consulta;
+  filtros: Filtros;
   pagina: number;
   responder: (linhas: Linha[]) => void;
   falhar: (e: Error) => void;
@@ -21,9 +22,9 @@ function fonteFalsa() {
   let facetas = 0;
   const fonte: Fonte<Linha> = {
     preparar: () => Promise.resolve(),
-    buscar: (q, _f, pagina) =>
+    buscar: (q, filtros, pagina) =>
       new Promise((responder, falhar) => {
-        pedidos.push({ q, pagina, responder, falhar });
+        pedidos.push({ q, filtros, pagina, responder, falhar });
       }),
     facetas: () => {
       facetas++;
@@ -55,29 +56,31 @@ function montar() {
   return { ...falsa, b };
 }
 
+const texto = (valor: string): Consulta => ({ modo: "texto", valor });
+const filtros = { ...FILTROS_PADRAO };
+
 describe("useBusca", () => {
   it("resposta atrasada de uma busca antiga é descartada", async () => {
     const { b, pedidos } = montar();
-    b.entrada.value = "whey";
-    const primeira = b.buscar();
-    b.entrada.value = "creatina";
-    const segunda = b.buscar();
+    const primeira = b.buscar(texto("whey"), filtros);
+    const segunda = b.buscar(texto("creatina"), filtros);
     pedidos[1]!.responder(linhas(1, 1, 100));
     pedidos[0]!.responder(linhas(2, 2));
     await Promise.all([primeira, segunda]);
     expect(b.produtos.value).toEqual(linhas(1, 1, 100));
-    expect(b.buscada.value).toEqual({ modo: "texto", valor: "creatina" });
+    expect(b.buscada.value).toEqual(texto("creatina"));
   });
 
-  it("mais acrescenta a página seguinte e não reconta as facetas", async () => {
+  it("mais acrescenta a página seguinte, com os filtros da lista, e não reconta as facetas", async () => {
     const { b, pedidos, facetas } = montar();
-    b.entrada.value = "whey";
-    const p1 = b.buscar();
+    const comTodos = { ...filtros, situacao: "todos" as const };
+    const p1 = b.buscar(texto("whey"), comTodos);
     pedidos[0]!.responder(linhas(POR_PAGINA, 45));
     await p1;
     expect(b.temMais.value).toBe(true);
-    const p2 = b.buscar(true);
+    const p2 = b.mais();
     expect(pedidos[1]!.pagina).toBe(1);
+    expect(pedidos[1]!.filtros).toEqual(comTodos);
     pedidos[1]!.responder(linhas(15, 45, POR_PAGINA));
     await p2;
     expect(b.produtos.value).toHaveLength(45);
@@ -87,31 +90,32 @@ describe("useBusca", () => {
 
   it("a mesma busca não repete, a não ser forçada ou depois de um erro", async () => {
     const { b, pedidos } = montar();
-    b.entrada.value = "whey";
-    const p1 = b.buscar();
+    const p1 = b.buscar(texto("whey"), filtros);
     pedidos[0]!.falhar(new Error("sem rede"));
     await p1;
     expect(b.erro.value).toBe("sem rede");
-    const p2 = b.buscar();
+    const p2 = b.buscar(texto("whey"), filtros);
     expect(pedidos).toHaveLength(2);
     pedidos[1]!.responder(linhas(1, 1));
     await p2;
     expect(b.erro.value).toBe("");
-    await b.buscar();
+    await b.buscar(texto("whey"), filtros);
     expect(pedidos).toHaveLength(2);
-    void b.buscar(false, true);
+    void b.buscar(texto("whey"), filtros, true);
     expect(pedidos).toHaveLength(3);
   });
 
-  it("limpar descarta o que ainda está a caminho", async () => {
-    const { b, pedidos } = montar();
-    b.entrada.value = "whey";
-    const p = b.buscar();
-    b.limpar();
-    pedidos[0]!.responder(linhas(3, 3));
-    await p;
-    expect(b.produtos.value).toEqual([]);
-    expect(b.buscada.value).toBeNull();
-    expect(b.carregando.value).toBe(false);
+  it("sem consulta, ou ao limpar, descarta o que ainda está a caminho", async () => {
+    for (const descartar of ["limpar", "sem consulta"] as const) {
+      const { b, pedidos } = montar();
+      const p = b.buscar(texto("whey"), filtros);
+      if (descartar === "limpar") b.limpar();
+      else await b.buscar(null, filtros);
+      pedidos[0]!.responder(linhas(3, 3));
+      await p;
+      expect(b.produtos.value).toEqual([]);
+      expect(b.buscada.value).toBeNull();
+      expect(b.carregando.value).toBe(false);
+    }
   });
 });

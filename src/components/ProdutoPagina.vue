@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
+import { computed, ref, shallowRef, watch } from "vue";
 import { resumirAlergia } from "../lib/alergia";
 import { consenso, empresas, vazio } from "../lib/apresentacoes";
 import { fatiar, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas, plural } from "../lib/format";
-import { tituloPagina } from "../lib/marca";
 import { ativo as estaAtivo, indeferido as foiIndeferido, marcaPrincipal } from "../lib/produto";
 import { alimentos, buscarApresentacoes, type Apresentacao, type Produto } from "../lib/fontes/alimentos";
 import { situacaoDe } from "../lib/situacao";
@@ -14,7 +13,7 @@ import Icone from "./Icone.vue";
 import ResumoAlergia from "./ResumoAlergia.vue";
 
 const props = defineProps<{ id: string }>();
-const emit = defineEmits<{ voltar: []; empresa: [cnpj: string] }>();
+const emit = defineEmits<{ voltar: []; empresa: [cnpj: string]; titulo: [texto: string] }>();
 
 const p = shallowRef<Produto | null>(null);
 const aps = shallowRef<Apresentacao[] | null>(null);
@@ -22,30 +21,21 @@ const carregando = ref(true);
 const erro = ref("");
 const todasMarcas = ref(false);
 const { copiado: compartilhado, compartilhar } = useCopia();
-let vez = 0;
-
+// o BuscaApp monta esta página de novo a cada produto (:key), então ela carrega uma vez só
 async function carregar(): Promise<void> {
-  const minha = ++vez;
-  carregando.value = true;
-  erro.value = "";
-  aps.value = null;
   try {
     const produto = await alimentos.porId(props.id);
-    if (minha !== vez) return;
     p.value = produto;
     carregando.value = false;
     // o detalhe pode exigir baixar a segunda tabela: o topo aparece antes
-    if (produto) {
-      const lista = await buscarApresentacoes(Number(props.id));
-      if (minha === vez) aps.value = lista;
-    }
+    if (produto) aps.value = await buscarApresentacoes(Number(props.id));
   } catch (e) {
-    if (minha === vez) erro.value = e instanceof Error ? e.message : String(e);
+    erro.value = e instanceof Error ? e.message : String(e);
   } finally {
-    if (minha === vez) carregando.value = false;
+    carregando.value = false;
   }
 }
-watch(() => props.id, carregar, { immediate: true });
+void carregar();
 
 const listaMarcas = computed(() => marcas(p.value?.marcas));
 const titulo = computed(() => (p.value ? marcaPrincipal(p.value) : ""));
@@ -54,9 +44,7 @@ const sit = computed(() => situacaoDe(ativo.value));
 const indeferido = computed(() => !!p.value && foiIndeferido(p.value));
 const notificado = computed(() => p.value?.tipo_regularizacao === "Notificado");
 
-const tituloOriginal = document.title;
-watch(titulo, (t) => t && (document.title = tituloPagina(t)));
-onBeforeUnmount(() => (document.title = tituloOriginal));
+watch(titulo, (t) => t && emit("titulo", t));
 
 const comDetalhe = computed(() => (aps.value ?? []).filter((a) => a.tem_detalhe));
 const semDetalhe = computed(() => (aps.value ?? []).length - comDetalhe.value.length);

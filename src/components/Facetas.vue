@@ -30,8 +30,9 @@ const grupos = computed(() => {
 });
 const escondidas = computed(() => props.contagens.grupo.length - grupos.value.length);
 
+// os filtros são trocados inteiros, nunca alterados por dentro: cada clique é uma escolha nova (BuscaApp grava)
 function alternar(campo: "grupo" | "tipo", valor: string): void {
-  filtros.value[campo] = filtros.value[campo] === valor ? "" : valor;
+  filtros.value = { ...filtros.value, [campo]: filtros.value[campo] === valor ? "" : valor };
 }
 </script>
 
@@ -46,7 +47,7 @@ function alternar(campo: "grupo" | "tipo", valor: string): void {
         class="chip"
         :aria-pressed="filtros.situacao === s.valor"
         :disabled="!s.n && filtros.situacao !== s.valor"
-        @click="filtros.situacao = s.valor"
+        @click="filtros = { ...filtros, situacao: s.valor }"
       >
         {{ s.rotulo }} <span class="chip-n">{{ fmtInt(s.n) }}</span>
       </button>

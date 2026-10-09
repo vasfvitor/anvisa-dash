@@ -4,6 +4,7 @@ import { detectar, MODO_ROTULO, type Consulta } from "../lib/detect";
 import { fmtCnpj, fmtProcesso, plural } from "../lib/format";
 import type { Sugestao } from "../lib/fonte";
 import { legivel } from "../lib/texto";
+import { vezes } from "../lib/vez";
 import Destaque from "./Destaque.vue";
 import Icone from "./Icone.vue";
 
@@ -23,7 +24,7 @@ const lista = shallowRef<Sugestao[]>([]);
 const ativa = ref(-1);
 const aberta = ref(false);
 let espera: ReturnType<typeof setTimeout> | undefined;
-let vez = 0;
+const vez = vezes();
 // valor posto por uma escolha: não reabre sugestões para ele
 let escolhido = "";
 
@@ -40,9 +41,9 @@ watch([entrada, () => props.pronto], () => {
 });
 
 async function pedirSugestoes(t: string): Promise<void> {
-  const minha = ++vez;
+  const minhaVez = vez.nova();
   const r = await props.sugerir(t).catch(() => [] as Sugestao[]);
-  if (minha !== vez) return;
+  if (!minhaVez()) return;
   lista.value = r;
   ativa.value = -1;
 }
