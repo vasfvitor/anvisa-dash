@@ -9,6 +9,7 @@
 import { url } from "../lib/format";
 import * as colunasAlimentos from "./alimentos/colunas";
 import { meta as alimentos } from "./alimentos/meta";
+import * as colunasSaneantes from "./saneantes/colunas";
 import { meta as saneantes } from "./saneantes/meta";
 import type { Corredor } from "./tipos";
 
@@ -17,8 +18,17 @@ export type { Corredor, IdCorredor } from "./tipos";
 export const CORREDORES: Corredor[] = [alimentos, saneantes];
 
 /** Descrições de tabelas e colunas de todos os corredores, para o dicionário de dados. */
-export const TABELA_DESCRICAO: Record<string, string> = { ...colunasAlimentos.TABELA_DESCRICAO };
-export const COLUNA_DESCRICAO: Record<string, Record<string, string>> = { ...colunasAlimentos.COLUNA_DESCRICAO };
+export const TABELA_DESCRICAO: Record<string, string> = {
+  ...colunasAlimentos.TABELA_DESCRICAO,
+  ...colunasSaneantes.TABELA_DESCRICAO,
+  // de todos os corredores (cada um vê as do seu tipoProduto; ver lib/medidas.ts)
+  produtos_irregulares:
+    "Medidas de fiscalização da ANVISA contra produtos irregulares de todas as áreas (suspensão, proibição, recolhimento, interdição, apreensão, inutilização): uma linha por dossiê, ação, atividade e produto.",
+};
+export const COLUNA_DESCRICAO: Record<string, Record<string, string>> = {
+  ...colunasAlimentos.COLUNA_DESCRICAO,
+  ...colunasSaneantes.COLUNA_DESCRICAO,
+};
 
 export const CORREDOR_PADRAO = CORREDORES[0]!;
 

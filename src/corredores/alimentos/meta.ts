@@ -10,7 +10,7 @@ export const meta: Corredor = {
   tabela: "alimentos",
   icone: "capsula",
   deco: ["capsula", "folha", "pote", "trigo", "colher", "leite", "gota", "brilho", "etiqueta"],
-  titulo: "O que tem no que você consome",
+  titulo: "Alimentos e suplementos liberados pela ANVISA",
   descricao:
     "Consulte alimentos e suplementos regularizados na ANVISA pela marca, nome, empresa, CNPJ ou nº do processo: situação, glúten, lactose, alergênicos e ingredientes.",
   hero: {

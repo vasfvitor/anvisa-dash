@@ -1,0 +1,21 @@
+---
+// Página de erro do GitHub Pages (dist/404.html): fora dos buscadores, com o caminho de volta.
+import Base from "../layouts/Base.astro";
+import { CORREDORES, rotaDo } from "../corredores";
+import { url } from "../lib/format";
+---
+
+<Base title="Página não encontrada" description="Este endereço não existe no contém." noindex>
+  <h1>Página não encontrada</h1>
+  <p class="lead">Este endereço não existe (ou mudou). A consulta está em um destes corredores:</p>
+  <ul>
+    {CORREDORES.map((c) => (
+      <li>
+        <a href={rotaDo(c)}>{c.nome}</a>
+      </li>
+    ))}
+    <li>
+      <a href={url("/sobre/")}>Sobre o site</a>
+    </li>
+  </ul>
+</Base>

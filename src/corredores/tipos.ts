@@ -24,6 +24,7 @@ export interface Corredor {
   icone: string;
   /** ícones que flutuam em volta do título */
   deco: string[];
+  /** o <title> da página do corredor (o que aparece no resultado de busca e na aba): descritivo, não o slogan */
   titulo: string;
   descricao: string;
   hero: { selo: string; linha1: Frase; linha2: Frase; lead: string; carimbo: string };

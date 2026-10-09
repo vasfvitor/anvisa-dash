@@ -11,9 +11,9 @@ export const meta: Corredor = {
   tabela: "saneantes",
   icone: "borrifador",
   deco: ["borrifador", "bolhas", "gota", "certo", "bolhas", "documento", "gota", "brilho", "etiqueta"],
-  titulo: "Seu produto de limpeza é liberado?",
+  titulo: "Produtos de limpeza liberados pela ANVISA",
   descricao:
-    "Confira se um produto de limpeza (água sanitária, desinfetante, detergente, inseticida…) está liberado pela ANVISA e até quando a liberação vale. Busque pelo nome, pela empresa, pelo CNPJ ou pelo número do rótulo.",
+    "Veja se um produto de limpeza (saneante) está liberado pela ANVISA e até quando: água sanitária, desinfetante, inseticida. Busque por nome, empresa ou CNPJ.",
   hero: {
     selo: "antes de usar em casa",
     linha1: { antes: "Liberado ou ", destaque: "clandestino", depois: "?" },

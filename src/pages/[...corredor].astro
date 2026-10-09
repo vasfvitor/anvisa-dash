@@ -4,6 +4,7 @@ import Icone from "../components/Icone.astro";
 import Base from "../layouts/Base.astro";
 import { CORREDORES, type Corredor } from "../corredores";
 import { url } from "../lib/format";
+import { DESCRICAO, NOME } from "../lib/marca";
 
 // uma página por corredor: / é alimentos, /limpeza/ é saneantes
 export function getStaticPaths() {
@@ -13,9 +14,23 @@ const { id } = Astro.props;
 const corredor = CORREDORES.find((c) => c.id === id) as Corredor;
 // todas as aberturas vão na página (a troca de corredor não recarrega); o CSS mostra a do corredor ativo
 const visivel = CORREDORES.map((c) => `[data-corredor="${c.id}"] .hero[data-hero="${c.id}"]`).join(",");
+// o site em si (schema.org WebSite), só na página da raiz
+const site = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: `${NOME}.`,
+  url: new URL(url("/"), Astro.site).href,
+  inLanguage: "pt-BR",
+  description: DESCRICAO,
+};
 ---
 
-<Base title={corredor.titulo} description={corredor.descricao} corredor={corredor.id}>
+<Base
+  title={corredor.titulo}
+  description={corredor.descricao}
+  corredor={corredor.id}
+  estruturados={corredor.slug ? [] : [site]}
+>
   <style is:inline set:html={`.hero{display:none}${visivel}{display:block}`}></style>
   {CORREDORES.map((c) => (
     <section class="hero" data-hero={c.id}>

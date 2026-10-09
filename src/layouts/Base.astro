@@ -6,10 +6,10 @@ import Corredores from "../components/Corredores.astro";
 import Icone from "../components/Icone.astro";
 import Logo from "../components/Logo.astro";
 import { MANIFEST_URL } from "../lib/config";
-import { CORREDORES } from "../corredores";
+import { CORREDOR_PADRAO, CORREDORES } from "../corredores";
 import { fmtData, url } from "../lib/format";
 import { manifestDoBuild } from "../lib/manifest";
-import { DESCRICAO, SLOGAN, tituloPagina } from "../lib/marca";
+import { DESCRICAO, NOME, SLOGAN, tituloPagina } from "../lib/marca";
 import "../styles/global.css";
 
 interface Props {
@@ -17,8 +17,17 @@ interface Props {
   description?: string;
   /** corredor desta página (busca); dados e sobre não têm */
   corredor?: string;
+  /** fora dos buscadores (a página de erro) */
+  noindex?: boolean;
+  /** JSON-LD (schema.org) que descreve o que a página mostra */
+  estruturados?: Record<string, unknown>[];
 }
-const { title, corredor, description = DESCRICAO } = Astro.props;
+const { title, corredor, description = DESCRICAO, noindex = false, estruturados = [] } = Astro.props;
+const titulo = tituloPagina(title);
+// endereço canônico: o da página sem query (?q=, ?p= são estado da busca, não páginas)
+const canonico = new URL(Astro.url.pathname, Astro.site).href;
+// JSON dentro de <script>: "</" não pode aparecer cru
+const jsonLd = (d: Record<string, unknown>) => JSON.stringify(d).replace(/</g, "\\u003c");
 
 // rodapé com a origem de cada corredor no último build (a troca de corredor não recarrega a página, então
 // o rodapé cita todos); a busca mostra a do corredor ativo pelo manifest ao vivo
@@ -35,12 +44,24 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 ---
 
 <!doctype html>
-<html lang="pt-BR">
+<!-- o corredor já vem no HTML (o script inline só confirma pela URL): sem JavaScript, a abertura certa aparece -->
+<html lang="pt-BR" data-corredor={corredor ?? CORREDOR_PADRAO.id}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{tituloPagina(title)}</title>
+    <title>{titulo}</title>
     <meta name="description" content={description} />
+    {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonico} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={`${NOME}.`} />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={description} />
+    {!noindex && <meta property="og:url" content={canonico} />}
+    <meta name="twitter:card" content="summary" />
+    {estruturados.map((d) => (
+      <script type="application/ld+json" set:html={jsonLd(d)} />
+    ))}
     <meta name="theme-color" content="#f6f1e6" />
     <link rel="icon" href={url("/favicon.svg")} type="image/svg+xml" />
     <link rel="sitemap" href={url("/sitemap-index.xml")} />

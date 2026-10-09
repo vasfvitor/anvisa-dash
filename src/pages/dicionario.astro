@@ -8,9 +8,41 @@ import { manifestDoBuild, tabelaUrl } from "../lib/manifest";
 // gerado a cada build a partir do manifest: tabela ou coluna nova aparece aqui sem mudar código
 const m = await manifestDoBuild(MANIFEST_URL);
 const tabelas = Object.entries(m.tables);
+
+// um Dataset (schema.org) por tabela que a página descreve, com o Parquet como distribuição
+const pagina = new URL(Astro.url.pathname, Astro.site).href;
+const conjuntos = tabelas.flatMap(([nome, t]) => {
+  const descricao = TABELA_DESCRICAO[nome];
+  if (!descricao) return [];
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "Dataset",
+      name: `Dados abertos da ANVISA em Parquet: ${nome}`,
+      description: descricao,
+      url: `${pagina}#${nome}`,
+      inLanguage: "pt-BR",
+      dateModified: t.source.loaded_at ?? m.built_at,
+      isBasedOn: t.source.url,
+      creator: {
+        "@type": "Organization",
+        name: "Agência Nacional de Vigilância Sanitária (ANVISA)",
+        url: "https://www.gov.br/anvisa",
+      },
+      distribution: [
+        {
+          "@type": "DataDownload",
+          encodingFormat: "application/vnd.apache.parquet",
+          contentUrl: tabelaUrl(MANIFEST_URL, m, nome),
+        },
+      ],
+    },
+  ];
+});
 ---
 
 <Base
+  estruturados={conjuntos}
   title="Dicionário de dados"
   description="Tabelas e colunas dos dados abertos da ANVISA usados no site (alimentos e produtos de limpeza), em Parquet."
 >
