@@ -424,8 +424,9 @@ a.badge:hover {
   letter-spacing: -0.03em;
   font-weight: 750;
 }
-/* os totais do build ficam na abertura: acima dos ícones que flutuam nela, como o título */
-.hero .numeros {
+/* os totais e os exemplos ficam na abertura: acima dos ícones que flutuam nela, como o título */
+.hero .numeros,
+.hero .exemplos {
   position: relative;
   z-index: 1;
 }

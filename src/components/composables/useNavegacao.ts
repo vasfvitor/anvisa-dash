@@ -103,9 +103,20 @@ export function useNavegacao(estado: Estado, acoes: Acoes) {
     if (!estado.produto.value) acoes.buscar(true);
   }
 
+  /** Os exemplos da abertura (estática, Abertura.astro) são links com ?q=; o clique simples busca sem recarregar. */
+  function aoClicarExemplo(ev: MouseEvent): boolean {
+    const a = ev.target instanceof Element ? ev.target.closest<HTMLAnchorElement>("a[data-exemplo]") : null;
+    if (!a || !cliqueInterno(ev)) return false;
+    ev.preventDefault();
+    estado.buscarPor(a.dataset.exemplo ?? "");
+    return true;
+  }
+
   // ouvintes do DOM não esperam promessa: os erros já viram estado (motor e busca)
   const naNavegacao = () => void aoNavegar();
-  const noClique = (ev: MouseEvent) => void aoClicarPlaca(ev);
+  const noClique = (ev: MouseEvent) => {
+    if (!aoClicarExemplo(ev)) void aoClicarPlaca(ev);
+  };
   onMounted(() => {
     marcarPlacas(estado.corredor.value.id);
     window.addEventListener("popstate", naNavegacao);

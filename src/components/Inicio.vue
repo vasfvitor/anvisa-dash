@@ -6,7 +6,6 @@ import { fmtCnpj, fmtInt } from "../lib/format";
 import { recentes, type Medida } from "../lib/medidas";
 import { legivel } from "../lib/texto";
 import MedidaCartao from "./MedidaCartao.vue";
-import { montarUrl, noApp } from "./composables/useUrlState";
 
 const props = defineProps<{ corredor: Corredor; fonte: Fonte; pronto: boolean }>();
 const emit = defineEmits<{ exemplo: [valor: string]; grupo: [valor: string] }>();
@@ -47,14 +46,6 @@ watch(
 
 <template>
   <section class="inicio">
-    <p class="exemplos">
-      Experimente:
-      <template v-for="(x, i) in corredor.exemplos" :key="x.valor">
-        <a :href="montarUrl({ q: x.valor })" @click="noApp($event, () => emit('exemplo', x.valor))">{{ x.texto }}</a
-        ><span v-if="x.dica" class="muted"> ({{ x.dica }})</span>{{ i < corredor.exemplos.length - 1 ? ", " : "" }}
-      </template>
-    </p>
-
     <template v-if="corredor.atalhos">
       <h2>O que você procura?</h2>
       <div class="categorias">

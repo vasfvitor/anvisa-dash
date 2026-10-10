@@ -2,7 +2,9 @@
 // A abertura (hero) de um corredor. A página do corredor mostra a sua e guarda as dos outros em <template>:
 // conteúdo inerte (fora da página para buscadores e leitores de tela) que a troca de corredor clona.
 // Os totais vêm do build (lib/estatico/dados.ts): aparecem antes do motor da busca subir, também nos cosméticos.
-import type { Corredor } from "../corredores";
+// Os exemplos também são estáticos (eram da ilha e viravam o maior elemento da tela, pintado só depois do
+// JavaScript: LCP de 3 s no Lighthouse em 2026-10-10); o clique simples busca sem recarregar (useNavegacao).
+import { rotaDo, type Corredor } from "../corredores";
 import type { Numeros } from "../lib/fonte";
 import { fmtInt } from "../lib/format";
 import Icone from "./Icone.astro";
@@ -43,4 +45,16 @@ const { c, numeros } = Astro.props;
       </div>
     </dl>
   )}
+  <p class="exemplos">
+    Experimente:{" "}
+    {c.exemplos.map((x, i) => (
+      <>
+        {i > 0 && ", "}
+        <a href={`${rotaDo(c)}?${new URLSearchParams({ q: x.valor }).toString()}`} data-exemplo={x.valor}>
+          {x.texto}
+        </a>
+        {x.dica && <span class="muted"> ({x.dica})</span>}
+      </>
+    ))}
+  </p>
 </section>
