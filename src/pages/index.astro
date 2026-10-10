@@ -4,12 +4,19 @@
 // verdade: funciona sem JavaScript e abre o corredor com ?q=. Sem a ilha: a busca roda na página do corredor.
 import Base from "../layouts/Base.astro";
 import Icone from "../components/Icone.astro";
-import { CORREDORES, rotaDo } from "../corredores";
+import { CORREDORES, rotaDo, type IdCorredor } from "../corredores";
 import { totaisDoBuild } from "../lib/estatico/dados";
 import { fmtInt, url } from "../lib/format";
 import { DESCRICAO, NOME } from "../lib/marca";
 
 const totais = await totaisDoBuild();
+// o que tem em cada corredor, em vez do lead (igual nos três); medido em 2026-10-10: nos alimentos, 9.233 dos
+// cerca de 10.300 liberados são suplementos, depois alimentos infantis e dietas enterais
+const CONTEUDO: Record<IdCorredor, string> = {
+  alimentos: "Suplementos, alimentos infantis e dietas enterais.",
+  saneantes: "Água sanitária, detergente, desinfetante, inseticida.",
+  cosmeticos: "Shampoo, protetor solar, maquiagem, perfume, fralda.",
+};
 // o site em si (schema.org WebSite), só aqui
 const site = {
   "@context": "https://schema.org",
@@ -24,8 +31,8 @@ const site = {
 <Base title="Produtos liberados pela ANVISA" description={DESCRICAO} estruturados={[site]}>
   <h1>Está liberado pela ANVISA?</h1>
   <p class="lead">
-    Consulte alimentos, suplementos, produtos de limpeza e cosméticos nos dados abertos da ANVISA: se o produto está
-    liberado, até quando, e se a empresa tem medidas de fiscalização.
+    Digite o nome, a marca, o CNPJ ou o número do processo que vem no rótulo. Os dados são os da própria ANVISA,
+    atualizados nos dias úteis.
   </p>
 
   <div class="secoes">
@@ -40,10 +47,10 @@ const site = {
             <Icone nome={c.icone} />
             <a href={rotaDo(c)}>{c.nome}</a>
           </h2>
-          <p class="desc">{c.lead}</p>
+          <p class="desc">{CONTEUDO[c.id]}</p>
           {n && (
             <p class="totais">
-              <strong>{fmtInt(n.ativos)}</strong> liberados de {fmtInt(n.produtos)}, de {fmtInt(n.empresas)} empresas
+              <strong>{fmtInt(n.ativos)}</strong> liberados · {fmtInt(n.empresas)} empresas
             </p>
           )}
           <form class="busca" role="search" action={rotaDo(c)} method="get">
@@ -80,18 +87,10 @@ const site = {
     })}
   </div>
 
-  <h2 class="sem-busca-titulo">Sem buscar</h2>
-  <ul class="sem-busca">
-    <li>
-      <a href={url("/empresas/")}>Empresas de A a Z</a>: os produtos e as medidas de cada uma, numa página só.
-    </li>
-    <li>
-      <a href={url("/dicionario/")}>Dicionário de dados</a>: as tabelas e colunas, para quem quer os arquivos.
-    </li>
-    <li>
-      <a href={url("/sobre/")}>Sobre</a>: de onde vêm os dados e como a busca funciona.
-    </li>
-  </ul>
+  <p class="note">
+    Também: <a href={url("/empresas/")}>empresas de A a Z</a> · <a href={url("/dicionario/")}>dicionário de dados</a> ·{" "}
+    <a href={url("/sobre/")}>sobre o site</a>
+  </p>
 </Base>
 
 <style>
@@ -168,15 +167,5 @@ const site = {
   }
   .secao-inicial .note {
     margin: 0;
-  }
-  .sem-busca-titulo {
-    font-size: 1.2rem;
-  }
-  /* não .mais: é o nome do "Mostrar mais" da busca, centralizado */
-  .sem-busca {
-    padding-left: 1.1rem;
-  }
-  .sem-busca li {
-    margin: 0.35rem 0;
   }
 </style>
