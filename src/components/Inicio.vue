@@ -1,32 +1,25 @@
 <script setup lang="ts">
 import { computed, onMounted, shallowRef, watch } from "vue";
 import type { Corredor } from "../corredores";
-import type { Fonte, Numeros, ValorFaceta } from "../lib/fonte";
+import type { Fonte, ValorFaceta } from "../lib/fonte";
 import { fmtCnpj, fmtInt } from "../lib/format";
 import { recentes, type Medida } from "../lib/medidas";
 import { legivel } from "../lib/texto";
-import Icone from "./Icone.vue";
 import MedidaCartao from "./MedidaCartao.vue";
 import { montarUrl, noApp } from "./composables/useUrlState";
 
 const props = defineProps<{ corredor: Corredor; fonte: Fonte; pronto: boolean }>();
 const emit = defineEmits<{ exemplo: [valor: string]; grupo: [valor: string] }>();
 
-// só esta tela usa os números gerais e os grupos: consulta ao aparecer, não na partida do app
-const totais = shallowRef<Numeros | null>(null);
+// só esta tela usa os grupos: consulta ao aparecer, não na partida do app (os totais vêm prontos do build, na
+// abertura estática: Abertura.astro)
 const grupos = shallowRef<ValorFaceta[]>([]);
 onMounted(() => {
-  props.fonte.numeros().then(
-    (n) => (totais.value = n),
-    () => {
-      // sem os números a abertura só não mostra o painel; o erro da tabela aparece na busca
-    },
-  );
   if (!props.corredor.atalhos)
     props.fonte.grupos().then(
       (c) => (grupos.value = c),
       () => {
-        // idem: sem os grupos, a abertura fica sem os atalhos
+        // sem os grupos, a abertura fica sem os atalhos
       },
     );
 });
@@ -61,24 +54,6 @@ watch(
         ><span v-if="x.dica" class="muted"> ({{ x.dica }})</span>{{ i < corredor.exemplos.length - 1 ? ", " : "" }}
       </template>
     </p>
-
-    <dl v-if="totais" class="numeros">
-      <div>
-        <Icone nome="certo" />
-        <dt>liberados</dt>
-        <dd>{{ fmtInt(totais.ativos) }}</dd>
-      </div>
-      <div>
-        <Icone nome="caixas" />
-        <dt>já passaram pela ANVISA</dt>
-        <dd>{{ fmtInt(totais.produtos) }}</dd>
-      </div>
-      <div>
-        <Icone nome="fabrica" />
-        <dt>empresas</dt>
-        <dd>{{ fmtInt(totais.empresas) }}</dd>
-      </div>
-    </dl>
 
     <template v-if="corredor.atalhos">
       <h2>O que você procura?</h2>

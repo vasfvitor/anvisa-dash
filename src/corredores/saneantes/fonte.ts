@@ -6,16 +6,7 @@ import { carregar, consultar } from "../../lib/db";
 import { SQL_SAN, TABELA } from "./consultas";
 import type { Consulta } from "../../lib/detect";
 import { ID_PRODUTO, POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../../lib/fonte";
-import {
-  contarFacetas,
-  contarNumeros,
-  derivar,
-  gruposAtivos,
-  onde,
-  sugerirEm,
-  termo,
-  type Trecho,
-} from "../../lib/sql";
+import { contarFacetas, derivar, gruposAtivos, onde, sugerirEm, termo, type Trecho } from "../../lib/sql";
 
 export interface Saneante {
   /** nu_expediente: o id na URL (?p=) */
@@ -114,10 +105,6 @@ export const fonte: Fonte<Saneante> = {
     return sugerirEm("san_sugestoes", texto);
   },
   porId,
-  async numeros() {
-    await tabela();
-    return contarNumeros("san");
-  },
   async grupos() {
     await tabela();
     return gruposAtivos("san");

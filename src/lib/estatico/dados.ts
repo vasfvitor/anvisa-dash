@@ -12,18 +12,31 @@ import { sqlCos, TABELA as COSMETICOS } from "../../corredores/cosmeticos/consul
 import { SQL_SAN, TABELA as SANEANTES } from "../../corredores/saneantes/consultas";
 import type { IdCorredor } from "../../corredores/tipos";
 import { MANIFEST_URL } from "../config";
-import { SQL_MEDIDAS, TABELA_MEDIDAS } from "../consultas";
+import { SQL_MEDIDAS, sqlNumeros, TABELA_MEDIDAS } from "../consultas";
+import type { Numeros } from "../fonte";
 import { manifestDoBuild, tabelaUrl, type Manifest } from "../manifest";
 import { agrupar, COSMETICOS_POR_EMPRESA, type Empresa, type Entrada } from "./empresas";
 
-let doBuild: Promise<Map<string, Empresa>> | undefined;
-
-/** As empresas com produto, por CNPJ. */
-export function empresasDoBuild(): Promise<Map<string, Empresa>> {
-  return (doBuild ??= carregar());
+interface DoBuild {
+  empresas: Map<string, Empresa>;
+  /** totais de cada corredor (os cosméticos só aqui: a ilha não baixa a tabela inteira) */
+  totais: Partial<Record<IdCorredor, Numeros>>;
 }
 
-async function carregar(): Promise<Map<string, Empresa>> {
+let doBuild: Promise<DoBuild> | undefined;
+const umaVez = () => (doBuild ??= carregar());
+
+/** As empresas com produto, por CNPJ. */
+export async function empresasDoBuild(): Promise<Map<string, Empresa>> {
+  return (await umaVez()).empresas;
+}
+
+/** Liberados, total e empresas de cada corredor, como estavam os dados no build. */
+export async function totaisDoBuild(): Promise<Partial<Record<IdCorredor, Numeros>>> {
+  return (await umaVez()).totais;
+}
+
+async function carregar(): Promise<DoBuild> {
   const manifest = await manifestDoBuild(MANIFEST_URL);
   const pasta = await mkdtemp(join(tmpdir(), "contem-"));
   const db = await DuckDBInstance.create(":memory:");
@@ -40,7 +53,16 @@ async function carregar(): Promise<Map<string, Empresa>> {
     await con.run(SQL_SAN);
     if (medidas) await con.run(SQL_MEDIDAS);
     if (cosmeticos) await con.run(`CREATE TABLE cos AS ${sqlCos(`"${COSMETICOS}"`)}`);
-    return agrupar(await ler(con, medidas, cosmeticos));
+    const derivadas: [IdCorredor, string][] = [
+      ["alimentos", "produtos"],
+      ["saneantes", "san"],
+      ...(cosmeticos ? [["cosmeticos", "cos"] as [IdCorredor, string]] : []),
+    ];
+    const totais: DoBuild["totais"] = {};
+    for (const [id, tabela] of derivadas) {
+      totais[id] = (await con.runAndReadAll(sqlNumeros(tabela))).getRowObjectsJson()[0] as unknown as Numeros;
+    }
+    return { empresas: agrupar(await ler(con, medidas, cosmeticos)), totais };
   } finally {
     con.closeSync();
     db.closeSync();

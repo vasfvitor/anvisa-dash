@@ -32,7 +32,6 @@ function fonteFalsa() {
     },
     sugerir: () => Promise.resolve([]),
     porId: () => Promise.resolve(null),
-    numeros: () => Promise.resolve({ produtos: 0, ativos: 0, empresas: 0 }),
     grupos: () => Promise.resolve([]),
     idDe: (l) => l.id,
     cnpjDe: () => null,

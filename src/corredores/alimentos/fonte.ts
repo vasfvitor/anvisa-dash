@@ -9,16 +9,7 @@ import { SQL_PRODUTOS, TABELA, TABELA_DETALHE } from "./consultas";
 import { carregar, consultar } from "../../lib/db";
 import type { Consulta } from "../../lib/detect";
 import { ID_PRODUTO, POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../../lib/fonte";
-import {
-  contarFacetas,
-  contarNumeros,
-  derivar,
-  gruposAtivos,
-  onde,
-  sugerirEm,
-  termo,
-  type Trecho,
-} from "../../lib/sql";
+import { contarFacetas, derivar, gruposAtivos, onde, sugerirEm, termo, type Trecho } from "../../lib/sql";
 
 export interface Produto {
   co_seq_produto: number;
@@ -224,10 +215,6 @@ export const fonte: Fonte<Produto> = {
     return sugerirEm("sugestoes", texto);
   },
   porId,
-  async numeros() {
-    await produtos();
-    return contarNumeros("produtos");
-  },
   async grupos() {
     await produtos();
     return gruposAtivos("produtos");

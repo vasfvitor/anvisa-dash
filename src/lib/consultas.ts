@@ -21,3 +21,8 @@ export const SQL_MEDIDAS = `CREATE OR REPLACE TABLE medidas AS
       lower(strip_accents(concat_ws(' ', prod, any_value(no_empresa_investigada)))) AS busca
     FROM (SELECT *, trim(produto) AS prod FROM "${TABELA_MEDIDAS}") WHERE coalesce(prod, '') <> ''
     GROUP BY co_tipo_produto, co_seq_dossie_investig_med, prod`;
+
+/** Totais de uma tabela derivada (com situacao_registro e nu_cnpj_empresa), para a abertura de cada corredor. */
+export const sqlNumeros = (tabela: string) =>
+  `SELECT count(*)::INTEGER AS produtos, (count(*) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER AS ativos,
+    count(DISTINCT nu_cnpj_empresa)::INTEGER AS empresas FROM ${tabela}`;

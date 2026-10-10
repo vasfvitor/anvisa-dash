@@ -2,7 +2,7 @@
 // facetas. Valores do usuário entram só como parâmetros; o WHERE é montado com fragmentos fixos.
 import { buildAtual, consultar, type Valor } from "./db";
 import type { Consulta } from "./detect";
-import type { Dimensao, Facetas, Filtros, Numeros, Sugestao, ValorFaceta } from "./fonte";
+import type { Dimensao, Facetas, Filtros, Sugestao, ValorFaceta } from "./fonte";
 import { normalizar } from "./texto";
 
 const derivadas = new Map<string, Promise<void>>();
@@ -72,16 +72,6 @@ export async function contarFacetas(tabela: string, predicado: Trecho, f: Filtro
   const r: Facetas = { situacao: [], tipo: [], grupo: [] };
   for (const l of linhas) r[l.dim].push({ valor: l.valor, n: l.n });
   return r;
-}
-
-/** Totais de uma tabela derivada (com situacao_registro e nu_cnpj_empresa). */
-export async function contarNumeros(tabela: string): Promise<Numeros> {
-  const [n] = await consultar<Numeros>(
-    [],
-    `SELECT count(*)::INTEGER AS produtos, (count(*) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER AS ativos,
-      count(DISTINCT nu_cnpj_empresa)::INTEGER AS empresas FROM ${tabela}`,
-  );
-  return n!;
 }
 
 /** Valores da terceira faceta com produtos ativos. */

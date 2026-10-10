@@ -1,13 +1,17 @@
 ---
 // A abertura (hero) de um corredor. A página do corredor mostra a sua e guarda as dos outros em <template>:
 // conteúdo inerte (fora da página para buscadores e leitores de tela) que a troca de corredor clona.
+// Os totais vêm do build (lib/estatico/dados.ts): aparecem antes do motor da busca subir, também nos cosméticos.
 import type { Corredor } from "../corredores";
+import type { Numeros } from "../lib/fonte";
+import { fmtInt } from "../lib/format";
 import Icone from "./Icone.astro";
 
 interface Props {
   c: Corredor;
+  numeros?: Numeros | undefined;
 }
-const { c } = Astro.props;
+const { c, numeros } = Astro.props;
 ---
 
 <section class="hero" data-hero={c.id}>
@@ -20,4 +24,23 @@ const { c } = Astro.props;
   </div>
   <h1>{c.nome}</h1>
   <p class="lead">{c.lead}</p>
+  {numeros && (
+    <dl class="numeros">
+      <div>
+        <Icone nome="certo" />
+        <dt>liberados</dt>
+        <dd>{fmtInt(numeros.ativos)}</dd>
+      </div>
+      <div>
+        <Icone nome="caixas" />
+        <dt>já passaram pela ANVISA</dt>
+        <dd>{fmtInt(numeros.produtos)}</dd>
+      </div>
+      <div>
+        <Icone nome="fabrica" />
+        <dt>empresas</dt>
+        <dd>{fmtInt(numeros.empresas)}</dd>
+      </div>
+    </dl>
+  )}
 </section>

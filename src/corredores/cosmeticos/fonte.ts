@@ -183,8 +183,6 @@ export const fonte: Fonte<Cosmetico> = {
     return sugerirEm("cos_empresas", texto);
   },
   porId,
-  // liberados e processos só se contam com a tabela inteira, que a ilha não baixa
-  numeros: () => Promise.resolve(null),
   // a abertura usa os atalhos do meta
   grupos: () => Promise.resolve([]),
   idDe: (c) => c.id,
