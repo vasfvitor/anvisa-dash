@@ -36,4 +36,17 @@ describe("destacar", () => {
     ).toEqual(["whey", "WHEY"]);
     expect(destacar("abc", "")).toEqual([{ texto: "abc", achado: false }]);
   });
+
+  it("lista de palavras: cada uma onde começa uma palavra, separadas no texto", () => {
+    const achados = (t: string, ps: string[]) =>
+      destacar(t, ps)
+        .filter((x) => x.achado)
+        .map((x) => x.texto);
+    expect(achados("Batom Cremoso Vermelho Intenso", ["batom", "vermelho"])).toEqual(["Batom", "Vermelho"]);
+    // no meio da palavra não: "sol" não marca "girassol"
+    expect(achados("Óleo de Girassol Solar", ["sol"])).toEqual(["Sol"]);
+    // prefixo marca só o começo; o apóstrofo some como na busca
+    expect(achados("Shampoo L'ORÉAL Paris", ["sham", "loreal"])).toEqual(["Sham", "L'ORÉAL"]);
+    expect(destacar("abc", [])).toEqual([{ texto: "abc", achado: false }]);
+  });
 });

@@ -9,7 +9,7 @@ import { cliqueInterno, montarUrl } from "../../components/composables/useUrlSta
 import Destaque from "../../components/Destaque.vue";
 import Icone from "../../components/Icone.vue";
 
-const props = defineProps<{ p: Cosmetico; termo?: string | null; medidas?: number }>();
+const props = defineProps<{ p: Cosmetico; termo?: string | readonly string[] | null; medidas?: number }>();
 const emit = defineEmits<{ abrir: [id: string] }>();
 
 const ativo = computed(() => props.p.situacao_registro === "Ativo");

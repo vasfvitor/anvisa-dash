@@ -1,5 +1,6 @@
 // Legibilidade de texto da ANVISA, que chega quase sempre em MAIÚSCULAS, e destaque do termo buscado.
 // Só muda a caixa de texto que veio todo em maiúsculas; texto com minúsculas fica como o autor escreveu.
+import { normalizarPalavras } from "./palavras";
 
 // siglas que continuam em maiúsculas depois de baixar a caixa (tokens com dígito já ficam: B12, Q10)
 const SIGLAS = new Set([
@@ -89,9 +90,13 @@ export interface Trecho {
   achado: boolean;
 }
 
-/** Fatia `texto` marcando onde `termo` aparece, sem diferenciar acento nem caixa. */
-export function destacar(texto: string, termo: string | null | undefined): Trecho[] {
-  const alvo = termo ? normalizar(termo.trim()) : "";
+/**
+ * Fatia `texto` marcando onde `termo` aparece, sem diferenciar acento nem caixa. Com uma lista de palavras (a
+ * busca por começo de palavra dos cosméticos), marca cada uma onde começa uma palavra do texto.
+ */
+export function destacar(texto: string, termo: string | readonly string[] | null | undefined): Trecho[] {
+  if (Array.isArray(termo)) return destacarPalavras(texto, termo);
+  const alvo = typeof termo === "string" ? normalizar(termo.trim()) : "";
   if (!alvo || !texto) return [{ texto, achado: false }];
   // normaliza caractere a caractere para saber onde cada um cai no texto original; por ponto de código
   // de propósito: um acento combinado ("e" + U+0301) some na normalização e o "e" fica com a posição
@@ -118,4 +123,33 @@ export function destacar(texto: string, termo: string | null | undefined): Trech
   }
   if (ini < chars.length) trechos.push({ texto: chars.slice(ini).join(""), achado: false });
   return trechos;
+}
+
+/** Cada palavra marcada onde começa uma palavra do texto, pela regra das palavras (sem apóstrofo: "l'oréal"). */
+function destacarPalavras(texto: string, palavras: readonly string[]): Trecho[] {
+  // eslint-disable-next-line @typescript-eslint/no-misused-spread
+  const chars = [...texto];
+  let norm = "";
+  const origem: number[] = [];
+  chars.forEach((c, i) => {
+    for (const n of normalizarPalavras(c)) {
+      norm += n;
+      origem.push(i);
+    }
+  });
+  const marcado = new Array<boolean>(chars.length).fill(false);
+  for (const p of palavras) {
+    if (!p) continue;
+    for (let pos = norm.indexOf(p); pos >= 0; pos = norm.indexOf(p, pos + 1)) {
+      if (pos > 0 && /[a-z0-9]/.test(norm[pos - 1]!)) continue;
+      for (let k = origem[pos]!; k <= origem[pos + p.length - 1]!; k++) marcado[k] = true;
+    }
+  }
+  const trechos: Trecho[] = [];
+  chars.forEach((c, i) => {
+    const ultimo = trechos.at(-1);
+    if (ultimo && ultimo.achado === marcado[i]) ultimo.texto += c;
+    else trechos.push({ texto: c, achado: marcado[i]! });
+  });
+  return trechos.length ? trechos : [{ texto, achado: false }];
 }

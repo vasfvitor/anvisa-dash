@@ -2,7 +2,8 @@
 import { computed } from "vue";
 import { destacar } from "../lib/texto";
 
-const props = defineProps<{ texto: string; termo?: string | null }>();
+/** `termo`: a frase buscada, ou as palavras (busca por começo de palavra) */
+const props = defineProps<{ texto: string; termo?: string | readonly string[] | null }>();
 const trechos = computed(() => destacar(props.texto, props.termo));
 </script>
 

@@ -134,9 +134,12 @@ const semPalavra = computed(() => {
   return q.modo === "todos" || ((q.modo === "texto" || q.modo === "marca") && !palavrasDaBusca(q.valor, min).length);
 });
 
+// o que os cartões destacam: a frase buscada, ou cada palavra nos corredores que buscam por palavra
 const termo = computed(() => {
   const q = b.buscada;
-  return q && (q.modo === "texto" || q.modo === "marca") ? q.valor : null;
+  if (!q || (q.modo !== "texto" && q.modo !== "marca")) return null;
+  const min = corredor.value.palavraMinima;
+  return min ? palavrasDaBusca(q.valor, min) : q.valor;
 });
 
 const titulo = computed(() => {
