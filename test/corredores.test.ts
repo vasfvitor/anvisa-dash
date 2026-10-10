@@ -3,6 +3,8 @@ import { CORREDORES, corredorDaUrl, corredorPorId, rotaDo } from "../src/corredo
 
 describe("corredores", () => {
   it("o caminho escolhe o corredor; desconhecido cai no padrão", () => {
+    expect(corredorDaUrl("/alimentos/").id).toBe("alimentos");
+    // a raiz é a página inicial: as cores dela são as do corredor padrão
     expect(corredorDaUrl("/").id).toBe("alimentos");
     expect(corredorDaUrl("/limpeza/").id).toBe("saneantes");
     expect(corredorDaUrl("/limpeza").id).toBe("saneantes");

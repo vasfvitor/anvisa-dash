@@ -29,11 +29,12 @@ A busca do site roda em JavaScript no navegador. Sem JavaScript, use as páginas
 ## Páginas sem JavaScript
 
 - [Página de empresa](${raiz("/empresa/84684620000187/")}): ${raiz("/empresa/")}<CNPJ com 14 dígitos>/. Lista os alimentos e suplementos, os produtos de limpeza e os cosméticos da empresa (até 100 cosméticos, liberados primeiro) com situação (Liberado ou Encerrado), tipo (Registrado ou Notificado; nos cosméticos também Isento de registro e Descartável), datas, nº do processo e registro, e as medidas de fiscalização da ANVISA contra a empresa. Todas estão no [sitemap](${raiz("/sitemap-index.xml")}).
+- [Página inicial](${raiz("/")}): os três corredores com uma busca em cada um, que sem JavaScript só abre o corredor
 - [Empresas de A a Z](${raiz("/empresas/")}): o link da página de cada uma
 - [Sobre](${raiz("/sobre/")}): o site e os dados
 - [Dicionário de dados](${raiz("/dicionario/")}): as colunas de cada tabela
 
-A página de um produto (${raiz("/")}?p=<id>, ${raiz("/limpeza/")}?p=<expediente>, ${raiz("/cosmeticos/")}?p=<processo>) precisa de JavaScript; glúten, lactose, alergênicos e ingredientes só aparecem nela.
+A página de um produto (${raiz("/alimentos/")}?p=<id>, ${raiz("/limpeza/")}?p=<expediente>, ${raiz("/cosmeticos/")}?p=<processo>) precisa de JavaScript; glúten, lactose, alergênicos e ingredientes só aparecem nela.
 
 ## Dados
 

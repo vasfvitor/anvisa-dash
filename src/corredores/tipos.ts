@@ -10,7 +10,7 @@ export interface Corredor {
   curto: string;
   /** como a ANVISA chama o corredor, quando o nome do dia a dia é outro (aparece no hover da placa) */
   tecnico?: string;
-  /** segmento da URL; vazio é a raiz do site */
+  /** segmento da URL (/<slug>/); a raiz do site é a página inicial, que apresenta os corredores */
   slug: string;
   /** tabela principal no manifest (a do download com barra de progresso) */
   tabela: string;

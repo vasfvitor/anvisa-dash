@@ -3,34 +3,18 @@ import BuscaApp from "../components/BuscaApp.vue";
 import Abertura from "../components/Abertura.astro";
 import Base from "../layouts/Base.astro";
 import { CORREDORES, type Corredor } from "../corredores";
-import { url } from "../lib/format";
-import { DESCRICAO, NOME } from "../lib/marca";
 import { totaisDoBuild } from "../lib/estatico/dados";
 
-// uma página por corredor: / é alimentos, /limpeza/ é saneantes
+// uma página por corredor (/alimentos/, /limpeza/, /cosmeticos/); a raiz é a página inicial (index.astro)
 export function getStaticPaths() {
-  return CORREDORES.map((c) => ({ params: { corredor: c.slug || undefined }, props: { id: c.id } }));
+  return CORREDORES.map((c) => ({ params: { corredor: c.slug }, props: { id: c.id } }));
 }
 const { id } = Astro.props;
 const corredor = CORREDORES.find((c) => c.id === id) as Corredor;
 const totais = await totaisDoBuild();
-// o site em si (schema.org WebSite), só na página da raiz
-const site = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  name: `${NOME}.`,
-  url: new URL(url("/"), Astro.site).href,
-  inLanguage: "pt-BR",
-  description: DESCRICAO,
-};
 ---
 
-<Base
-  title={corredor.titulo}
-  description={corredor.descricao}
-  corredor={corredor.id}
-  estruturados={corredor.slug ? [] : [site]}
->
+<Base title={corredor.titulo} description={corredor.descricao} corredor={corredor.id}>
   <Abertura c={corredor} numeros={totais[corredor.id]} />
   {CORREDORES.map((c) => (
     <template data-hero={c.id}>

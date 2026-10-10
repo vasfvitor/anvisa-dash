@@ -6,7 +6,7 @@ export const meta: Corredor = {
   numero: 1,
   nome: "Alimentos e suplementos",
   curto: "Alimentos",
-  slug: "",
+  slug: "alimentos",
   tabela: "alimentos",
   icone: "capsula",
   deco: ["capsula", "folha", "pote", "trigo", "colher", "leite", "gota", "brilho", "etiqueta"],

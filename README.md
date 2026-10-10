@@ -35,10 +35,10 @@ Coisas medidas que o código assume (build de 2026-10-06):
 
 ## Corredores
 
-Cada fonte de dados é um corredor: `/` (alimentos e suplementos), `/limpeza/` (saneantes) e
-`/cosmeticos/`. Os textos
-falam a língua de quem compra (liberado, encerrado, limpeza); o termo técnico fica no hover e nos dados
-técnicos. Cada corredor é uma pasta em `src/corredores/`; para criar outro:
+Cada fonte de dados é um corredor: `/alimentos/` (alimentos e suplementos), `/limpeza/` (saneantes) e
+`/cosmeticos/`. A raiz (`src/pages/index.astro`) apresenta os três, com os totais do build e uma busca
+em cada um que funciona sem JavaScript. Os textos falam a língua de quem compra (liberado, encerrado,
+limpeza); o termo técnico fica no hover e nos dados técnicos. Cada corredor é uma pasta em `src/corredores/`; para criar outro:
 
 1. `meta.ts`: o registro (nome, número, rota, tabela, textos, exemplos, ícones; tipo em `tipos.ts`, onde
    o id também entra em `IdCorredor`), que entra em `CORREDORES` (`src/corredores/index.ts`). Com `tipoProduto` (o `co_tipo_produto` da área em

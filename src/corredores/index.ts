@@ -42,10 +42,10 @@ export const CORREDOR_PADRAO = CORREDORES[0]!;
 
 /** Caminho do corredor no site, com o base path. */
 export function rotaDo(c: Corredor): string {
-  return url(c.slug ? `/${c.slug}/` : "/");
+  return url(`/${c.slug}/`);
 }
 
-/** Corredor pelo primeiro segmento do caminho depois do base path; desconhecido cai no padrão. */
+/** Corredor pelo primeiro segmento do caminho depois do base path; desconhecido (a raiz, o sobre) cai no padrão. */
 export function corredorDaUrl(pathname: string): Corredor {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
   const resto = pathname.startsWith(base) ? pathname.slice(base.length) : pathname;

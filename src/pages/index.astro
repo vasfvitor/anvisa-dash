@@ -1,0 +1,182 @@
+---
+// A página inicial: os três corredores lado a lado, cada um com as próprias cores (os tokens de
+// [data-corredor] valem em qualquer elemento), os totais do build e uma busca que é um formulário GET de
+// verdade: funciona sem JavaScript e abre o corredor com ?q=. Sem a ilha: a busca roda na página do corredor.
+import Base from "../layouts/Base.astro";
+import Icone from "../components/Icone.astro";
+import { CORREDORES, rotaDo } from "../corredores";
+import { totaisDoBuild } from "../lib/estatico/dados";
+import { fmtInt, url } from "../lib/format";
+import { DESCRICAO, NOME } from "../lib/marca";
+
+const totais = await totaisDoBuild();
+// o site em si (schema.org WebSite), só aqui
+const site = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: `${NOME}.`,
+  url: new URL(url("/"), Astro.site).href,
+  inLanguage: "pt-BR",
+  description: DESCRICAO,
+};
+---
+
+<Base title="Produtos liberados pela ANVISA" description={DESCRICAO} estruturados={[site]}>
+  <h1>Está liberado pela ANVISA?</h1>
+  <p class="lead">
+    Consulte alimentos, suplementos, produtos de limpeza e cosméticos nos dados abertos da ANVISA: se o produto está
+    liberado, até quando, e se a empresa tem medidas de fiscalização.
+  </p>
+
+  <div class="secoes">
+    {CORREDORES.map((c) => {
+      const n = totais[c.id];
+      return (
+        <section class="secao-inicial" data-corredor={c.id} aria-labelledby={`sec-${c.id}`}>
+          <h2 id={`sec-${c.id}`}>
+            <span class="num" aria-hidden="true">
+              {c.numero}
+            </span>
+            <Icone nome={c.icone} />
+            <a href={rotaDo(c)}>{c.nome}</a>
+          </h2>
+          <p class="desc">{c.lead}</p>
+          {n && (
+            <p class="totais">
+              <strong>{fmtInt(n.ativos)}</strong> liberados de {fmtInt(n.produtos)}, de {fmtInt(n.empresas)} empresas
+            </p>
+          )}
+          <form class="busca" role="search" action={rotaDo(c)} method="get">
+            <div class="busca-campo">
+              <label for={`q-${c.id}`} class="sr-only">
+                Buscar em {c.nome}
+              </label>
+              <Icone nome="lupa" />
+              <input
+                id={`q-${c.id}`}
+                class="field"
+                type="search"
+                name="q"
+                autocomplete="off"
+                enterkeyhint="search"
+                placeholder="Nome ou CNPJ"
+              />
+            </div>
+            <button class="btn primary" type="submit" aria-label={`Buscar em ${c.nome}`}>
+              <Icone nome="seta" />
+            </button>
+          </form>
+          <p class="note">
+            Experimente:{" "}
+            {c.exemplos.slice(0, 2).map((x, i) => (
+              <>
+                {i > 0 && ", "}
+                <a href={`${rotaDo(c)}?${new URLSearchParams({ q: x.valor }).toString()}`}>{x.texto}</a>
+              </>
+            ))}
+          </p>
+        </section>
+      );
+    })}
+  </div>
+
+  <h2 class="sem-busca-titulo">Sem buscar</h2>
+  <ul class="sem-busca">
+    <li>
+      <a href={url("/empresas/")}>Empresas de A a Z</a>: os produtos e as medidas de cada uma, numa página só.
+    </li>
+    <li>
+      <a href={url("/dicionario/")}>Dicionário de dados</a>: as tabelas e colunas, para quem quer os arquivos.
+    </li>
+    <li>
+      <a href={url("/sobre/")}>Sobre</a>: de onde vêm os dados e como a busca funciona.
+    </li>
+  </ul>
+</Base>
+
+<style>
+  h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin: 1.2rem 0 0;
+  }
+  .lead {
+    color: var(--muted);
+  }
+  .secoes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: 1rem;
+    margin: 2rem 0 2.5rem;
+  }
+  /* cada seção com o papel, a tinta e o fundo do seu corredor */
+  .secao-inicial {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: 1.1rem 1.1rem 1rem;
+    color: var(--fg);
+    background-color: var(--bg);
+    background-image: var(--padrao);
+    background-size: var(--padrao-tam);
+    border: 2px solid var(--contorno);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra-superficie);
+  }
+  .secao-inicial h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 1.35rem;
+  }
+  .secao-inicial h2 a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .secao-inicial h2 a:hover {
+    text-decoration: underline;
+  }
+  .num {
+    display: inline-grid;
+    place-items: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 50%;
+    background: var(--fg);
+    color: var(--bg);
+    font-size: 0.95rem;
+    font-family: var(--fonte-mono);
+  }
+  .desc,
+  .totais {
+    margin: 0;
+  }
+  .desc {
+    color: var(--muted);
+  }
+  .totais strong {
+    font-family: var(--fonte-titulo);
+    font-size: 1.15rem;
+  }
+  .secao-inicial .busca {
+    margin-top: auto;
+  }
+  .secao-inicial .busca .field {
+    font-size: 1rem;
+  }
+  .secao-inicial .note {
+    margin: 0;
+  }
+  .sem-busca-titulo {
+    font-size: 1.2rem;
+  }
+  /* não .mais: é o nome do "Mostrar mais" da busca, centralizado */
+  .sem-busca {
+    padding-left: 1.1rem;
+  }
+  .sem-busca li {
+    margin: 0.35rem 0;
+  }
+</style>
