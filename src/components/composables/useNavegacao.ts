@@ -17,7 +17,8 @@ interface Acoes {
 
 /** Marca a placa do corredor ativo no cabeçalho (estático, fora da ilha). */
 function marcarPlacas(id: string): void {
-  for (const a of document.querySelectorAll<HTMLAnchorElement>("[data-corredor-link]")) {
+  // só as placas: os links "também em" da busca usam o mesmo atributo para trocar de corredor
+  for (const a of document.querySelectorAll<HTMLAnchorElement>(".corredores a[data-corredor-link]")) {
     if (a.dataset.corredorLink === id) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   }

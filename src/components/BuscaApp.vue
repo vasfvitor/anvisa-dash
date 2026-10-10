@@ -3,6 +3,7 @@
 // useNavegacao, resultados em useBusca, motor e download em useCorredorPronto.
 import { computed, onMounted, reactive, shallowRef, watch, watchEffect } from "vue";
 import { MODO_ROTULO } from "../lib/detect";
+import { CORREDORES, rotaDo } from "../corredores";
 import { FONTES } from "../corredores/fontes";
 import { fmtBytes, fmtCnpj, fmtInt, plural } from "../lib/format";
 import { tituloPagina } from "../lib/marca";
@@ -108,6 +109,22 @@ function guardarTitulo(texto: string): void {
 
 // ---------------------------------------------------------------------------------------------
 // textos
+
+// poucos ou nenhum resultado: o produto pode estar noutro corredor (sabonete, álcool gel, protetor solar). Os
+// links são data-corredor-link: o clique troca de corredor levando o termo (useNavegacao), sem contar antes
+// (contar nos alimentos e na limpeza seria baixar a tabela inteira)
+const POUCOS = 5;
+const outros = computed(() => {
+  const q = b.buscada;
+  if (!q || b.carregando || b.erro || b.total > POUCOS) return [];
+  if (q.modo !== "texto" && q.modo !== "marca" && q.modo !== "cnpj") return [];
+  const termo = q.modo === "cnpj" ? fmtCnpj(q.valor) : q.valor;
+  return CORREDORES.filter((c) => c.id !== corredor.value.id).map((c) => ({
+    c,
+    termo,
+    href: `${rotaDo(c)}?${new URLSearchParams({ q: termo }).toString()}`,
+  }));
+});
 
 // corredor que busca por palavra (os cosméticos): sem nenhuma do tamanho mínimo não há o que procurar
 const semPalavra = computed(() => {
@@ -224,6 +241,12 @@ const titulo = computed(() => {
           :href="urlCom({ situacao: 'todos' })"
           @click="noApp($event, () => filtrar({ ...filtros, situacao: 'todos' }))"
           >Mostrar</a
+        >
+      </p>
+      <p v-if="outros.length" class="outros-corredores">
+        Procurar “{{ outros[0]!.termo }}” também em:
+        <template v-for="(o, i) in outros" :key="o.c.id"
+          >{{ i ? " · " : " " }}<a :href="o.href" :data-corredor-link="o.c.id">{{ o.c.nome }}</a></template
         >
       </p>
       <MedidasBloco
