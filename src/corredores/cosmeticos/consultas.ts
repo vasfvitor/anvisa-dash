@@ -26,8 +26,9 @@ export function sqlCos(origem: string): string {
       strftime(dt_vencimento, '%Y-%m-%d') AS dt_vencimento,
       CASE WHEN dt_vencimento IS NULL THEN 'Sem data'
         WHEN dt_vencimento < current_date THEN 'Vencida' ELSE 'Em dia' END AS grupo,
-      -- só para ordenar; vencimento depois de 2100 conta como 2100, sem passar à frente
-      least(dt_vencimento, TIMESTAMP '2100-12-31') AS ordem_data,
+      -- só para ordenar; vencimento depois de 2100 conta como 2100, sem passar à frente (sem data fica NULL:
+      -- least() ignoraria o NULL e o poria no topo)
+      if(dt_vencimento > TIMESTAMP '2100-12-31', TIMESTAMP '2100-12-31', dt_vencimento) AS ordem_data,
       lower(strip_accents(no_produto)) AS busca_nome
     FROM ${origem}
     QUALIFY row_number() OVER (PARTITION BY nu_processo ORDER BY st_registrado) = 1`;

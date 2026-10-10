@@ -22,7 +22,7 @@ export const meta: Corredor = {
     { valor: "nivea", texto: "nivea" },
     { valor: "protetor solar", texto: "protetor solar" },
     { valor: "33306929000100", texto: "33.306.929/0001-00", dica: "CNPJ" },
-    { valor: "25351.892332/2008-44", texto: "25351.892332/2008-44", dica: "processo" },
+    { valor: "25351.173212/2026-01", texto: "25351.173212/2026-01", dica: "processo" },
   ],
   atalhos: [
     "shampoo",
