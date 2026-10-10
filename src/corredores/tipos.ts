@@ -1,6 +1,6 @@
 // O que cada corredor declara sobre si: textos, exemplos, ícones e a tabela principal. Só dados, para as
 // páginas Astro gerarem tudo no build sem carregar o DuckDB.
-export type IdCorredor = "alimentos" | "saneantes";
+export type IdCorredor = "alimentos" | "saneantes" | "cosmeticos";
 
 export interface Corredor {
   id: IdCorredor;
@@ -41,6 +41,11 @@ export interface Corredor {
    * Alimento, 3 Saneantes, 2 Cosmético…); sem ele, o corredor não mostra medidas
    */
   tipoProduto?: number;
+  /**
+   * letras que uma palavra da busca precisa ter para valer (os cosméticos procuram por começo de palavra
+   * em arquivos por palavra; ver corredores/cosmeticos); sem ele, qualquer termo de 2 letras busca
+   */
+  palavraMinima?: number;
 }
 
 // a tabela no dicionário de dados é declarada aqui, mas o formato é do Dataset (lib/dataset.ts)

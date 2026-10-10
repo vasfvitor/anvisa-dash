@@ -1,0 +1,46 @@
+// Corredor 3: cosméticos, que a ANVISA chama de produtos de higiene pessoal, cosméticos e perfumes.
+import type { Corredor } from "../tipos";
+
+export const meta: Corredor = {
+  id: "cosmeticos",
+  numero: 3,
+  nome: "Cosméticos",
+  curto: "Cosméticos",
+  tecnico: "higiene pessoal, cosméticos e perfumes",
+  slug: "cosmeticos",
+  tabela: "cosmeticos",
+  icone: "batom",
+  deco: ["batom", "brilho", "perfume", "gota", "certo", "batom", "documento", "brilho", "perfume"],
+  titulo: "Cosméticos liberados pela ANVISA",
+  descricao:
+    "Veja se um cosmético, perfume ou produto de higiene está liberado pela ANVISA e até quando: shampoo, protetor solar, desodorante. Busque pelo nome, pela empresa ou pelo CNPJ.",
+  lead: "Registrados ou notificados na ANVISA.",
+  placeholder: "Produto, empresa ou CNPJ",
+  rotuloTexto: "Palavras do nome do produto",
+  rotuloNumero: "Nº do processo ou registro",
+  exemplos: [
+    { valor: "nivea", texto: "nivea" },
+    { valor: "protetor solar", texto: "protetor solar" },
+    { valor: "33306929000100", texto: "33.306.929/0001-00", dica: "CNPJ" },
+    { valor: "25351.892332/2008-44", texto: "25351.892332/2008-44", dica: "processo" },
+  ],
+  atalhos: [
+    "shampoo",
+    "condicionador",
+    "protetor solar",
+    "desodorante",
+    "hidratante",
+    "sabonete",
+    "batom",
+    "base",
+    "tintura",
+    "perfume",
+    "creme dental",
+    "fralda",
+  ],
+  grupo: "Validade",
+  item: ["cosmético", "cosméticos"],
+  dica: "Todo cosmético, perfume e produto de higiene vendido no Brasil precisa estar na ANVISA.",
+  tipoProduto: 2,
+  palavraMinima: 3,
+};

@@ -6,6 +6,7 @@ import { MODO_ROTULO } from "../lib/detect";
 import { FONTES } from "../corredores/fontes";
 import { fmtBytes, fmtCnpj, fmtInt, plural } from "../lib/format";
 import { tituloPagina } from "../lib/marca";
+import { palavrasDaBusca } from "../lib/palavras";
 import { legivel } from "../lib/texto";
 import CaixaBusca from "./CaixaBusca.vue";
 import { useBusca } from "./composables/useBusca";
@@ -108,6 +109,14 @@ function guardarTitulo(texto: string): void {
 // ---------------------------------------------------------------------------------------------
 // textos
 
+// corredor que busca por palavra (os cosméticos): sem nenhuma do tamanho mínimo não há o que procurar
+const semPalavra = computed(() => {
+  const min = corredor.value.palavraMinima;
+  const q = consulta.value;
+  if (!min || !q) return false;
+  return q.modo === "todos" || ((q.modo === "texto" || q.modo === "marca") && !palavrasDaBusca(q.valor, min).length);
+});
+
 const termo = computed(() => {
   const q = b.buscada;
   return q && (q.modo === "texto" || q.modo === "marca") ? q.valor : null;
@@ -188,6 +197,10 @@ const titulo = computed(() => {
     @empresa="(c: string) => buscarPor(fmtCnpj(c))"
     @titulo="guardarTitulo"
   />
+
+  <p v-else-if="consulta && semPalavra" class="estado" role="status">
+    Digite ao menos {{ corredor.palavraMinima }} letras de uma palavra do nome.
+  </p>
 
   <template v-else-if="consulta">
     <Facetas

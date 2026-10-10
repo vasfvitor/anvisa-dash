@@ -1,0 +1,31 @@
+{
+  "origem": "verificar.py no build de referência (dados de 2026-10-07, iguais ao build 20261010T000506Z): linhas (nu_processo, st_registrado) por busca",
+  "contagens": {
+    "shampoo": 117855,
+    "sham": 118260,
+    "creme": 72608,
+    "protetor solar": 3989,
+    "batom vermelho": 46,
+    "óleo de coco": 2973,
+    "kiss new york": 152,
+    "natura": 27641,
+    "hidratante corporal": 17225,
+    "cetaphil": 165,
+    "loção": 29342,
+    "loreal": 1055,
+    "l'oréal paris": 186,
+    "johnson": 834,
+    "anti-queda": 125,
+    "antiqueda": 1511,
+    "2 em 1": 0,
+    "fps50": 63,
+    "sh": 0,
+    "33306929000100": 11560,
+    "21566221000100": 19065,
+    "00000000000000": 0,
+    "250000018199711": 2,
+    "25351356607201281": 2,
+    "222620013": 2,
+    "999999999": 0
+  }
+}

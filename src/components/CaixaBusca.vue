@@ -151,7 +151,8 @@ function lida(c: Consulta): string {
             <Destaque :texto="s.tipo === 'empresa' ? legivel(s.rotulo, 'nome') : s.rotulo" :termo="entrada" />
             <small>{{ s.tipo === "marca" ? "marca" : "empresa" }}</small>
           </span>
-          <span class="sugestao-n">
+          <!-- sem contagem (as empresas dos cosméticos), só o nome -->
+          <span v-if="s.n" class="sugestao-n">
             {{ s.ativos ? plural(s.ativos, "ativo") : plural(s.n, "inativo") }}
           </span>
         </li>

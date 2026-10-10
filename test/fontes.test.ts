@@ -11,9 +11,28 @@ interface Chamada {
 
 const { chamadas } = vi.hoisted(() => ({ chamadas: [] as Chamada[] }));
 
+// os cosméticos leem um índice e baixam pedaços: aqui um índice mínimo e nomes de arquivo previsíveis
+const INDICE = {
+  versao: 1,
+  palavras: [
+    ["aaa", 10, "palavras/0000.parquet", 100],
+    ["shampoo", 4000, "palavras/0001.parquet", 2000],
+    ["solar", 30, "palavras/0002.parquet", 300],
+  ],
+  empresas: [["00000000000191", 3000, "empresas/000.parquet", 900]],
+  numeros: { "844": 45 },
+  empresas_parquet: 1000,
+};
+
 vi.mock("../src/lib/db", () => ({
   carregar: () => Promise.resolve(),
   buildAtual: () => Promise.resolve("teste"),
+  iniciar: () =>
+    Promise.resolve({
+      tables: { cosmeticos: { busca: { versao: 1, indice: "data/b/cosmeticos/indice.json", bytes: 1, sha256: "x" } } },
+    }),
+  baixarJson: () => Promise.resolve(INDICE),
+  baixarArquivo: (caminho: string) => Promise.resolve(caminho.replaceAll("/", "_")),
   consultar: (_tabelas: string[], sql: string, params: unknown[] = []) => {
     chamadas.push({ sql, params });
     return Promise.resolve([]);
@@ -22,12 +41,15 @@ vi.mock("../src/lib/db", () => ({
 
 const { fonte: alimentos, predicado: predicadoAlimentos } = await import("../src/corredores/alimentos/fonte");
 const { fonte: saneantes, predicado: predicadoSaneantes } = await import("../src/corredores/saneantes/fonte");
+const { fonte: cosmeticos } = await import("../src/corredores/cosmeticos/fonte");
 const { onde } = await import("../src/lib/sql");
 
 /** SQL com cada `?` trocado pelo valor (texto entre aspas), em uma linha. */
 function comValores({ sql, params }: Chamada): string {
   let i = 0;
-  const texto = sql.replace(/\?/g, () => {
+  // `?` dentro de string SQL (o regex das palavras tem "(?:") não é parâmetro
+  const texto = sql.replace(/'(?:[^']|'')*'|\?/g, (m) => {
+    if (m !== "?") return m;
     const v = params[i++];
     return typeof v === "string" ? `'${v}'` : String(v);
   });
@@ -129,10 +151,43 @@ describe("alimentos", () => {
   });
 });
 
+describe("cosméticos", () => {
+  it("texto: uma tabela da busca com a palavra mais rara e as outras como parâmetro", async () => {
+    await cosmeticos.buscar(texto("Shampoo Solar"), filtros(), 0);
+    const cria = chamadas.map(comValores).find((s) => s.startsWith("CREATE OR REPLACE TABLE cos_q"))!;
+    expect(cria).toContain("read_parquet(['data_b_cosmeticos_palavras_0002.parquet'])");
+    expect(cria).toContain("WHERE starts_with(palavra, 'solar') AND len(list_filter(");
+    expect(cria).toContain("lambda w: starts_with(w, 'shampoo'))) > 0");
+    // um produto por processo, a linha sem registro primeiro
+    expect(cria).toContain("QUALIFY row_number() OVER (PARTITION BY nu_processo ORDER BY st_registrado) = 1");
+    expect(ultima()).toMatch(/CASE WHEN starts_with\(busca_nome, 'shampoo'\) THEN 0 .* situacao_registro = 'Ativo'/);
+    expect(ultima()).toMatch(/OFFSET 0$/);
+  });
+
+  it("filtro novo na mesma busca reusa a tabela", async () => {
+    await cosmeticos.buscar(texto("solar"), filtros(), 0);
+    const antes = chamadas.filter((c) => c.sql.startsWith("CREATE OR REPLACE TABLE cos_q")).length;
+    await cosmeticos.facetas(texto("solar"), filtros({ grupo: "Vencida" }));
+    expect(chamadas.filter((c) => c.sql.startsWith("CREATE OR REPLACE TABLE cos_q")).length).toBe(antes);
+  });
+
+  it("número lê numeros/<3 últimos> por num", async () => {
+    await cosmeticos.buscar(numero("25351892332200844"), filtros(), 0);
+    const cria = chamadas.map(comValores).find((s) => s.startsWith("CREATE OR REPLACE TABLE cos_q"))!;
+    expect(cria).toContain("read_parquet(['data_b_cosmeticos_numeros_844.parquet']) WHERE num = '25351892332200844'");
+  });
+
+  it("sem palavra de 3 letras não consulta nada", async () => {
+    expect(await cosmeticos.buscar(texto("2 em 1"), filtros(), 0)).toEqual([]);
+    expect(chamadas.some((c) => c.sql.includes("cos_q"))).toBe(false);
+  });
+});
+
 describe("id inválido", () => {
   it("não existe em nenhum corredor e não consulta nada", async () => {
     expect(await alimentos.porId("abc")).toBeNull();
     expect(await saneantes.porId("12a")).toBeNull();
+    expect(await cosmeticos.porId("x1")).toBeNull();
     expect(chamadas).toHaveLength(0);
   });
 });

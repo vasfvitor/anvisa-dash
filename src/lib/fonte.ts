@@ -54,7 +54,8 @@ export interface Fonte<P extends Item = Item> {
   facetas(q: Consulta, f: Filtros): Promise<Facetas>;
   sugerir(texto: string): Promise<Sugestao[]>;
   porId(id: string): Promise<P | null>;
-  numeros(): Promise<Numeros>;
+  /** totais da abertura; null quando a fonte não tem a tabela inteira para contar (os cosméticos) */
+  numeros(): Promise<Numeros | null>;
   /** valores da terceira faceta com produtos ativos, para explorar sem digitar */
   grupos(): Promise<ValorFaceta[]>;
   idDe(p: P): string;

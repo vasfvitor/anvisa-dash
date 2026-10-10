@@ -1,0 +1,99 @@
+/* Corredor 3, cosméticos: paleta, material (tokens) e o que muda de caráter. */
+/* corredor 3, cosméticos: papel rosado, tinta ameixa, rosa de batom e pontos de pó no fundo */
+[data-corredor="cosmeticos"] {
+  --bg: #f8f0f1;
+  --line: #ead6da;
+  --chip-bg: #f1e2e5;
+  --accent: #8a3b6b;
+  --accent-fg: #fdf6f8;
+  --pop: #d6336c;
+  --pop-suave: #fbdbe6;
+  --mark: #fbd0de;
+  --padrao: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23d6336c' fill-opacity='.11'%3E%3Ccircle cx='18' cy='22' r='2.5'/%3E%3Ccircle cx='74' cy='14' r='1.5'/%3E%3Ccircle cx='98' cy='64' r='3'/%3E%3Ccircle cx='40' cy='88' r='2'/%3E%3Ccircle cx='60' cy='50' r='1.2'/%3E%3Ccircle cx='10' cy='70' r='1.6'/%3E%3Ccircle cx='108' cy='110' r='2'/%3E%3C/g%3E%3C/svg%3E");
+  --padrao-tam: 120px 120px;
+}
+
+/* a placa do corredor no cabeçalho tem a cor dele em qualquer página (por isso não é token de [data-corredor]) */
+.placa[data-placa="cosmeticos"] {
+  --cor: #d6336c;
+  --cor-suave: #fbdbe6;
+}
+
+/* ---------------------------------------------------------------- corredor 3: estojo de maquiagem
+   Alimentos é rótulo de papel e limpeza é frasco de plástico. Cosméticos é estojo: a serifa do título em
+   itálico, tinta ameixa, cantos médios, sombra rosada e um filete fino no lugar do contorno grosso. */
+[data-corredor="cosmeticos"] {
+  --fg: #2e1626;
+  --muted: #6e5662;
+  --card: #fffafb;
+  --chip-fg: #4a2a3d;
+  --sombra: #2e1626;
+  --raio: 16px;
+  --macia: 0 12px 26px -16px rgb(214 51 108 / 0.45), 0 2px 6px -2px rgb(46 22 38 / 0.1);
+  --macia-alta: 0 20px 36px -18px rgb(214 51 108 / 0.55), 0 3px 8px -3px rgb(46 22 38 / 0.14);
+
+  --superficie: var(--card);
+  --contorno: var(--line);
+  --contorno-suave: var(--line);
+  --contorno-botao: var(--line);
+  --sombra-superficie: var(--macia);
+  --raio-controle: 14px;
+  --raio-botao: 999px;
+  --chip-ativo: var(--accent);
+  --chip-ativo-fg: #fff;
+}
+[data-corredor="cosmeticos"] .hero h1 {
+  font-style: italic;
+  letter-spacing: -0.02em;
+}
+[data-corredor="cosmeticos"] .deco {
+  animation-name: brilho-po;
+}
+@keyframes brilho-po {
+  from {
+    transform: translateY(4px) rotate(-6deg);
+  }
+  to {
+    transform: translateY(-8px) rotate(6deg);
+  }
+}
+/* o acento do logo vira um ponto de pó compacto */
+[data-corredor="cosmeticos"] .logo-capsula {
+  left: 0.22em;
+  top: 0.04em;
+  width: 0.2em;
+  height: 0.2em;
+  border-radius: 50%;
+  background: var(--pop);
+  transform: none;
+}
+
+[data-corredor="cosmeticos"] .busca .field {
+  box-shadow: var(--macia);
+}
+[data-corredor="cosmeticos"] .busca .field:focus {
+  transform: none;
+  box-shadow:
+    0 0 0 4px var(--pop-suave),
+    var(--macia-alta);
+}
+[data-corredor="cosmeticos"] .busca .btn {
+  background: var(--accent);
+  color: var(--accent-fg);
+  box-shadow: var(--macia);
+}
+[data-corredor="cosmeticos"] .cartao:hover,
+[data-corredor="cosmeticos"] .cartao:not(.inativo):hover {
+  transform: translateY(-2px);
+  box-shadow: var(--macia-alta);
+}
+[data-corredor="cosmeticos"] .numeros div .icone {
+  color: var(--pop-suave);
+}
+[data-corredor="cosmeticos"] .produto-cabecalho {
+  box-shadow: var(--macia-alta);
+}
+[data-corredor="cosmeticos"] .produto-cabecalho::after {
+  border: 0;
+  background: radial-gradient(circle at 40% 60%, var(--pop-suave), transparent 70%);
+}

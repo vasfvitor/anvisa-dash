@@ -8,6 +8,8 @@
 // (o ESLint barra).
 import { url } from "../lib/format";
 import * as colunasAlimentos from "./alimentos/colunas";
+import * as colunasCosmeticos from "./cosmeticos/colunas";
+import { meta as cosmeticos } from "./cosmeticos/meta";
 import { meta as alimentos } from "./alimentos/meta";
 import * as colunasSaneantes from "./saneantes/colunas";
 import { meta as saneantes } from "./saneantes/meta";
@@ -15,12 +17,13 @@ import type { Corredor, InfoTabela } from "./tipos";
 
 export type { Corredor, IdCorredor, InfoTabela } from "./tipos";
 
-export const CORREDORES: Corredor[] = [alimentos, saneantes];
+export const CORREDORES: Corredor[] = [alimentos, saneantes, cosmeticos];
 
 /** Tabelas e colunas que o dicionário de dados descreve, de todos os corredores. */
 export const TABELAS: Record<string, InfoTabela> = {
   ...colunasAlimentos.TABELAS,
   ...colunasSaneantes.TABELAS,
+  ...colunasCosmeticos.TABELAS,
   // de todos os corredores (cada um vê as do seu tipoProduto; ver lib/medidas.ts)
   produtos_irregulares: {
     titulo: "Medidas de fiscalização da ANVISA contra produtos irregulares",
@@ -32,6 +35,7 @@ export const TABELAS: Record<string, InfoTabela> = {
 export const COLUNA_DESCRICAO: Record<string, Record<string, string>> = {
   ...colunasAlimentos.COLUNA_DESCRICAO,
   ...colunasSaneantes.COLUNA_DESCRICAO,
+  ...colunasCosmeticos.COLUNA_DESCRICAO,
 };
 
 export const CORREDOR_PADRAO = CORREDORES[0]!;
