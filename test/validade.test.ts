@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validade } from "../src/corredores/saneantes/validade";
+import { validade } from "../src/lib/validade";
 
 describe("validade de um saneante", () => {
   it("em dia", () => {

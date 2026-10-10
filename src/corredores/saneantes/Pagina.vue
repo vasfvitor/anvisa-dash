@@ -5,7 +5,7 @@ import { fmtCnpj, fmtData, fmtProcesso, url } from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
 import { situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
-import { validade } from "./validade";
+import { validade } from "../../lib/validade";
 import { useCopia } from "../../components/composables/useCopia";
 import Copiar from "../../components/Copiar.vue";
 import AvisoMedidas from "../../components/AvisoMedidas.vue";

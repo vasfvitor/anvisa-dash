@@ -4,7 +4,7 @@ import type { Saneante } from "./fonte";
 import { fmtProcesso } from "../../lib/format";
 import { situacaoDe, TIPOS } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
-import { validade } from "./validade";
+import { validade } from "../../lib/validade";
 import { cliqueInterno, montarUrl } from "../../components/composables/useUrlState";
 import Destaque from "../../components/Destaque.vue";
 import Icone from "../../components/Icone.vue";
