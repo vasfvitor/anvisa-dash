@@ -131,6 +131,8 @@ header.site .nav-site a[aria-current="page"] {
 }
 .placa[data-placa="alimentos"] {
   --cor: #f2602f;
+  /* 4,6:1 com branco (o #f2602f dá 3,2) */
+  --cor-forte: #cc4a14;
   --cor-suave: #ffe3d6;
 }
 .placa::before,
@@ -176,8 +178,9 @@ header.site .nav-site a[aria-current="page"] {
   transform: translate(-2px, -2px) rotate(-1.5deg);
   box-shadow: 3px 3px 0 var(--sombra);
 }
+/* --cor-forte: o tom da placa sob texto branco, quando a cor dela não chega a 4,5:1 (alimentos) */
 .placa[aria-current="page"] {
-  background: var(--cor);
+  background: var(--cor-forte, var(--cor));
   color: #fff;
   box-shadow: 3px 3px 0 var(--sombra);
 }
@@ -186,7 +189,7 @@ header.site .nav-site a[aria-current="page"] {
 }
 .placa[aria-current="page"] .placa-num {
   background: #fff;
-  color: var(--cor);
+  color: var(--cor-forte, var(--cor));
 }
 .placa[aria-current="page"] .icone {
   color: #fff;
