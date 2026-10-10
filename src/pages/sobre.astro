@@ -12,10 +12,13 @@ const tam = (t: string) => {
   const tabela = m.tables[t];
   return tabela ? fmtBytes(tabela.bytes) : null;
 };
+// os cosméticos não baixam a tabela inteira: cada busca baixa os pedaços dela (em geral de 50 a 850 KB)
 const corredores = CORREDORES.flatMap((c) => {
   const t = tam(c.tabela);
-  return t ? [`${t} em ${c.curto.toLowerCase()}`] : [];
+  if (!t) return [];
+  return m.tables[c.tabela]?.busca ? [] : [`${t} em ${c.curto.toLowerCase()}`];
 });
+const cosmeticos = m.tables.cosmeticos?.busca;
 const detalhe = tam("alimentos_resultado");
 const medidas = tam("produtos_irregulares");
 ---
@@ -26,7 +29,8 @@ const medidas = tam("produtos_irregulares");
 >
   <h1>Sobre</h1>
   <p class="lead">
-    Consulta independente aos dados abertos da ANVISA sobre alimentos, suplementos e produtos de limpeza (saneantes).
+    Consulta independente aos dados abertos da ANVISA sobre alimentos, suplementos, produtos de limpeza (saneantes) e
+    cosméticos.
   </p>
 
   <h2>De onde vêm os dados</h2>
@@ -56,6 +60,12 @@ const medidas = tam("produtos_irregulares");
     e a tabela que você abriu ({corredores.join(", ")})
     {detalhe && <>, mais {detalhe} ao abrir as apresentações de um alimento</>}
     {medidas && <> e {medidas} de medidas de fiscalização</>}. Depois os arquivos ficam no cache.
+    {cosmeticos && (
+      <>
+        Os cosméticos são grandes demais para baixar de uma vez: cada busca baixa só os pedaços que precisa, em geral de
+        50 a 850 KB.
+      </>
+    )}
   </p>
   <ul>
     <li>
@@ -63,6 +73,10 @@ const medidas = tam("produtos_irregulares");
       <strong>registro</strong> e, na limpeza, o <strong>expediente</strong>. Pontuação é ignorada.
     </li>
     <li>Texto busca no nome do produto, nas marcas e na empresa, sem diferenciar acentos.</li>
+    <li>
+      Nos cosméticos, o texto busca pelo começo das palavras do nome, com ao menos 3 letras: “sham” acha shampoo. A
+      empresa se escolhe na sugestão, que busca pelo CNPJ.
+    </li>
     <li>Só aparecem os produtos liberados, a não ser que você mude o filtro de situação.</li>
   </ul>
 

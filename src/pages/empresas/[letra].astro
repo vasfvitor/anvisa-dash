@@ -25,7 +25,7 @@ const rotulo = letra === "0-9" ? "0–9" : letra!.toUpperCase();
 
 const detalhe = (e: Empresa) => {
   const r = resumo(e);
-  const produtos = r.alimentos + r.saneantes;
+  const produtos = r.alimentos + r.saneantes + r.cosmeticos;
   return [fmtCnpj(e.cnpj), produtos > 0 && plural(produtos, "produto"), r.medidas > 0 && plural(r.medidas, "medida")]
     .filter(Boolean)
     .join(" · ");

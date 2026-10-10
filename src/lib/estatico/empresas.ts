@@ -19,8 +19,9 @@ export interface LinhaAlimento {
   apresentacoes: number;
 }
 
-export interface LinhaSaneante {
-  /** nu_expediente, o id na URL (com zeros à esquerda) */
+/** Um produto com validade da liberação (saneantes e cosméticos). */
+export interface LinhaValidade {
+  /** o id na URL: nu_expediente nos saneantes (com zeros à esquerda), nu_processo nos cosméticos */
   id: string;
   nome: string;
   ativo: boolean;
@@ -32,6 +33,15 @@ export interface LinhaSaneante {
   /** Em dia, Vencida ou Sem data */
   grupo: string;
 }
+
+/** Totais de um corredor que a página não lista inteiro (os cosméticos de uma empresa grande). */
+export interface Totais {
+  produtos: number;
+  ativos: number;
+}
+
+/** Quantos cosméticos de cada empresa a página lista (liberados primeiro); o resto fica na busca. */
+export const COSMETICOS_POR_EMPRESA = 100;
 
 export interface LinhaMedida {
   corredor: IdCorredor;
@@ -49,7 +59,10 @@ interface DaEmpresa {
 
 export interface Entrada {
   alimentos: (LinhaAlimento & DaEmpresa)[];
-  saneantes: (LinhaSaneante & DaEmpresa)[];
+  saneantes: (LinhaValidade & DaEmpresa)[];
+  /** até COSMETICOS_POR_EMPRESA por empresa; os totais vêm em cosmeticosTotais */
+  cosmeticos: (LinhaValidade & DaEmpresa)[];
+  cosmeticosTotais: (Totais & { cnpj: string })[];
   medidas: (LinhaMedida & DaEmpresa)[];
 }
 
@@ -57,7 +70,10 @@ export interface Empresa {
   cnpj: string;
   nome: string;
   alimentos: LinhaAlimento[];
-  saneantes: LinhaSaneante[];
+  saneantes: LinhaValidade[];
+  cosmeticos: LinhaValidade[];
+  /** todos os cosméticos da empresa, não só os listados */
+  cosmeticosTotais: Totais;
   medidas: LinhaMedida[];
 }
 
@@ -78,7 +94,15 @@ export function agrupar(e: Entrada): Map<string, Empresa> {
     if (!CNPJ.test(cnpj)) return undefined;
     let emp = empresas.get(cnpj);
     if (!emp) {
-      emp = { cnpj, nome: "", alimentos: [], saneantes: [], medidas: [] };
+      emp = {
+        cnpj,
+        nome: "",
+        alimentos: [],
+        saneantes: [],
+        cosmeticos: [],
+        cosmeticosTotais: { produtos: 0, ativos: 0 },
+        medidas: [],
+      };
       empresas.set(cnpj, emp);
       nomes.set(cnpj, { produtos: new Map(), medidas: new Map() });
     }
@@ -91,6 +115,11 @@ export function agrupar(e: Entrada): Map<string, Empresa> {
 
   for (const { cnpj, empresa, ...linha } of e.alimentos) da(cnpj, empresa, "produtos")?.alimentos.push(linha);
   for (const { cnpj, empresa, ...linha } of e.saneantes) da(cnpj, empresa, "produtos")?.saneantes.push(linha);
+  for (const { cnpj, empresa, ...linha } of e.cosmeticos) da(cnpj, empresa, "produtos")?.cosmeticos.push(linha);
+  for (const { cnpj, produtos, ativos } of e.cosmeticosTotais) {
+    const emp = empresas.get(cnpj);
+    if (emp) emp.cosmeticosTotais = { produtos, ativos };
+  }
   for (const m of e.medidas) {
     da(m.cnpj, m.empresa, "medidas")?.medidas.push({
       corredor: m.corredor,
@@ -105,6 +134,7 @@ export function agrupar(e: Entrada): Map<string, Empresa> {
     emp.nome = maisFrequente(produtos.size ? produtos : medidas);
     emp.alimentos.sort(porNome);
     emp.saneantes.sort(porNome);
+    emp.cosmeticos.sort(porNome);
     emp.medidas.sort((a, b) => b.data.localeCompare(a.data) || a.produto.localeCompare(b.produto, "pt-BR"));
   }
   return empresas;
@@ -119,11 +149,17 @@ function maisFrequente(conta: Map<string, number>): string {
 /** Contagens para o título, a descrição e o cabeçalho da página. */
 export function resumo(emp: Empresa) {
   const ativos = (l: { ativo: boolean }[]) => l.filter((x) => x.ativo).length;
+  // sem os totais (testes, ou empresa só com linhas), conta o que está na lista
+  const cos = emp.cosmeticosTotais.produtos
+    ? emp.cosmeticosTotais
+    : { produtos: emp.cosmeticos.length, ativos: ativos(emp.cosmeticos) };
   return {
     alimentos: emp.alimentos.length,
     alimentosAtivos: ativos(emp.alimentos),
     saneantes: emp.saneantes.length,
     saneantesAtivos: ativos(emp.saneantes),
+    cosmeticos: cos.produtos,
+    cosmeticosAtivos: cos.ativos,
     medidas: emp.medidas.length,
   };
 }

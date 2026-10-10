@@ -41,7 +41,7 @@ const medida = (produto: string, data: string, cnpj = CNPJ_A, empresa = "EMPRESA
   empresa,
 });
 
-const vazio: Entrada = { alimentos: [], saneantes: [], medidas: [] };
+const vazio: Entrada = { alimentos: [], saneantes: [], cosmeticos: [], cosmeticosTotais: [], medidas: [] };
 
 describe("agrupar", () => {
   it("uma empresa por CNPJ, com os produtos dos dois corredores", () => {
@@ -133,7 +133,33 @@ describe("resumo", () => {
       alimentos: [alimento(1, "A", true), alimento(2, "B", false)],
       saneantes: [saneante("1", "C", true)],
     }).get(CNPJ_A)!;
-    expect(resumo(emp)).toEqual({ alimentos: 2, alimentosAtivos: 1, saneantes: 1, saneantesAtivos: 1, medidas: 0 });
+    expect(resumo(emp)).toEqual({
+      alimentos: 2,
+      alimentosAtivos: 1,
+      saneantes: 1,
+      saneantesAtivos: 1,
+      cosmeticos: 0,
+      cosmeticosAtivos: 0,
+      medidas: 0,
+    });
+  });
+
+  it("cosméticos contam pelos totais, não pela lista cortada", () => {
+    const emp = agrupar({
+      ...vazio,
+      cosmeticos: [
+        saneante("25351000000000001", "SHAMPOO", true),
+        saneante("25351000000000002", "CONDICIONADOR", false),
+      ],
+      cosmeticosTotais: [{ cnpj: CNPJ_A, produtos: 1200, ativos: 900 }],
+    }).get(CNPJ_A)!;
+    expect(emp.cosmeticos.map((p) => p.nome)).toEqual(["SHAMPOO", "CONDICIONADOR"]);
+    expect(resumo(emp)).toMatchObject({ cosmeticos: 1200, cosmeticosAtivos: 900 });
+  });
+
+  it("totais de CNPJ sem linha não criam empresa", () => {
+    const m = agrupar({ ...vazio, cosmeticosTotais: [{ cnpj: CNPJ_B, produtos: 3, ativos: 1 }] });
+    expect(m.size).toBe(0);
   });
 });
 

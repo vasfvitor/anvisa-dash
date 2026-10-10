@@ -8,12 +8,13 @@ import { join } from "node:path";
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
 import { CORREDORES } from "../../corredores";
 import { SQL_PRODUTOS, TABELA as ALIMENTOS } from "../../corredores/alimentos/consultas";
+import { sqlCos, TABELA as COSMETICOS } from "../../corredores/cosmeticos/consultas";
 import { SQL_SAN, TABELA as SANEANTES } from "../../corredores/saneantes/consultas";
 import type { IdCorredor } from "../../corredores/tipos";
 import { MANIFEST_URL } from "../config";
 import { SQL_MEDIDAS, TABELA_MEDIDAS } from "../consultas";
 import { manifestDoBuild, tabelaUrl, type Manifest } from "../manifest";
-import { agrupar, type Empresa, type Entrada } from "./empresas";
+import { agrupar, COSMETICOS_POR_EMPRESA, type Empresa, type Entrada } from "./empresas";
 
 let doBuild: Promise<Map<string, Empresa>> | undefined;
 
@@ -28,14 +29,18 @@ async function carregar(): Promise<Map<string, Empresa>> {
   const db = await DuckDBInstance.create(":memory:");
   const con = await db.connect();
   try {
+    // tabela que o manifest ainda não tem fica sem seção, sem derrubar o build
     const medidas = TABELA_MEDIDAS in manifest.tables;
-    for (const nome of [ALIMENTOS, SANEANTES, ...(medidas ? [TABELA_MEDIDAS] : [])]) {
+    const cosmeticos = COSMETICOS in manifest.tables;
+    const opcionais = [...(medidas ? [TABELA_MEDIDAS] : []), ...(cosmeticos ? [COSMETICOS] : [])];
+    for (const nome of [ALIMENTOS, SANEANTES, ...opcionais]) {
       await abrir(con, manifest, nome, pasta);
     }
     await con.run(SQL_PRODUTOS);
     await con.run(SQL_SAN);
     if (medidas) await con.run(SQL_MEDIDAS);
-    return agrupar(await ler(con, medidas));
+    if (cosmeticos) await con.run(`CREATE TABLE cos AS ${sqlCos(`"${COSMETICOS}"`)}`);
+    return agrupar(await ler(con, medidas, cosmeticos));
   } finally {
     con.closeSync();
     db.closeSync();
@@ -64,7 +69,7 @@ const CORREDOR_DO_TIPO = new Map<number, IdCorredor>(
 
 // as colunas e os tipos de cada linha são os do SELECT (getRowObjectsJson: INTEGER e BOOLEAN viram number e
 // boolean, NULL vira null); a conversão de tipo é o contrato entre o SQL e empresas.ts
-async function ler(con: DuckDBConnection, medidas: boolean): Promise<Entrada> {
+async function ler(con: DuckDBConnection, medidas: boolean, cosmeticos: boolean): Promise<Entrada> {
   const linhas = async <T>(sql: string) => (await con.runAndReadAll(sql)).getRowObjectsJson() as T[];
 
   const alimentos = await linhas<Entrada["alimentos"][number]>(
@@ -80,7 +85,26 @@ async function ler(con: DuckDBConnection, medidas: boolean): Promise<Entrada> {
       nu_cnpj_empresa AS cnpj, no_razao_social_empresa AS empresa
     FROM san`,
   );
-  if (!medidas) return { alimentos, saneantes, medidas: [] };
+  // 1,19 milhão de cosméticos não cabem em páginas (nem na memória do build como objetos): cada empresa
+  // lista os primeiros, liberados antes, e leva os totais para o resumo
+  const cos = cosmeticos
+    ? await linhas<Entrada["cosmeticos"][number]>(
+        `SELECT id, no_produto AS nome, situacao_registro = 'Ativo' AS ativo, tipo_regularizacao AS tipo,
+          nu_processo AS processo, nu_registro AS registro, dt_vencimento AS vencimento, grupo,
+          nu_cnpj_empresa AS cnpj, no_razao_social_empresa AS empresa
+        FROM cos
+        QUALIFY row_number() OVER (PARTITION BY nu_cnpj_empresa ORDER BY situacao_registro, no_produto, id)
+          <= ${COSMETICOS_POR_EMPRESA}`,
+      )
+    : [];
+  const cosmeticosTotais = cosmeticos
+    ? await linhas<Entrada["cosmeticosTotais"][number]>(
+        `SELECT nu_cnpj_empresa AS cnpj, count(*)::INTEGER AS produtos,
+          (count(*) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER AS ativos
+        FROM cos GROUP BY 1`,
+      )
+    : [];
+  if (!medidas) return { alimentos, saneantes, cosmeticos: cos, cosmeticosTotais, medidas: [] };
 
   const tipos = [...CORREDOR_DO_TIPO.keys()].join(", ");
   const brutas = await linhas<{
@@ -97,6 +121,8 @@ async function ler(con: DuckDBConnection, medidas: boolean): Promise<Entrada> {
   return {
     alimentos,
     saneantes,
+    cosmeticos: cos,
+    cosmeticosTotais,
     medidas: brutas.map((x) => ({
       corredor: CORREDOR_DO_TIPO.get(x.tipo)!,
       produto: x.produto,

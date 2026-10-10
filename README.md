@@ -1,6 +1,7 @@
 # contém.
 
-Consulta de produtos regularizados na ANVISA (alimentos e suplementos; produtos de limpeza, os saneantes) por nº do processo,
+Consulta de produtos regularizados na ANVISA (alimentos e suplementos; produtos de limpeza, os saneantes;
+cosméticos) por nº do processo,
 CNPJ, registro, nome, marca, empresa e categoria. Site estático (Astro + uma ilha Vue). A busca roda no navegador
 com DuckDB-WASM sobre os Parquet que o repo [`anvisa`](https://github.com/vasfvitor/anvisa-api)
 publica diariamente. Não há backend. No build, uma página estática por empresa (`/empresa/<cnpj>/`), a
@@ -34,12 +35,13 @@ Coisas medidas que o código assume (build de 2026-10-06):
 
 ## Corredores
 
-Cada fonte de dados é um corredor: `/` (alimentos e suplementos) e `/limpeza/` (saneantes). Os textos
+Cada fonte de dados é um corredor: `/` (alimentos e suplementos), `/limpeza/` (saneantes) e
+`/cosmeticos/`. Os textos
 falam a língua de quem compra (liberado, encerrado, limpeza); o termo técnico fica no hover e nos dados
 técnicos. Cada corredor é uma pasta em `src/corredores/`; para criar outro:
 
-1. `meta.ts`: o registro (nome, número, rota, tabela, textos, exemplos, ícones; tipo em `tipos.ts`), que
-   entra em `CORREDORES` (`src/corredores/index.ts`). Com `tipoProduto` (o `co_tipo_produto` da área em
+1. `meta.ts`: o registro (nome, número, rota, tabela, textos, exemplos, ícones; tipo em `tipos.ts`, onde
+   o id também entra em `IdCorredor`), que entra em `CORREDORES` (`src/corredores/index.ts`). Com `tipoProduto` (o `co_tipo_produto` da área em
    `produtos_irregulares`: 6 alimento, 3 saneantes, 2 cosmético…), o corredor ganha as medidas de
    fiscalização (`src/lib/medidas.ts`) na busca, na abertura, na página do produto e nos cartões;
 2. `fonte.ts`: a fonte de dados, que implementa `Fonte` (`src/lib/fonte.ts`) com o SQL compartilhado de
@@ -47,7 +49,17 @@ técnicos. Cada corredor é uma pasta em `src/corredores/`; para criar outro:
 3. `Cartao.vue` e `Pagina.vue`: o cartão da lista e a página de detalhe, que entram em `telas.ts`;
 4. `colunas.ts` (opcional): descrições para o dicionário de dados;
 5. o CSS em `src/styles/corredores/<id>.css`, importado em `src/styles/global.css`: paleta e material
-   (os tokens de `tokens.css`) em `[data-corredor="…"]`, a cor da placa e o que muda de caráter.
+   (os tokens de `tokens.css`) em `[data-corredor="…"]`, a cor da placa e o que muda de caráter; os
+   ícones novos em `public/icones.svg`;
+6. no build: a tabela em `src/lib/estatico/dados.ts` e `empresas.ts` (páginas de empresa e lista de A a
+   Z) e no `src/pages/llms.txt.ts`.
+
+Tabela grande demais para baixar inteira (os cosméticos, 24 MB) vem também em pedaços com índice (a chave
+`busca` da tabela no manifest; formato no repo `anvisa`): a fonte baixa só os pedaços de cada busca
+(`src/corredores/cosmeticos/indice.ts`) e cria com eles uma tabela pequena, sobre a qual vale o mesmo SQL
+de filtros e facetas. A regra das palavras é a mesma dos dois lados (`src/lib/palavras.ts`, casos em
+`test/fixtures/tokens.json`); `COSMETICOS_BUSCA=<pasta> pnpm test` confere as buscas contra uma pasta de
+verdade.
 
 As páginas Astro rodam no build e só podem ler o registro (`index.ts`, `tipos.ts`, `meta.ts`,
 `colunas.ts`) e o SQL puro (`consultas.ts`); o DuckDB-WASM, as fontes e os componentes da ilha só existem
