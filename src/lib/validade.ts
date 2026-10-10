@@ -18,7 +18,7 @@ const ANTIGA =
 
 /**
  * `ativo` é a situação na ANVISA: um liberado com data passada não diz "venceu" ao lado de "Liberado" (os dois
- * juntos se contradizem); diz que a data é antiga e explica no hover.
+ * juntos se contradizem); diz que a data já passou e explica no hover.
  */
 export function validade(grupo: string, dt: string | null, ativo: boolean): Validade {
   const d = toDate(dt);
@@ -34,7 +34,7 @@ export function validade(grupo: string, dt: string | null, ativo: boolean): Vali
   if (grupo === "Vencida" && ativo) {
     return {
       classe: "neutro",
-      curto: `Data antiga: ${fmtData(dt)}`,
+      curto: `Data já passou: ${fmtData(dt)}`,
       estranha,
       antiga: true,
       dica: ANTIGA,
