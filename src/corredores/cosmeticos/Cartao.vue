@@ -14,7 +14,7 @@ const emit = defineEmits<{ abrir: [id: string] }>();
 
 const ativo = computed(() => props.p.situacao_registro === "Ativo");
 const sit = computed(() => situacaoDe(ativo.value));
-const val = computed(() => validade(props.p.grupo, props.p.dt_vencimento));
+const val = computed(() => validade(props.p.grupo, props.p.dt_vencimento, ativo.value));
 const href = computed(() => montarUrl({ produto: props.p.id }));
 
 function abrir(ev: MouseEvent): void {
@@ -34,7 +34,7 @@ function abrir(ev: MouseEvent): void {
       <p v-if="p.no_razao_social_empresa" class="cartao-empresa">{{ legivel(p.no_razao_social_empresa, "nome") }}</p>
       <div class="alergia compacta">
         <span class="selo" :title="TIPOS">{{ p.tipo_regularizacao }}</span>
-        <span class="selo" :class="val.classe === 'neutro' ? '' : val.classe"
+        <span class="selo" :class="val.classe === 'neutro' ? '' : val.classe" :title="val.dica"
           ><Icone nome="gota" />{{ val.curto }}</span
         >
       </div>

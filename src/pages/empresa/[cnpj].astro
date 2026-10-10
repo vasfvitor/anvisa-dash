@@ -147,7 +147,9 @@ const organizacao = {
                 </td>
                 <td>
                   <span class="linha">{`${situacaoDe(p.ativo).curto} · ${p.tipo}`}</span>
-                  <span class="linha muted">{validade(p.grupo, p.vencimento).curto}</span>
+                  <span class="linha muted" title={validade(p.grupo, p.vencimento, p.ativo).dica}>
+                    {validade(p.grupo, p.vencimento, p.ativo).curto}
+                  </span>
                   <span class="linha numero">Processo {fmtProcesso(p.processo)}</span>
                   {p.registro && <span class="linha numero">Registro {p.registro}</span>}
                 </td>

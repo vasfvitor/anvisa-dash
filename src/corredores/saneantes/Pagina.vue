@@ -37,7 +37,7 @@ void carregar();
 const ativo = computed(() => p.value?.situacao_registro === "Ativo");
 const sit = computed(() => situacaoDe(ativo.value));
 const notificado = computed(() => p.value?.tipo_regularizacao === "Notificado");
-const val = computed(() => (p.value ? validade(p.value.grupo, p.value.dt_vencimento) : null));
+const val = computed(() => (p.value ? validade(p.value.grupo, p.value.dt_vencimento, ativo.value) : null));
 // o nome do saneante costuma trazer a marca ("RAID ELÉTRICO LÍQUIDO JOHNSON"): iniciais maiúsculas
 const titulo = computed(() => (p.value ? legivel(p.value.no_produto, "nome") : ""));
 
@@ -121,7 +121,7 @@ watch(titulo, (t) => t && emit("titulo", t));
           >
         </div>
         <p v-if="val.estranha" class="note">Data como publicada pela ANVISA.</p>
-        <p v-if="ativo && val.classe === 'perigo'" class="note">
+        <p v-if="val.antiga" class="note">
           A data já passou, mas a ANVISA ainda lista o produto como liberado. Confira na consulta oficial.
         </p>
       </section>
