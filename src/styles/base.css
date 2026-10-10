@@ -30,6 +30,11 @@ main {
   padding: 1.25rem 1rem 4rem;
   flex: 1;
 }
+/* a ilha da busca cresce depois de montar (abertura, resultados): com a página de uma tela inteira, o
+   rodapé já começa fora da tela e não pula (Lighthouse em 2026-10-10: CLS 0,13 a 0,24, todo do rodapé) */
+main.com-busca {
+  min-height: 100svh;
+}
 a {
   color: var(--accent);
   text-underline-offset: 0.18em;
