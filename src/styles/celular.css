@@ -16,13 +16,21 @@
   header.site .nav-site {
     gap: 0.75rem;
   }
+  /* três placas cabem em 390 px sem o ícone e mais justas (medido em 2026-10-09: com ícone, 466 px de 358) */
   .corredores {
     order: 3;
     width: 100%;
+    gap: 0.4rem;
   }
   .placa {
     flex: 1;
     justify-content: center;
+    gap: 0.25rem;
+    padding: 0.3rem 0.45rem 0.3rem 0.25rem;
+    font-size: 0.85rem;
+  }
+  .placa .icone {
+    display: none;
   }
   .placa::before,
   .placa::after {
@@ -105,5 +113,18 @@
   th,
   td {
     padding: 0.4rem 0.4rem;
+  }
+}
+
+/* celular estreito (360 e 320 px): só a placa atual leva o nome; as outras ficam com número e ícone */
+@media (max-width: 23rem) {
+  .placa:not([aria-current]) {
+    flex: 0 0 auto;
+  }
+  .placa:not([aria-current]) .placa-nome {
+    display: none;
+  }
+  .placa:not([aria-current]) .icone {
+    display: inline;
   }
 }
