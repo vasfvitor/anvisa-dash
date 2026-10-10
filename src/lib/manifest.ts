@@ -16,6 +16,17 @@ export interface Origem {
   bytes?: number;
 }
 
+/** Arquivos de busca de uma tabela grande demais para baixar inteira (só os cosméticos; ver SPEC no repo `anvisa`). */
+export interface Busca {
+  versao: number;
+  /** caminho do indice.json, relativo ao manifest; os arquivos do índice ficam na mesma pasta */
+  indice: string;
+  bytes: number;
+  sha256: string;
+  arquivos: number;
+  bytes_total: number;
+}
+
 export interface Tabela {
   path: string;
   rows: number;
@@ -25,6 +36,7 @@ export interface Tabela {
   columns: Coluna[];
   source: Origem;
   nulls_added?: Record<string, number>;
+  busca?: Busca;
 }
 
 export interface Manifest {
