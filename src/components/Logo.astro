@@ -4,7 +4,9 @@ import { url } from "../lib/format";
 import { NOME } from "../lib/marca";
 ---
 
-<a class="logo" href={url("/")} aria-label={`${NOME}, página inicial`}>
+<!-- o nome vem do texto para leitor de tela, não de aria-label: as letras desenhadas não batem com um rótulo -->
+<a class="logo" href={url("/")}>
+  <span class="sr-only">{NOME}, página inicial</span>
   <span aria-hidden="true">
     cont
     <span class="logo-e">
