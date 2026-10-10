@@ -86,6 +86,8 @@
     scrollbar-width: none;
     margin: 0 -1rem;
     padding: 0.1rem 1rem;
+    /* sem barra de rolagem, o esmaecido na borda direita é o que diz que há mais filtros ao lado */
+    mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
   }
   .faceta::-webkit-scrollbar {
     display: none;
