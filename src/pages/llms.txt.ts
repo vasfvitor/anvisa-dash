@@ -28,22 +28,22 @@ A busca do site roda em JavaScript no navegador. Sem JavaScript, use as páginas
 
 ## Páginas sem JavaScript
 
-- Empresa: ${raiz("/empresa/")}<CNPJ com 14 dígitos>/ (exemplo: ${raiz("/empresa/84684620000187/")}). Lista os alimentos e suplementos, os produtos de limpeza e os cosméticos da empresa (até 100 cosméticos, liberados primeiro) com situação (Liberado ou Encerrado), tipo (Registrado ou Notificado), datas, nº do processo e registro, e as medidas de fiscalização da ANVISA contra a empresa. Todas estão no sitemap: ${raiz("/sitemap-index.xml")}
-- Empresas de A a Z, com o link da página de cada uma: ${raiz("/empresas/")}
-- Sobre o site e os dados: ${raiz("/sobre/")}
-- Dicionário de dados (colunas de cada tabela): ${raiz("/dicionario/")}
+- [Página de empresa](${raiz("/empresa/84684620000187/")}): ${raiz("/empresa/")}<CNPJ com 14 dígitos>/. Lista os alimentos e suplementos, os produtos de limpeza e os cosméticos da empresa (até 100 cosméticos, liberados primeiro) com situação (Liberado ou Encerrado), tipo (Registrado ou Notificado; nos cosméticos também Isento de registro e Descartável), datas, nº do processo e registro, e as medidas de fiscalização da ANVISA contra a empresa. Todas estão no [sitemap](${raiz("/sitemap-index.xml")}).
+- [Empresas de A a Z](${raiz("/empresas/")}): o link da página de cada uma
+- [Sobre](${raiz("/sobre/")}): o site e os dados
+- [Dicionário de dados](${raiz("/dicionario/")}): as colunas de cada tabela
 
 A página de um produto (${raiz("/")}?p=<id>, ${raiz("/limpeza/")}?p=<expediente>, ${raiz("/cosmeticos/")}?p=<processo>) precisa de JavaScript; glúten, lactose, alergênicos e ingredientes só aparecem nela.
 
 ## Dados
 
-Arquivos Parquet do build ${m.build_id}, com os dados abertos da ANVISA. O manifest lista os arquivos atuais: ${MANIFEST_URL}
+Arquivos Parquet do build ${m.build_id}, com os dados abertos da ANVISA. O [manifest](${MANIFEST_URL}) lista os arquivos atuais.
 
-${tabelas.map((t) => `- ${t} (${fmtInt(m.tables[t]!.rows)} linhas${m.tables[t]!.source.loaded_at ? `, dados de ${fmtData(m.tables[t]!.source.loaded_at)}` : ""}): ${arquivo(t)}`).join("\n")}
+${tabelas.map((t) => `- [${t}](${arquivo(t)}): ${fmtInt(m.tables[t]!.rows)} linhas${m.tables[t]!.source.loaded_at ? `, dados de ${fmtData(m.tables[t]!.source.loaded_at)}` : ""}`).join("\n")}
 
 - ${ALIMENTOS}: uma linha por apresentação; o produto é co_seq_produto. Situação em situacao_registro ('Ativo' é liberado), marcas separadas por ";".
 - ${SANEANTES}: produtos de limpeza, uma linha por processo; o produto é nu_expediente. st_produto_ativo é liberado, dt_vencimento_produto é o fim da liberação.
-- ${COSMETICOS}: cosméticos, perfumes e produtos de higiene, uma linha por processo e st_registrado (11 mil processos registrados aparecem duas vezes). st_situacao_produto é liberado, ds_tipo_peticao o tipo (REGISTRO, Notificado, ISENTO DE REGISTRO, DESCARTAVEL; vazio nas linhas de registro).${busca ? ` Os mesmos dados também em ${fmtInt(busca.arquivos)} pedaços por palavra do nome, CNPJ e número, com índice: ${new URL(busca.indice, MANIFEST_URL).href}` : ""}
+- ${COSMETICOS}: cosméticos, perfumes e produtos de higiene, uma linha por processo e st_registrado (11 mil processos registrados aparecem duas vezes). st_situacao_produto é liberado, ds_tipo_peticao o tipo (REGISTRO, Notificado, ISENTO DE REGISTRO, DESCARTAVEL; vazio nas linhas de registro).${busca ? ` Os mesmos dados também em ${fmtInt(busca.arquivos)} pedaços por palavra do nome, CNPJ e número, com [índice](${new URL(busca.indice, MANIFEST_URL).href}).` : ""}
 - ${TABELA_MEDIDAS}: medidas de fiscalização (suspensão, proibição, recolhimento, interdição, apreensão, inutilização), uma linha por dossiê, produto, ação e atividade. co_tipo_produto ${tipo("alimentos")} é alimento, ${tipo("saneantes")} é saneante, ${tipo("cosmeticos")} é cosmético.
 
 ## Consultas (DuckDB)
