@@ -424,6 +424,11 @@ a.badge:hover {
   letter-spacing: -0.03em;
   font-weight: 750;
 }
+/* os totais do build ficam na abertura: acima dos ícones que flutuam nela, como o título */
+.hero .numeros {
+  position: relative;
+  z-index: 1;
+}
 .hero .lead {
   position: relative;
   z-index: 1;
@@ -432,9 +437,11 @@ a.badge:hover {
   max-width: 36rem;
 }
 
+/* altura fixa, a da abertura sem os totais: os ícones (posições em %) ficam em volta do título, não atrás dos números */
 .hero-deco {
   position: absolute;
-  inset: 0 0 0 auto;
+  inset: 0 0 auto auto;
+  height: 10.5rem;
   width: min(46%, 26rem);
   pointer-events: none;
 }
