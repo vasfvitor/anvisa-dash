@@ -170,24 +170,20 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
     expect(await diferentes(b, a)).toBe(0);
     expect(await contar(`SELECT 1 FROM ${app} WHERE situacao_assunto IS NULL`)).toBe(0);
     // as cinco colunas novas e desde, contra a derivada da ilha (SQL_PRODUTOS sobre alimentos)
+    // (vencimento: 141 alimentos têm apresentações com datas diferentes; os dois lados ficam com a maior,
+    // a renovação mais recente, desde o build 20261012T024410Z)
     const ilha = `SELECT co_seq_produto::VARCHAR AS id, ds_situacao_assunto_doc AS situacao_assunto,
         ds_alegacao_funcional AS alegacao, dt_publicacao AS publicacao, dt_situacao AS situacao_em,
-        dt_inicio_analise AS inicio_analise, strftime(ordem_data, '%Y-%m-%d') AS desde
+        dt_inicio_analise AS inicio_analise, dt_vencimento_registro AS vencimento,
+        strftime(ordem_data, '%Y-%m-%d') AS desde
       FROM produtos`;
     const nova = `SELECT id, situacao_assunto, alegacao, strftime(publicacao, '%Y-%m-%dT%H:%M:%S') AS publicacao,
         strftime(situacao_em, '%Y-%m-%dT%H:%M:%S') AS situacao_em,
-        strftime(inicio_analise, '%Y-%m-%dT%H:%M:%S') AS inicio_analise, strftime(desde, '%Y-%m-%d') AS desde
+        strftime(inicio_analise, '%Y-%m-%dT%H:%M:%S') AS inicio_analise,
+        strftime(vencimento, '%Y-%m-%d') AS vencimento, strftime(desde, '%Y-%m-%d') AS desde
       FROM ${app}`;
     expect(await diferentes(ilha, nova)).toBe(0);
     expect(await diferentes(nova, ilha)).toBe(0);
-    // vencimento: 141 alimentos têm apresentações com dt_vencimento_registro diferentes (2026-10-12). A tabela
-    // traz o menor; a ilha traz any_value (indefinido). Em aberto com o repo `anvisa`: o maior é o que diz se
-    // o produto ainda vale. Até decidir, só se mede
-    const venc = await contar(
-      `SELECT 1 FROM ${app} n JOIN (SELECT co_seq_produto::VARCHAR AS id, max(dt_vencimento_registro) AS v
-         FROM alimentos GROUP BY 1) a USING (id) WHERE n.vencimento::DATE IS DISTINCT FROM a.v::DATE`,
-    );
-    console.log("alimentos cujo vencimento em alimentos_por_produto não é o maior das apresentações:", venc);
   });
 
   // cosmeticos_por_empresa: o que o build listava da tabela inteira (dados.ts até 2026-10-12), já cortado

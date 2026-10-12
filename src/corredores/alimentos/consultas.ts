@@ -28,7 +28,9 @@ export const SQL_PRODUTOS = `CREATE OR REPLACE TABLE produtos AS
       ${TS("max(dt_publicacao)", "dt_publicacao")},
       ${TS("max(dt_situacao)", "dt_situacao")},
       ${TS("min(dt_inicio_analise)", "dt_inicio_analise")},
-      strftime(any_value(dt_vencimento_registro), '%Y-%m-%d') AS dt_vencimento_registro,
+      -- 141 produtos têm apresentações com vencimentos diferentes (2026-10-12): vale a renovação mais recente,
+      -- a mesma regra de produtos e alimentos_por_produto no repo anvisa
+      strftime(max(dt_vencimento_registro), '%Y-%m-%d') AS dt_vencimento_registro,
       count(*)::INTEGER AS n_apresentacoes,
       -- só para busca e ordenação
       min(dt_regularizacao) AS ordem_data,
