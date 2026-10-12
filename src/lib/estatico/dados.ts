@@ -27,12 +27,11 @@ export const sqlAlimentosDe = (de = `"${TABELA_PRODUTOS}"`) =>
   `SELECT id::INTEGER AS id, nome, marcas, categoria, ativo, tipo, processo, registro,
     strftime(desde, '%Y-%m-%d') AS desde, apresentacoes, cnpj, empresa
   FROM ${de} WHERE area = 'alimentos'`;
-// o QUALIFY é a deduplicação de SQL_SAN (saneantes/consultas.ts), enquanto `produtos` trouxer os 6 pares
+// (area, id) é única em `produtos` desde o build 20261012T014436Z: a deduplicação de SQL_SAN já vem feita de lá
 export const sqlSaneantesDe = (de = `"${TABELA_PRODUTOS}"`) =>
   `SELECT id, nome, ativo, tipo, processo, registro,
     strftime(vencimento, '%Y-%m-%d') AS vencimento, ${sqlGrupoValidade("vencimento")} AS grupo, cnpj, empresa
-  FROM ${de} WHERE area = 'saneantes'
-  QUALIFY row_number() OVER (PARTITION BY id ORDER BY tipo = 'Registrado' DESC, vencimento DESC NULLS LAST) = 1`;
+  FROM ${de} WHERE area = 'saneantes'`;
 
 const DE_PRODUTOS = { ativo: "ativo", cnpj: "cnpj" };
 

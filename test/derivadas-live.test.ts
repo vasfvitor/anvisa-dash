@@ -14,9 +14,26 @@ import { SQL_SAN } from "../src/corredores/saneantes/consultas";
 import { MEDIDAS_BUSCA, SQL_MEDIDAS, sqlNumeros } from "../src/lib/consultas";
 import { sqlAlimentosDe, sqlSaneantesDe } from "../src/lib/estatico/dados";
 import type { Numeros } from "../src/lib/fonte";
+import { deJson, resumirAlergia, type Sinal } from "../src/corredores/alimentos/alergia";
 
 const pasta = process.env.DADOS_LIVE;
-const TABELAS = ["alimentos", "saneantes", "cosmeticos", "produtos_irregulares", "produtos", "empresas", "medidas"];
+const TABELAS = [
+  "alimentos",
+  "alimentos_resultado",
+  "saneantes",
+  "cosmeticos",
+  "produtos_irregulares",
+  "produtos",
+  "empresas",
+  "medidas",
+];
+
+// o resumo de alergênicos como a ilha o monta (corredores/alimentos/fonte.ts): a referência das colunas novas
+const SQL_RESUMO = `CREATE TABLE resumo AS
+    SELECT co_produto AS co_seq_produto,
+      to_json(list(DISTINCT alergenicos) FILTER (WHERE alergenicos <> ''))::VARCHAR AS alergenicos_json,
+      to_json(list(DISTINCT intolerancias) FILTER (WHERE intolerancias <> ''))::VARCHAR AS intolerancias_json
+    FROM "alimentos_resultado" GROUP BY co_produto`;
 
 // o que a ilha e o build derivavam de produtos_irregulares até 2026-10-11 (lib/consultas.ts): a referência
 const SQL_MEDIDAS_ANTIGO = `CREATE TABLE medidas_antigo AS
@@ -66,14 +83,64 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
     instancia.closeSync();
   });
 
-  // 2026-10-11: saneantes dá 144.413 em produtos e 144.407 na ilha (6 expedientes em par, ver SQL_SAN); o
-  // SELECT do build deduplica, e é ele que tem de bater
   it("totais do build (de produtos) batem com sqlNumeros das derivadas da ilha", async () => {
     const totais = (de: string) => uma<Numeros>(sqlNumeros(`(${de})`, DE_PRODUTOS));
     expect(await totais(novoAlimentos)).toEqual(await uma(sqlNumeros("produtos")));
     expect(await totais(novoSaneantes)).toEqual(await uma(sqlNumeros("san")));
-    const pares = await contar("SELECT id FROM produtos_pub WHERE area = 'saneantes' GROUP BY id HAVING count(*) > 1");
-    console.log("expedientes em par em produtos:", pares, "(a tabela promete id único por area)");
+    // (area, id) única: os 6 expedientes em par da origem ficam com a linha registrada, como em SQL_SAN
+    expect(await contar("SELECT area, id FROM produtos_pub GROUP BY ALL HAVING count(*) > 1")).toBe(0);
+  });
+
+  // as colunas de alergênicos de produtos são o resumirAlergia da ilha, produto a produto
+  it("alergênicos em produtos batem com resumirAlergia sobre alimentos_resultado", async () => {
+    await con.run(SQL_RESUMO);
+    interface Linha {
+      id: string;
+      gluten: string | null;
+      lactose: string | null;
+      contem: string[] | null;
+      pode_conter: string[] | null;
+      nao_contem: string[] | null;
+      alergia_varia: boolean | null;
+      alergenicos_json: string | null;
+      intolerancias_json: string | null;
+    }
+    const todas = await linhas<Linha>(
+      `SELECT p.id, p.gluten, p.lactose, p.contem, p.pode_conter, p.nao_contem, p.alergia_varia,
+         r.alergenicos_json, r.intolerancias_json
+       FROM produtos_pub p LEFT JOIN resumo r ON r.co_seq_produto = p.id::INTEGER WHERE p.area = 'alimentos'`,
+    );
+    const SINAL: Record<string, Sinal> = { Sim: "sim", Não: "nao", Varia: "varia" };
+    const erros: string[] = [];
+    let comDados = 0;
+    for (const l of todas) {
+      const r = resumirAlergia(deJson(l.alergenicos_json), deJson(l.intolerancias_json));
+      const esperado = r.temDados
+        ? {
+            gluten: r.gluten,
+            lactose: r.lactose,
+            contem: r.contem,
+            podeConter: r.podeConter,
+            naoContem: r.naoContem,
+            varia: r.varia,
+          }
+        : { gluten: null, lactose: null, contem: null, podeConter: null, naoContem: null, varia: null };
+      const lista = (xs: string[] | null) => xs && [...xs].sort((a, b) => a.localeCompare(b, "pt-BR"));
+      const visto = {
+        gluten: l.gluten && SINAL[l.gluten],
+        lactose: l.lactose && SINAL[l.lactose],
+        contem: lista(l.contem),
+        podeConter: lista(l.pode_conter),
+        naoContem: lista(l.nao_contem),
+        varia: l.alergia_varia,
+      };
+      if (r.temDados) comDados++;
+      if (JSON.stringify(visto) !== JSON.stringify(esperado))
+        erros.push(`${l.id}: ${JSON.stringify({ visto, esperado })}`);
+    }
+    expect(erros.slice(0, 3)).toEqual([]);
+    expect(await contar("SELECT 1 FROM produtos_pub WHERE contem IS NOT NULL")).toBe(comDados);
+    console.log("alimentos com dados de alergênicos:", comDados, "de", todas.length);
   });
 
   it("cosméticos em empresas: processos distintos, ativos pela regra de sqlCos", async () => {
