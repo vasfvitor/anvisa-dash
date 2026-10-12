@@ -12,7 +12,6 @@ const m = await manifestDoBuild(MANIFEST_URL);
 const tabelas = Object.entries(m.tables);
 // o dicionário que o pipeline gera ao lado do manifest (a mesma informação, sem o site em volta)
 const docs = m.docs ? new URL(m.docs, MANIFEST_URL).href : undefined;
-const titulo = (nome: string) => TABELAS[nome]?.titulo ?? m.tables[nome]!.title;
 
 // um Dataset (schema.org) por tabela que a página descreve, com o Parquet como distribuição
 const pagina = new URL(Astro.url.pathname, Astro.site).href;
@@ -64,97 +63,93 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
     ))}
   </nav>
 
-  {tabelas.map(([nome, t]) => (
-    <section id={nome}>
-      <h2>
-        {titulo(nome) ? (
-          <>
-            {titulo(nome)}{" "}
-            <span class="sub">
-              <code>{nome}</code> · {fmtInt(t.rows)} linhas · {fmtBytes(t.bytes)}
-            </span>
-          </>
-        ) : (
-          <>
-            <code>{nome}</code>{" "}
-            <span class="sub">
-              {fmtInt(t.rows)} linhas · {fmtBytes(t.bytes)}
-            </span>
-          </>
-        )}
-      </h2>
-      {TABELAS[nome] && <p>{TABELAS[nome].descricao}</p>}
-      {t.notes?.length ? (
-        <ul class="notas">
-          {t.notes.map((n) => (
-            <li>{n}</li>
-          ))}
-        </ul>
-      ) : null}
-      <p class="note">
-        {t.fontes?.length ? (
-          <>
-            Derivada de{" "}
-            {t.fontes.map((f, i) => (
+  {tabelas.map(([nome, t]) => {
+    // o título do site quando a tabela tem Dataset, senão o do manifest; sem nenhum, o nome
+    const titulo = TABELAS[nome]?.titulo ?? t.title;
+    return (
+      <section id={nome}>
+        <h2>
+          {titulo ?? <code>{nome}</code>}{" "}
+          <span class="sub">
+            {titulo && (
               <>
-                {i > 0 && ", "}
+                <code>{nome}</code> ·{" "}
+              </>
+            )}
+            {fmtInt(t.rows)} linhas · {fmtBytes(t.bytes)}
+          </span>
+        </h2>
+        {TABELAS[nome] && <p>{TABELAS[nome].descricao}</p>}
+        {t.notes?.length ? (
+          <ul class="notas">
+            {t.notes.map((n) => (
+              <li>{n}</li>
+            ))}
+          </ul>
+        ) : null}
+        <p class="note">
+          {t.fontes?.length ? (
+            <>
+              Derivada de{" "}
+              {t.fontes.flatMap((f, i) => [
+                i > 0 ? ", " : null,
                 <a href={`#${f}`}>
                   <code>{f}</code>
-                </a>
-              </>
-            ))}{" "}
-            a cada build (<a href={t.source.url}>receita</a>)
-          </>
-        ) : (
-          <>
-            Origem: <a href={t.source.url}>{t.source.name}</a>
-          </>
-        )}
-        {t.source.loaded_at && <>, dados de {fmtData(t.source.loaded_at)}</>}.
-        {t.sort?.length ? (
-          <>
-            {" "}
-            Ordenado por <code>{t.sort.join(", ")}</code>.
-          </>
-        ) : null}{" "}
-        <a href={tabelaUrl(MANIFEST_URL, m, nome)}>Baixar Parquet</a>.
-      </p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Coluna</th>
-              <th>Tipo</th>
-              <th>Origem</th>
-              <th>Descrição</th>
-            </tr>
-          </thead>
-          <tbody>
-            {t.columns.map((c) => (
+                </a>,
+              ])}{" "}
+              a cada build (<a href={t.source.url}>receita</a>)
+            </>
+          ) : (
+            <>
+              Origem: <a href={t.source.url}>{t.source.name}</a>
+            </>
+          )}
+          {t.source.loaded_at && <>, dados de {fmtData(t.source.loaded_at)}</>}.
+          {t.sort?.length ? (
+            <>
+              {" "}
+              Ordenado por <code>{t.sort.join(", ")}</code>.
+            </>
+          ) : null}{" "}
+          <a href={tabelaUrl(MANIFEST_URL, m, nome)}>Baixar Parquet</a>.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
               <tr>
-                <td>
-                  <code>{c.name}</code>
-                </td>
-                <td>
-                  <code>{c.type}</code>
-                </td>
-                <td class="muted">{c.source && <code>{c.source}</code>}</td>
-                <td>
-                  {c.description ?? ""}
-                  {(t.nulls_added?.[c.name] ?? 0) > 0 && (
-                    <span class="note">
-                      {" "}
-                      {fmtInt(t.nulls_added![c.name]!)} valor(es) inválido(s) na origem viraram nulo.
-                    </span>
-                  )}
-                </td>
+                <th>Coluna</th>
+                <th>Tipo</th>
+                <th>Origem</th>
+                <th>Descrição</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  ))}
+            </thead>
+            <tbody>
+              {t.columns.map((c) => (
+                <tr>
+                  <td>
+                    <code>{c.name}</code>
+                  </td>
+                  <td>
+                    <code>{c.type}</code>
+                  </td>
+                  <td class="muted">{c.source && <code>{c.source}</code>}</td>
+                  <td>
+                    {c.description ?? ""}
+                    {(t.nulls_added?.[c.name] ?? 0) > 0 && (
+                      <span class="note">
+                        {" "}
+                        {fmtInt(t.nulls_added![c.name]!)} valor(es) inválido(s) na origem viraram nulo.
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    );
+  })}
 </Base>
 
 <style>

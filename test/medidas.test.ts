@@ -92,11 +92,6 @@ describe("medidas", () => {
     expect(consultas()[0]).toContain("cnpj IN ('43461789000190')");
   });
 
-  it("pessoa nunca aparece pelo nome", async () => {
-    await recentes(3);
-    expect(consultas()[0]).toContain("CASE WHEN pessoa THEN NULL ELSE empresa END AS empresa");
-  });
-
   it("sem a tabela no manifest, nada é consultado e tudo volta vazio", async () => {
     estado.publicada = false;
     expect(await buscarMedidas(3, { modo: "texto", valor: "biojet" })).toEqual([]);

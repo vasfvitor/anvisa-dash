@@ -1,10 +1,8 @@
 // Só no build: baixa as tabelas do manifest, abre no DuckDB do Node e monta as empresas das páginas
-// /empresa/<cnpj>/. Alimentos e saneantes vêm de `produtos`, a tabela que o repo `anvisa` deriva a cada
-// build com a mesma definição de produto que a ilha (uma linha por co_seq_produto ou nu_expediente):
-// test/derivadas-live.test.ts confere, contra os dados reais, que as linhas e os totais saem iguais aos do
-// SQL da ilha. Os cosméticos ainda vêm da tabela inteira (24 MB) pelo SQL da ilha: as páginas listam os
-// primeiros de cada empresa, e `empresas` só traz contagens. Uma vez por processo (build ou dev); qualquer
-// falha derruba o build e o site no ar continua o anterior.
+// /empresa/<cnpj>/. Alimentos e saneantes vêm de `produtos` e as medidas de `medidas`, tabelas que o repo
+// `anvisa` deriva a cada build com a mesma definição que a ilha. Os cosméticos ainda vêm da tabela inteira
+// (24 MB) pelo SQL da ilha: as páginas listam os primeiros de cada empresa, e `empresas` só traz contagens.
+// Uma vez por processo (build ou dev); qualquer falha derruba o build e o site no ar continua o anterior.
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,29 +11,30 @@ import { CORREDORES } from "../../corredores";
 import { sqlCos, TABELA as COSMETICOS } from "../../corredores/cosmeticos/consultas";
 import type { IdCorredor } from "../../corredores/tipos";
 import { MANIFEST_URL } from "../config";
-import { SQL_MEDIDAS, sqlGrupoValidade, sqlNumeros, TABELA_MEDIDAS } from "../consultas";
+import { fatiar } from "../format";
+import { MEDIDAS_BUSCA, SQL_MEDIDAS, sqlGrupoValidade, sqlNumeros, TABELA_MEDIDAS } from "../consultas";
 import type { Numeros } from "../fonte";
 import { manifestDoBuild, tabelaUrl, type Manifest } from "../manifest";
 import { agrupar, COSMETICOS_POR_EMPRESA, type Empresa, type Entrada } from "./empresas";
 
 /** A tabela derivada do manifest: uma linha por alimento ou saneante, nas mesmas colunas (`area` diz qual). */
-export const TABELA_PRODUTOS = "produtos";
+const TABELA_PRODUTOS = "produtos";
 
-// as colunas e os tipos de cada linha são os do SELECT (getRowObjectsJson: INTEGER e BOOLEAN viram number e
-// boolean, DATE vira texto pelo strftime, NULL vira null); a conversão de tipo é o contrato com empresas.ts
-export const SQL_ALIMENTOS_DE_PRODUTOS = `SELECT id::INTEGER AS id, nome, marcas, categoria, ativo, tipo, processo,
-    registro, strftime(desde, '%Y-%m-%d') AS desde, apresentacoes, cnpj, empresa
-  FROM "${TABELA_PRODUTOS}" WHERE area = 'alimentos'`;
-// o QUALIFY é a deduplicação de SQL_SAN (saneantes/consultas.ts): 6 expedientes vêm em par em `produtos`
-export const SQL_SANEANTES_DE_PRODUTOS = `SELECT id, nome, ativo, tipo, processo, registro,
+// As linhas das páginas de empresa a partir de `de` (a tabela produtos, ou outra com as mesmas colunas). As
+// colunas e os tipos são os do SELECT (getRowObjectsJson: INTEGER e BOOLEAN viram number e boolean, DATE
+// vira texto pelo strftime, NULL vira null); a conversão de tipo é o contrato com empresas.ts.
+export const sqlAlimentosDe = (de = `"${TABELA_PRODUTOS}"`) =>
+  `SELECT id::INTEGER AS id, nome, marcas, categoria, ativo, tipo, processo, registro,
+    strftime(desde, '%Y-%m-%d') AS desde, apresentacoes, cnpj, empresa
+  FROM ${de} WHERE area = 'alimentos'`;
+// o QUALIFY é a deduplicação de SQL_SAN (saneantes/consultas.ts), enquanto `produtos` trouxer os 6 pares
+export const sqlSaneantesDe = (de = `"${TABELA_PRODUTOS}"`) =>
+  `SELECT id, nome, ativo, tipo, processo, registro,
     strftime(vencimento, '%Y-%m-%d') AS vencimento, ${sqlGrupoValidade("vencimento")} AS grupo, cnpj, empresa
-  FROM "${TABELA_PRODUTOS}" WHERE area = 'saneantes'
-  QUALIFY row_number() OVER (PARTITION BY id ORDER BY vencimento DESC NULLS LAST, tipo = 'Registrado' DESC) = 1`;
+  FROM ${de} WHERE area = 'saneantes'
+  QUALIFY row_number() OVER (PARTITION BY id ORDER BY tipo = 'Registrado' DESC, vencimento DESC NULLS LAST) = 1`;
 
-/** Liberados, total e empresas de uma área de `produtos`, como sqlNumeros faz nas derivadas da ilha. */
-const sqlNumerosDe = (area: IdCorredor) =>
-  `SELECT count(*)::INTEGER AS produtos, (count(*) FILTER (WHERE ativo))::INTEGER AS ativos,
-    count(DISTINCT cnpj)::INTEGER AS empresas FROM "${TABELA_PRODUTOS}" WHERE area = '${area}'`;
+const DE_PRODUTOS = { ativo: "ativo", cnpj: "cnpj" };
 
 interface DoBuild {
   empresas: Map<string, Empresa>;
@@ -66,14 +65,18 @@ async function carregar(): Promise<DoBuild> {
     const medidas = TABELA_MEDIDAS in manifest.tables;
     const cosmeticos = COSMETICOS in manifest.tables;
     const opcionais = [...(medidas ? [TABELA_MEDIDAS] : []), ...(cosmeticos ? [COSMETICOS] : [])];
-    for (const nome of [TABELA_PRODUTOS, ...opcionais]) {
-      await abrir(con, manifest, nome, pasta);
+    const nomes = [TABELA_PRODUTOS, ...opcionais];
+    // os downloads em paralelo; as views uma a uma, na mesma conexão
+    const arquivos = await Promise.all(nomes.map((nome) => baixar(manifest, nome, pasta)));
+    for (const [i, nome] of nomes.entries()) {
+      await con.run(`CREATE VIEW "${nome}" AS SELECT * FROM read_parquet('${arquivos[i]!.replaceAll("'", "''")}')`);
     }
     if (medidas) await con.run(SQL_MEDIDAS);
     if (cosmeticos) await con.run(`CREATE TABLE cos AS ${sqlCos(`"${COSMETICOS}"`)}`);
+    // os saneantes contam depois da deduplicação, como as linhas das páginas e como a ilha
     const consultas: [IdCorredor, string][] = [
-      ["alimentos", sqlNumerosDe("alimentos")],
-      ["saneantes", sqlNumerosDe("saneantes")],
+      ["alimentos", sqlNumeros(`(${sqlAlimentosDe()})`, DE_PRODUTOS)],
+      ["saneantes", sqlNumeros(`(${sqlSaneantesDe()})`, DE_PRODUTOS)],
       ...(cosmeticos ? [["cosmeticos", sqlNumeros("cos")] as [IdCorredor, string]] : []),
     ];
     const totais: DoBuild["totais"] = {};
@@ -88,8 +91,8 @@ async function carregar(): Promise<DoBuild> {
   }
 }
 
-/** Baixa a tabela, confere como a ilha confere (tamanho do manifest e o rodapé PAR1) e cria a view. */
-async function abrir(con: DuckDBConnection, m: Manifest, nome: string, pasta: string): Promise<void> {
+/** Baixa a tabela, confere como a ilha confere (tamanho do manifest e o rodapé PAR1) e devolve o arquivo. */
+async function baixar(m: Manifest, nome: string, pasta: string): Promise<string> {
   const url = tabelaUrl(MANIFEST_URL, m, nome);
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${nome}: HTTP ${res.status} em ${url}`);
@@ -100,7 +103,7 @@ async function abrir(con: DuckDBConnection, m: Manifest, nome: string, pasta: st
   }
   const arquivo = join(pasta, `${nome}.parquet`);
   await writeFile(arquivo, bytes);
-  await con.run(`CREATE VIEW "${nome}" AS SELECT * FROM read_parquet('${arquivo.replaceAll("'", "''")}')`);
+  return arquivo;
 }
 
 const CORREDOR_DO_TIPO = new Map<number, IdCorredor>(
@@ -110,8 +113,8 @@ const CORREDOR_DO_TIPO = new Map<number, IdCorredor>(
 async function ler(con: DuckDBConnection, medidas: boolean, cosmeticos: boolean): Promise<Entrada> {
   const linhas = async <T>(sql: string) => (await con.runAndReadAll(sql)).getRowObjectsJson() as T[];
 
-  const alimentos = await linhas<Entrada["alimentos"][number]>(SQL_ALIMENTOS_DE_PRODUTOS);
-  const saneantes = await linhas<Entrada["saneantes"][number]>(SQL_SANEANTES_DE_PRODUTOS);
+  const alimentos = await linhas<Entrada["alimentos"][number]>(sqlAlimentosDe());
+  const saneantes = await linhas<Entrada["saneantes"][number]>(sqlSaneantesDe());
   // os cosméticos seguem o SQL da ilha (cos), com os mesmos rótulos de situação, tipo e grupo
   // 1,19 milhão de cosméticos não cabem em páginas (nem na memória do build como objetos): cada empresa
   // lista os primeiros, liberados antes, e leva os totais para o resumo
@@ -144,7 +147,7 @@ async function ler(con: DuckDBConnection, medidas: boolean, cosmeticos: boolean)
     empresa: string | null;
   }>(
     `SELECT tipo::INTEGER AS tipo, produto, acoes, dt_ultima AS data, cnpj, empresa
-    FROM medidas_busca WHERE cnpj IS NOT NULL AND tipo IN (${tipos})`,
+    FROM ${MEDIDAS_BUSCA} WHERE cnpj IS NOT NULL AND tipo IN (${tipos})`,
   );
   return {
     alimentos,
@@ -154,7 +157,7 @@ async function ler(con: DuckDBConnection, medidas: boolean, cosmeticos: boolean)
     medidas: brutas.map((x) => ({
       corredor: CORREDOR_DO_TIPO.get(x.tipo)!,
       produto: x.produto,
-      acoes: x.acoes ? x.acoes.split("|") : [],
+      acoes: fatiar(x.acoes, "|"),
       data: x.data,
       cnpj: x.cnpj,
       empresa: x.empresa ?? "",

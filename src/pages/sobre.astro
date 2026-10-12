@@ -2,6 +2,7 @@
 import Base from "../layouts/Base.astro";
 import { CORREDORES } from "../corredores";
 import { MANIFEST_URL } from "../lib/config";
+import { TABELA_MEDIDAS } from "../lib/consultas";
 import { fmtBytes, fmtData, url } from "../lib/format";
 import { manifestDoBuild } from "../lib/manifest";
 
@@ -20,7 +21,7 @@ const corredores = CORREDORES.flatMap((c) => {
 });
 const cosmeticos = m.tables.cosmeticos?.busca;
 const detalhe = tam("alimentos_resultado");
-const medidas = tam("produtos_irregulares");
+const medidas = tam(TABELA_MEDIDAS);
 ---
 
 <Base

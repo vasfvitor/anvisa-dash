@@ -4,9 +4,10 @@
 // áreas; cada corredor vê só as do seu tipoProduto (area_codigo), e toda consulta começa por ele. Cuidados
 // da origem: a empresa investigada nem sempre tem CNPJ (CPF é pessoa, e o nome não aparece); `registros`
 // só vem nos saneantes e cosméticos; `processo` é o da medida, não o de um produto.
-import { SQL_MEDIDAS, TABELA_MEDIDAS } from "./consultas";
+import { MEDIDAS_BUSCA, SQL_MEDIDAS, TABELA_MEDIDAS } from "./consultas";
 import { carregar, consultar, iniciar } from "./db";
 import type { Consulta } from "./detect";
+import { fatiar } from "./format";
 import { derivar, termo, type Trecho } from "./sql";
 
 const TABELA = TABELA_MEDIDAS;
@@ -34,7 +35,7 @@ export interface Medida {
 }
 
 function tabela(): Promise<void> {
-  return derivar("medidas_busca", () => carregar(TABELA), SQL_MEDIDAS);
+  return derivar(MEDIDAS_BUSCA, () => carregar(TABELA), SQL_MEDIDAS);
 }
 
 /** Se o build atual publicou a tabela; sem ela o site segue sem medidas, sem tentar de novo a cada busca. */
@@ -70,10 +71,10 @@ export function predicado(q: Consulta, registros: string[] = []): Trecho | null 
   }
 }
 
-// a tabela já traz empresa nula quando o alvo é uma pessoa; a regra fica também aqui, porque é do site.
+// a tabela já traz empresa nula quando o alvo é uma pessoa (test/derivadas-live.test.ts confere);
 // registros vira texto com "|" como as outras listas (o Arrow devolve vetor, não array)
-const COLUNAS = `dossie || ':' || produto AS id, dossie, produto, CASE WHEN pessoa THEN NULL ELSE empresa END AS empresa,
-  cnpj, array_to_string(registros, '|') AS registros, processo, risco, acoes, atividades, dt_primeira, dt_ultima`;
+const COLUNAS = `dossie || ':' || produto AS id, dossie, produto, empresa, cnpj,
+  array_to_string(registros, '|') AS registros, processo, risco, acoes, atividades, dt_primeira, dt_ultima`;
 
 type Bruta = Omit<Medida, "acoes" | "atividades" | "registros"> & {
   acoes: string | null;
@@ -82,12 +83,11 @@ type Bruta = Omit<Medida, "acoes" | "atividades" | "registros"> & {
 };
 
 function medidas(linhas: Bruta[]): Medida[] {
-  const lista = (s: string | null) => (s ? s.split("|") : []);
   return linhas.map((l) => ({
     ...l,
-    acoes: lista(l.acoes),
-    atividades: lista(l.atividades),
-    registros: lista(l.registros),
+    acoes: fatiar(l.acoes, "|"),
+    atividades: fatiar(l.atividades, "|"),
+    registros: fatiar(l.registros, "|"),
   }));
 }
 
@@ -101,7 +101,7 @@ export async function buscarMedidas(
   const p = predicado(q, registros);
   if (!p || !(await disponivel())) return [];
   await tabela();
-  const sql = `SELECT ${COLUNAS}, (count(*) OVER ())::INTEGER AS total FROM medidas_busca
+  const sql = `SELECT ${COLUNAS}, (count(*) OVER ())::INTEGER AS total FROM ${MEDIDAS_BUSCA}
     WHERE tipo = ? AND ${p.sql}
     ORDER BY dt_ultima DESC, dossie, produto LIMIT ${MEDIDAS_POR_PAGINA} OFFSET ?`;
   return medidas(await consultar<Bruta>([], sql, [tipo, ...p.params, pagina * MEDIDAS_POR_PAGINA]));
@@ -111,7 +111,7 @@ export async function buscarMedidas(
 export async function recentes(tipo: number, n = 6): Promise<Medida[]> {
   if (!(await disponivel())) return [];
   await tabela();
-  const sql = `SELECT ${COLUNAS}, 0 AS total FROM medidas_busca WHERE tipo = ?
+  const sql = `SELECT ${COLUNAS}, 0 AS total FROM ${MEDIDAS_BUSCA} WHERE tipo = ?
     ORDER BY dt_ultima DESC, dossie, produto LIMIT ${Math.trunc(n)}`;
   return medidas(await consultar<Bruta>([], sql, [tipo]));
 }
@@ -120,7 +120,7 @@ export async function recentes(tipo: number, n = 6): Promise<Medida[]> {
 export async function porRegistro(tipo: number, registro: string): Promise<Medida[]> {
   if (!/^\d+$/.test(registro) || !(await disponivel())) return [];
   await tabela();
-  const sql = `SELECT ${COLUNAS}, 0 AS total FROM medidas_busca WHERE tipo = ? AND list_contains(registros, ?)
+  const sql = `SELECT ${COLUNAS}, 0 AS total FROM ${MEDIDAS_BUSCA} WHERE tipo = ? AND list_contains(registros, ?)
     ORDER BY dt_ultima DESC, dossie, produto`;
   return medidas(await consultar<Bruta>([], sql, [tipo, registro]));
 }
@@ -133,7 +133,7 @@ export async function medidasPorEmpresa(tipo: number, cnpjs: string[]): Promise<
   await tabela();
   const linhas = await consultar<{ cnpj: string; n: number }>(
     [],
-    `SELECT cnpj, count(*)::INTEGER AS n FROM medidas_busca
+    `SELECT cnpj, count(*)::INTEGER AS n FROM ${MEDIDAS_BUSCA}
      WHERE tipo = ? AND cnpj IN (${validos.map((c) => `'${c}'`).join(",")}) GROUP BY cnpj`,
     [tipo],
   );

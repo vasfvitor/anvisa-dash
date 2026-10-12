@@ -11,8 +11,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { SQL_PRODUTOS } from "../src/corredores/alimentos/consultas";
 import { sqlCos } from "../src/corredores/cosmeticos/consultas";
 import { SQL_SAN } from "../src/corredores/saneantes/consultas";
-import { SQL_MEDIDAS, sqlNumeros } from "../src/lib/consultas";
-import { SQL_ALIMENTOS_DE_PRODUTOS, SQL_SANEANTES_DE_PRODUTOS } from "../src/lib/estatico/dados";
+import { MEDIDAS_BUSCA, SQL_MEDIDAS, sqlNumeros } from "../src/lib/consultas";
+import { sqlAlimentosDe, sqlSaneantesDe } from "../src/lib/estatico/dados";
+import type { Numeros } from "../src/lib/fonte";
 
 const pasta = process.env.DADOS_LIVE;
 const TABELAS = ["alimentos", "saneantes", "cosmeticos", "produtos_irregulares", "produtos", "empresas", "medidas"];
@@ -37,6 +38,13 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
   let con: DuckDBConnection;
   const linhas = async <T>(sql: string) => (await con.runAndReadAll(sql)).getRowObjectsJson() as T[];
   const uma = async <T>(sql: string) => (await linhas<T>(sql))[0]!;
+  const contar = async (sql: string) => (await uma<{ n: number }>(`SELECT count(*)::INTEGER AS n FROM (${sql})`)).n;
+  /** quantas linhas de `a` não estão em `b` */
+  const diferentes = (a: string, b: string) => contar(`(${a}) EXCEPT ALL (${b})`);
+  // o que o build lê de produtos (o Parquet do manifest fica como `produtos_pub`: a ilha chama sua derivada de `produtos`)
+  const DE_PRODUTOS = { ativo: "ativo", cnpj: "cnpj" };
+  const novoAlimentos = sqlAlimentosDe("produtos_pub");
+  const novoSaneantes = sqlSaneantesDe("produtos_pub");
 
   beforeAll(async () => {
     instancia = await DuckDBInstance.create(":memory:");
@@ -58,24 +66,13 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
     instancia.closeSync();
   });
 
-  const numeros = (area: string) =>
-    uma<{ produtos: number; ativos: number; empresas: number }>(
-      `SELECT count(*)::INTEGER AS produtos, (count(*) FILTER (WHERE ativo))::INTEGER AS ativos,
-        count(DISTINCT cnpj)::INTEGER AS empresas FROM produtos_pub WHERE area = '${area}'`,
-    );
-
   // 2026-10-11: saneantes dá 144.413 em produtos e 144.407 na ilha (6 expedientes em par, ver SQL_SAN); o
   // SELECT do build deduplica, e é ele que tem de bater
-  it("produtos por área bate com sqlNumeros das derivadas da ilha", async () => {
-    expect(await numeros("alimentos")).toEqual(await uma(sqlNumeros("produtos")));
-    const san = await uma(
-      `SELECT count(*)::INTEGER AS produtos, (count(*) FILTER (WHERE ativo))::INTEGER AS ativos,
-        count(DISTINCT cnpj)::INTEGER AS empresas FROM (${SQL_SANEANTES_DE_PRODUTOS.replaceAll('"produtos"', "produtos_pub")})`,
-    );
-    expect(san).toEqual(await uma(sqlNumeros("san")));
-    const { pares } = await uma<{ pares: number }>(
-      `SELECT count(*)::INTEGER AS pares FROM (SELECT id FROM produtos_pub WHERE area = 'saneantes' GROUP BY id HAVING count(*) > 1)`,
-    );
+  it("totais do build (de produtos) batem com sqlNumeros das derivadas da ilha", async () => {
+    const totais = (de: string) => uma<Numeros>(sqlNumeros(`(${de})`, DE_PRODUTOS));
+    expect(await totais(novoAlimentos)).toEqual(await uma(sqlNumeros("produtos")));
+    expect(await totais(novoSaneantes)).toEqual(await uma(sqlNumeros("san")));
+    const pares = await contar("SELECT id FROM produtos_pub WHERE area = 'saneantes' GROUP BY id HAVING count(*) > 1");
     console.log("expedientes em par em produtos:", pares, "(a tabela promete id único por area)");
   });
 
@@ -86,15 +83,14 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
     );
     const { n } = await uma<{ n: number }>(`SELECT count(DISTINCT nu_processo)::INTEGER AS n FROM cosmeticos`);
     expect(e.cosmeticos).toBe(n);
-    const c = await uma<{ produtos: number; ativos: number; empresas: number }>(sqlNumeros("cos"));
+    const c = await uma<Numeros>(sqlNumeros("cos"));
     expect(e.cosmeticos).toBe(c.produtos);
     expect(e.ativos).toBe(c.ativos);
     expect(e.empresas).toBe(c.empresas);
   });
 
   it("registros nunca é nulo", async () => {
-    const { n } = await uma<{ n: number }>(`SELECT count(*)::INTEGER AS n FROM produtos_pub WHERE registros IS NULL`);
-    expect(n).toBe(0);
+    expect(await contar("SELECT 1 FROM produtos_pub WHERE registros IS NULL")).toBe(0);
   });
 
   // o que o build lia das derivadas da ilha (dados.ts até 2026-10-11) é o que lê de produtos: nenhuma linha difere
@@ -108,14 +104,10 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
         nu_processo AS processo, nu_registro_produto AS registro, dt_vencimento AS vencimento, grupo,
         nu_cnpj_empresa AS cnpj, no_razao_social_empresa AS empresa
       FROM san`;
-    const novoAlimentos = SQL_ALIMENTOS_DE_PRODUTOS.replaceAll('"produtos"', "produtos_pub");
-    const novoSaneantes = SQL_SANEANTES_DE_PRODUTOS.replaceAll('"produtos"', "produtos_pub");
-    const diferentes = async (a: string, b: string) =>
-      uma<{ n: number }>(`SELECT count(*)::INTEGER AS n FROM ((${a}) EXCEPT ALL (${b}))`);
-    expect(await diferentes(antigoAlimentos, novoAlimentos)).toEqual({ n: 0 });
-    expect(await diferentes(novoAlimentos, antigoAlimentos)).toEqual({ n: 0 });
-    expect(await diferentes(antigoSaneantes, novoSaneantes)).toEqual({ n: 0 });
-    expect(await diferentes(novoSaneantes, antigoSaneantes)).toEqual({ n: 0 });
+    expect(await diferentes(antigoAlimentos, novoAlimentos)).toBe(0);
+    expect(await diferentes(novoAlimentos, antigoAlimentos)).toBe(0);
+    expect(await diferentes(antigoSaneantes, novoSaneantes)).toBe(0);
+    expect(await diferentes(novoSaneantes, antigoSaneantes)).toBe(0);
   });
 
   // a tabela medidas do manifest, lida por medidas_busca, dá as mesmas linhas que a derivação antiga
@@ -123,25 +115,23 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
     // atividades: sem nenhuma, a derivação antiga dava NULL e a lista vazia dá ''; a ilha lê os dois como []
     const colunas =
       "tipo, dossie, produto, cnpj, pessoa, processo, risco, acoes, coalesce(atividades, '') AS atividades, dt_primeira, dt_ultima";
-    const diferentes = async (a: string, b: string) =>
-      (
-        await uma<{ n: number }>(
-          `SELECT count(*)::INTEGER AS n FROM ((SELECT ${colunas} FROM ${a}) EXCEPT ALL (SELECT ${colunas} FROM ${b}))`,
-        )
-      ).n;
-    expect(await diferentes("medidas_busca", "medidas_antigo")).toBe(0);
-    expect(await diferentes("medidas_antigo", "medidas_busca")).toBe(0);
-    // a empresa: igual fora as pessoas (a tabela nova já não traz o nome delas)
-    const { n: nomes } = await uma<{ n: number }>(
-      `SELECT count(*)::INTEGER AS n FROM medidas_busca n JOIN medidas_antigo a USING (tipo, dossie, produto)
-       WHERE NOT n.pessoa AND n.empresa IS DISTINCT FROM a.empresa`,
-    );
-    expect(nomes).toBe(0);
+    const nova = `SELECT ${colunas} FROM ${MEDIDAS_BUSCA}`;
+    const antiga = `SELECT ${colunas} FROM medidas_antigo`;
+    expect(await diferentes(nova, antiga)).toBe(0);
+    expect(await diferentes(antiga, nova)).toBe(0);
+    // a empresa: igual fora as pessoas, e nula nelas (medidas.ts confia nisso e não repete a regra)
+    expect(
+      await contar(
+        `SELECT 1 FROM ${MEDIDAS_BUSCA} n JOIN medidas_antigo a USING (tipo, dossie, produto)
+         WHERE NOT n.pessoa AND n.empresa IS DISTINCT FROM a.empresa`,
+      ),
+    ).toBe(0);
+    expect(await contar(`SELECT 1 FROM ${MEDIDAS_BUSCA} WHERE pessoa AND empresa IS NOT NULL`)).toBe(0);
     // o registro antigo (um por linha) está na lista nova; a lista traz mais em alguns pares
     const r = await uma<{ faltando: number; com_mais: number }>(
       `SELECT (count(*) FILTER (WHERE a.registro IS NOT NULL AND NOT list_contains(n.registros, a.registro)))::INTEGER AS faltando,
          (count(*) FILTER (WHERE len(n.registros) > 1))::INTEGER AS com_mais
-       FROM medidas_busca n JOIN medidas_antigo a USING (tipo, dossie, produto)`,
+       FROM ${MEDIDAS_BUSCA} n JOIN medidas_antigo a USING (tipo, dossie, produto)`,
     );
     expect(r.faltando).toBe(0);
     console.log("medidas com mais de um registro citado:", r.com_mais);
@@ -153,7 +143,7 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
       `WITH site AS (
          SELECT cnpj FROM produtos_pub
          UNION SELECT nu_cnpj_empresa FROM cos
-         UNION SELECT cnpj FROM medidas_busca WHERE cnpj IS NOT NULL AND tipo IN (6, 3, 2)
+         UNION SELECT cnpj FROM ${MEDIDAS_BUSCA} WHERE cnpj IS NOT NULL AND tipo IN (6, 3, 2)
        )
        SELECT (SELECT count(*) FROM empresas)::INTEGER AS empresas,
          (SELECT count(*) FROM site)::INTEGER AS site,

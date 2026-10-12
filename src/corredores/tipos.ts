@@ -37,8 +37,8 @@ export interface Corredor {
   /** dica quando a busca não acha nada */
   dica: string;
   /**
-   * co_tipo_produto destes produtos em produtos_irregulares (medidas de fiscalização da ANVISA: 6 é
-   * Alimento, 3 Saneantes, 2 Cosmético…); sem ele, o corredor não mostra medidas
+   * área destes produtos nas medidas de fiscalização da ANVISA (area_codigo em `medidas`, co_tipo_produto
+   * em produtos_irregulares: 6 é Alimento, 3 Saneantes, 2 Cosmético…); sem ele, o corredor não mostra medidas
    */
   tipoProduto?: number;
   /**
