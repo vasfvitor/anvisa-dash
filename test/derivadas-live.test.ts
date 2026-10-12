@@ -34,6 +34,7 @@ const TABELAS = [
   "empresas",
   "medidas",
   "cosmeticos_por_empresa",
+  "alimentos_por_produto",
 ];
 
 // o resumo de alergênicos como a ilha o monta (corredores/alimentos/fonte.ts): a referência das colunas novas
@@ -156,6 +157,37 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
     const { n } = await uma<{ n: number }>(`SELECT count(DISTINCT nu_processo)::INTEGER AS n FROM cosmeticos`);
     expect(e.produtos).toBe(n);
     expect(e).toEqual(await uma(sqlNumeros("cos")));
+  });
+
+  // alimentos_por_produto: produtos (só alimentos) mais o que a ilha derivava de alimentos em SQL_PRODUTOS
+  it("alimentos_por_produto é produtos nos alimentos, mais as colunas da ilha", async () => {
+    const app = "alimentos_por_produto";
+    const comuns =
+      "area, id, nome, marcas, empresa, cnpj, processo, registro, ativo, tipo, categoria, desde, vencimento, apresentacoes, registros, gluten, lactose, contem, pode_conter, nao_contem, alergia_varia";
+    const a = `SELECT ${comuns} FROM ${app}`;
+    const b = `SELECT ${comuns} FROM produtos_pub WHERE area = 'alimentos'`;
+    expect(await diferentes(a, b)).toBe(0);
+    expect(await diferentes(b, a)).toBe(0);
+    expect(await contar(`SELECT 1 FROM ${app} WHERE situacao_assunto IS NULL`)).toBe(0);
+    // as cinco colunas novas e desde, contra a derivada da ilha (SQL_PRODUTOS sobre alimentos)
+    const ilha = `SELECT co_seq_produto::VARCHAR AS id, ds_situacao_assunto_doc AS situacao_assunto,
+        ds_alegacao_funcional AS alegacao, dt_publicacao AS publicacao, dt_situacao AS situacao_em,
+        dt_inicio_analise AS inicio_analise, strftime(ordem_data, '%Y-%m-%d') AS desde
+      FROM produtos`;
+    const nova = `SELECT id, situacao_assunto, alegacao, strftime(publicacao, '%Y-%m-%dT%H:%M:%S') AS publicacao,
+        strftime(situacao_em, '%Y-%m-%dT%H:%M:%S') AS situacao_em,
+        strftime(inicio_analise, '%Y-%m-%dT%H:%M:%S') AS inicio_analise, strftime(desde, '%Y-%m-%d') AS desde
+      FROM ${app}`;
+    expect(await diferentes(ilha, nova)).toBe(0);
+    expect(await diferentes(nova, ilha)).toBe(0);
+    // vencimento: 141 alimentos têm apresentações com dt_vencimento_registro diferentes (2026-10-12). A tabela
+    // traz o menor; a ilha traz any_value (indefinido). Em aberto com o repo `anvisa`: o maior é o que diz se
+    // o produto ainda vale. Até decidir, só se mede
+    const venc = await contar(
+      `SELECT 1 FROM ${app} n JOIN (SELECT co_seq_produto::VARCHAR AS id, max(dt_vencimento_registro) AS v
+         FROM alimentos GROUP BY 1) a USING (id) WHERE n.vencimento::DATE IS DISTINCT FROM a.v::DATE`,
+    );
+    console.log("alimentos cujo vencimento em alimentos_por_produto não é o maior das apresentações:", venc);
   });
 
   // cosmeticos_por_empresa: o que o build listava da tabela inteira (dados.ts até 2026-10-12), já cortado
