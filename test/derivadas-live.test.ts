@@ -1,6 +1,7 @@
-// As tabelas derivadas do repo `anvisa` (produtos, empresas) contra o SQL da ilha, sobre os dados reais.
-// Só roda com DADOS_LIVE apontando para uma pasta com alimentos, saneantes, cosmeticos, produtos_irregulares,
-// produtos e empresas em .parquet (baixados do manifest ao vivo); sem ela, fica de fora (não há rede no CI).
+// As tabelas derivadas do repo `anvisa` (produtos, empresas, medidas) contra o SQL da ilha, sobre os dados
+// reais. Só roda com DADOS_LIVE apontando para uma pasta com alimentos, saneantes, cosmeticos,
+// produtos_irregulares, produtos, empresas e medidas em .parquet (baixados do manifest ao vivo); sem ela,
+// fica de fora (não há rede no CI).
 // Primeira rodada em 2026-10-11 contra o build 20261012T000746Z; o que deve bater está no handoff
 // ~/SharedFiles/agent/dados-produto/PROMPT.md.
 import { existsSync } from "node:fs";
@@ -14,7 +15,21 @@ import { SQL_MEDIDAS, sqlNumeros } from "../src/lib/consultas";
 import { SQL_ALIMENTOS_DE_PRODUTOS, SQL_SANEANTES_DE_PRODUTOS } from "../src/lib/estatico/dados";
 
 const pasta = process.env.DADOS_LIVE;
-const TABELAS = ["alimentos", "saneantes", "cosmeticos", "produtos_irregulares", "produtos", "empresas"];
+const TABELAS = ["alimentos", "saneantes", "cosmeticos", "produtos_irregulares", "produtos", "empresas", "medidas"];
+
+// o que a ilha e o build derivavam de produtos_irregulares até 2026-10-11 (lib/consultas.ts): a referência
+const SQL_MEDIDAS_ANTIGO = `CREATE TABLE medidas_antigo AS
+    SELECT co_tipo_produto AS tipo, co_seq_dossie_investig_med AS dossie, prod AS produto,
+      any_value(no_empresa_investigada) AS empresa,
+      any_value(nu_cnpj_empresa_investigada) FILTER (WHERE regexp_full_match(nu_cnpj_empresa_investigada, '[0-9]{14}') AND nu_cnpj_empresa_investigada <> '00000000000000') AS cnpj,
+      coalesce(bool_or(regexp_full_match(nu_cnpj_empresa_investigada, '[0-9]{11}')), false) AS pessoa,
+      any_value(nullif(regexp_replace(registro, '[^0-9]', '', 'g'), '')) AS registro,
+      any_value(nu_processo) AS processo, any_value(ds_risco_produto) AS risco,
+      array_to_string(list_sort(list(DISTINCT ds_acao_fiscalizacao) FILTER (WHERE ds_acao_fiscalizacao IS NOT NULL)), '|') AS acoes,
+      array_to_string(list_sort(list(DISTINCT ds_atividade_fiscalizacao) FILTER (WHERE ds_atividade_fiscalizacao IS NOT NULL)), '|') AS atividades,
+      strftime(min(dt_publicacao), '%Y-%m-%d') AS dt_primeira, strftime(max(dt_publicacao), '%Y-%m-%d') AS dt_ultima
+    FROM (SELECT *, trim(produto) AS prod FROM "produtos_irregulares") WHERE coalesce(prod, '') <> ''
+    GROUP BY co_tipo_produto, co_seq_dossie_investig_med, prod`;
 const pronta = !!pasta && TABELAS.every((t) => existsSync(join(pasta, `${t}.parquet`)));
 
 describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_LIVE)", () => {
@@ -35,6 +50,7 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
     await con.run(SQL_PRODUTOS);
     await con.run(SQL_SAN);
     await con.run(SQL_MEDIDAS);
+    await con.run(SQL_MEDIDAS_ANTIGO);
     await con.run(`CREATE TABLE cos AS ${sqlCos('"cosmeticos"')}`);
   }, 120_000);
   afterAll(() => {
@@ -102,13 +118,42 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
     expect(await diferentes(novoSaneantes, antigoSaneantes)).toEqual({ n: 0 });
   });
 
+  // a tabela medidas do manifest, lida por medidas_busca, dá as mesmas linhas que a derivação antiga
+  it("medidas do manifest batem com a derivação antiga de produtos_irregulares", async () => {
+    // atividades: sem nenhuma, a derivação antiga dava NULL e a lista vazia dá ''; a ilha lê os dois como []
+    const colunas =
+      "tipo, dossie, produto, cnpj, pessoa, processo, risco, acoes, coalesce(atividades, '') AS atividades, dt_primeira, dt_ultima";
+    const diferentes = async (a: string, b: string) =>
+      (
+        await uma<{ n: number }>(
+          `SELECT count(*)::INTEGER AS n FROM ((SELECT ${colunas} FROM ${a}) EXCEPT ALL (SELECT ${colunas} FROM ${b}))`,
+        )
+      ).n;
+    expect(await diferentes("medidas_busca", "medidas_antigo")).toBe(0);
+    expect(await diferentes("medidas_antigo", "medidas_busca")).toBe(0);
+    // a empresa: igual fora as pessoas (a tabela nova já não traz o nome delas)
+    const { n: nomes } = await uma<{ n: number }>(
+      `SELECT count(*)::INTEGER AS n FROM medidas_busca n JOIN medidas_antigo a USING (tipo, dossie, produto)
+       WHERE NOT n.pessoa AND n.empresa IS DISTINCT FROM a.empresa`,
+    );
+    expect(nomes).toBe(0);
+    // o registro antigo (um por linha) está na lista nova; a lista traz mais em alguns pares
+    const r = await uma<{ faltando: number; com_mais: number }>(
+      `SELECT (count(*) FILTER (WHERE a.registro IS NOT NULL AND NOT list_contains(n.registros, a.registro)))::INTEGER AS faltando,
+         (count(*) FILTER (WHERE len(n.registros) > 1))::INTEGER AS com_mais
+       FROM medidas_busca n JOIN medidas_antigo a USING (tipo, dossie, produto)`,
+    );
+    expect(r.faltando).toBe(0);
+    console.log("medidas com mais de um registro citado:", r.com_mais);
+  });
+
   // onde empresas e o site divergem por definição, para quem for avaliar trocar a agregação do build
   it("relata empresas contra a agregação do site", async () => {
     const r = await uma<Record<string, number>>(
       `WITH site AS (
          SELECT cnpj FROM produtos_pub
          UNION SELECT nu_cnpj_empresa FROM cos
-         UNION SELECT cnpj FROM medidas WHERE cnpj IS NOT NULL AND tipo IN (6, 3, 2)
+         UNION SELECT cnpj FROM medidas_busca WHERE cnpj IS NOT NULL AND tipo IN (6, 3, 2)
        )
        SELECT (SELECT count(*) FROM empresas)::INTEGER AS empresas,
          (SELECT count(*) FROM site)::INTEGER AS site,

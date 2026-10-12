@@ -43,7 +43,7 @@ limpeza); o termo técnico fica no hover e nos dados técnicos. Cada corredor é
 
 1. `meta.ts`: o registro (nome, número, rota, tabela, textos, exemplos, ícones; tipo em `tipos.ts`, onde
    o id também entra em `IdCorredor`), que entra em `CORREDORES` (`src/corredores/index.ts`). Com `tipoProduto` (o `co_tipo_produto` da área em
-   `produtos_irregulares`: 6 alimento, 3 saneantes, 2 cosmético…), o corredor ganha as medidas de
+   `medidas` e `produtos_irregulares`: 6 alimento, 3 saneantes, 2 cosmético…), o corredor ganha as medidas de
    fiscalização (`src/lib/medidas.ts`) na busca, na abertura, na página do produto e nos cartões;
 2. `fonte.ts`: a fonte de dados, que implementa `Fonte` (`src/lib/fonte.ts`) com o SQL compartilhado de
    `src/lib/sql.ts` e entra em `fontes.ts`;
@@ -67,9 +67,11 @@ As páginas Astro rodam no build e só podem ler o registro (`index.ts`, `tipos.
 `colunas.ts`) e o SQL puro (`consultas.ts`); o DuckDB-WASM, as fontes e os componentes da ilha só existem
 no navegador, e o ESLint barra o import no lugar errado. As páginas de empresa leem os Parquet no build com
 o DuckDB do Node (`src/lib/estatico/dados.ts`): alimentos e saneantes da tabela `produtos`, que o repo
-`anvisa` deriva a cada build com a mesma definição de produto da ilha, e os cosméticos da tabela inteira
-com o mesmo SQL de `consultas.ts` que a ilha roda. `DADOS_LIVE=<pasta com os Parquet> pnpm test` confere,
-contra os dados reais, que `produtos` e `empresas` batem com o SQL da ilha (`test/derivadas-live.test.ts`).
+`anvisa` deriva a cada build com a mesma definição de produto da ilha, as medidas de fiscalização da
+tabela `medidas` (uma linha por dossiê e produto, também derivada lá; a ilha a lê pela view
+`medidas_busca` de `src/lib/consultas.ts`), e os cosméticos da tabela inteira com o mesmo SQL de
+`consultas.ts` que a ilha roda. `DADOS_LIVE=<pasta com os Parquet> pnpm test` confere, contra os dados
+reais, que `produtos`, `empresas` e `medidas` batem com o SQL da ilha (`test/derivadas-live.test.ts`).
 
 A página é gerada por `src/pages/[...corredor].astro`. A troca de corredor não recarrega: a ilha
 intercepta o clique na placa, troca `html[data-corredor]` numa View Transition (círculo a partir do

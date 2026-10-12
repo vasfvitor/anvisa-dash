@@ -12,7 +12,7 @@ const estado = vi.hoisted(() => ({ chamadas: [] as Chamada[], publicada: true })
 vi.mock("../src/lib/db", () => ({
   carregar: () => Promise.resolve(),
   buildAtual: () => Promise.resolve("teste"),
-  iniciar: () => Promise.resolve({ tables: estado.publicada ? { produtos_irregulares: {} } : {} }),
+  iniciar: () => Promise.resolve({ tables: estado.publicada ? { medidas: {} } : {} }),
   consultar: (_tabelas: string[], sql: string, params: unknown[] = []) => {
     estado.chamadas.push({ sql, params });
     return Promise.resolve([]);
@@ -46,7 +46,9 @@ describe("medidas", () => {
       return p && comValores(p);
     };
     expect(sql({ modo: "cnpj", valor: "43694232000108" })).toBe("cnpj = '43694232000108'");
-    expect(sql({ modo: "numero", valor: "341750056" })).toBe("(processo = '341750056' OR registro = '341750056')");
+    expect(sql({ modo: "numero", valor: "341750056" })).toBe(
+      "(processo = '341750056' OR list_contains(registros, '341750056'))",
+    );
     expect(sql({ modo: "texto", valor: "Água Sanitária" })).toBe("contains(busca, 'agua sanitaria')");
     expect(sql({ modo: "todos", valor: "" })).toBeNull();
   });
@@ -54,11 +56,11 @@ describe("medidas", () => {
   it("por número, também os registros dos produtos achados (sem repetir o próprio número)", async () => {
     const q = { modo: "numero", valor: "1208030256" } as const;
     expect(comValores(predicado(q, ["341750056", "341750056", "1208030256", "300000001"])!)).toBe(
-      "(processo = '1208030256' OR registro = '1208030256' OR registro IN ('341750056', '300000001'))",
+      "(processo = '1208030256' OR list_contains(registros, '1208030256') OR list_has_any(registros, ['341750056', '300000001']))",
     );
     await buscarMedidas(3, q, 0, ["341750056"]);
     expect(consultas()[0]).toContain(
-      "WHERE tipo = 3 AND (processo = '1208030256' OR registro = '1208030256' OR registro IN ('341750056'))",
+      "WHERE tipo = 3 AND (processo = '1208030256' OR list_contains(registros, '1208030256') OR list_has_any(registros, ['341750056']))",
     );
   });
 
@@ -72,14 +74,14 @@ describe("medidas", () => {
     expect(qs[0]).toContain("WHERE tipo = 3 AND contains(busca, 'biojet')");
     expect(qs[0]).toMatch(/LIMIT 20 OFFSET 20$/);
     expect(qs[1]).toContain("WHERE tipo = 6 ORDER BY");
-    expect(qs[2]).toContain("WHERE tipo = 3 AND registro = '341750056'");
+    expect(qs[2]).toContain("WHERE tipo = 3 AND list_contains(registros, '341750056')");
     expect(qs[3]).toContain("WHERE tipo = 6 AND cnpj IN ('29822523000103')");
   });
 
   it("o registro do produto não casa com o processo da medida", async () => {
     await porRegistro(3, "341750056");
     const onde = consultas()[0]!.split(" WHERE ")[1];
-    expect(onde).toContain("registro = '341750056'");
+    expect(onde).toContain("list_contains(registros, '341750056')");
     expect(onde).not.toContain("processo");
   });
 

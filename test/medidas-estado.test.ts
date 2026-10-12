@@ -39,7 +39,7 @@ const medidas = (n: number, total: number, de = 0): Medida[] =>
     produto: "x",
     empresa: null,
     cnpj: null,
-    registro: null,
+    registros: [],
     processo: null,
     risco: null,
     acoes: [],

@@ -144,7 +144,7 @@ async function ler(con: DuckDBConnection, medidas: boolean, cosmeticos: boolean)
     empresa: string | null;
   }>(
     `SELECT tipo::INTEGER AS tipo, produto, acoes, dt_ultima AS data, cnpj, empresa
-    FROM medidas WHERE cnpj IS NOT NULL AND tipo IN (${tipos})`,
+    FROM medidas_busca WHERE cnpj IS NOT NULL AND tipo IN (${tipos})`,
   );
   return {
     alimentos,
