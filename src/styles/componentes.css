@@ -559,19 +559,29 @@ a.badge:hover {
   .hero {
     padding-top: 1.2rem;
   }
+  /* no celular os ícones entram no fluxo, como um float à direita antes do título: a primeira linha do
+     título contorna o par e o resto do texto fica inteiro. Antes, a caixa absoluta ficava a 2,6 rem do topo
+     e os ícones caíam no fim da frase de abertura, com título de uma linha ou de duas (medido a 390 px,
+     2026-10-11). Dois ícones só: o terceiro não cabe em 2,6 rem de altura */
   .hero-deco {
+    position: relative;
+    float: right;
+    inset: auto;
     width: 24%;
-    top: 2.6rem;
-    bottom: auto;
-    height: 9rem;
+    height: 2.6rem;
+    margin: 0 0 0.4rem 0.6rem;
   }
   .deco {
     transform: scale(0.8);
   }
+  .deco-1,
   .deco-2,
   .deco-4,
   .deco-6 {
     display: none;
+  }
+  .numeros {
+    clear: both;
   }
 }
 
