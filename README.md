@@ -69,9 +69,10 @@ no navegador, e o ESLint barra o import no lugar errado. As páginas de empresa 
 o DuckDB do Node (`src/lib/estatico/dados.ts`): alimentos e saneantes da tabela `produtos`, que o repo
 `anvisa` deriva a cada build com a mesma definição de produto da ilha, as medidas de fiscalização da
 tabela `medidas` (uma linha por dossiê e produto, também derivada lá; a ilha a lê pela view
-`medidas_busca` de `src/lib/consultas.ts`), e os cosméticos da tabela inteira com o mesmo SQL de
-`consultas.ts` que a ilha roda. `DADOS_LIVE=<pasta com os Parquet> pnpm test` confere, contra os dados
-reais, que `produtos`, `empresas` e `medidas` batem com o SQL da ilha (`test/derivadas-live.test.ts`).
+`medidas_busca` de `src/lib/consultas.ts`), e os cosméticos de `cosmeticos_por_empresa` (os 100
+primeiros de cada CNPJ pelas regras de `sqlCos`, 7,6 MB em vez dos 24 MB da tabela inteira) com os
+totais em `empresas`. `DADOS_LIVE=<pasta com os Parquet> pnpm test` confere, contra os dados reais, que
+cada derivada bate com o SQL da ilha (`test/derivadas-live.test.ts`).
 
 A página é gerada por `src/pages/[...corredor].astro`. A troca de corredor não recarrega: a ilha
 intercepta o clique na placa, troca `html[data-corredor]` numa View Transition (círculo a partir do

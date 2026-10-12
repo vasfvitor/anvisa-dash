@@ -1,14 +1,15 @@
 // Só no build: baixa as tabelas do manifest, abre no DuckDB do Node e monta as empresas das páginas
-// /empresa/<cnpj>/. Alimentos e saneantes vêm de `produtos` e as medidas de `medidas`, tabelas que o repo
-// `anvisa` deriva a cada build com a mesma definição que a ilha. Os cosméticos ainda vêm da tabela inteira
-// (24 MB) pelo SQL da ilha: as páginas listam os primeiros de cada empresa, e `empresas` só traz contagens.
-// Uma vez por processo (build ou dev); qualquer falha derruba o build e o site no ar continua o anterior.
+// /empresa/<cnpj>/. Tudo vem de tabelas que o repo `anvisa` deriva a cada build com a mesma definição que
+// a ilha: alimentos e saneantes de `produtos`, as medidas de `medidas`, os cosméticos de
+// `cosmeticos_por_empresa` (os primeiros de cada CNPJ, pelas regras de sqlCos; 7,6 MB em vez dos 24 MB da
+// tabela inteira) com os totais por empresa e do corredor em `empresas`. test/derivadas-live.test.ts
+// confere cada uma contra o SQL da ilha. Uma vez por processo (build ou dev); qualquer falha derruba o
+// build e o site no ar continua o anterior.
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
 import { CORREDORES } from "../../corredores";
-import { sqlCos, TABELA as COSMETICOS } from "../../corredores/cosmeticos/consultas";
 import type { IdCorredor } from "../../corredores/tipos";
 import { MANIFEST_URL } from "../config";
 import { fatiar } from "../format";
@@ -19,6 +20,10 @@ import { agrupar, COSMETICOS_POR_EMPRESA, type Empresa, type Entrada } from "./e
 
 /** A tabela derivada do manifest: uma linha por alimento ou saneante, nas mesmas colunas (`area` diz qual). */
 const TABELA_PRODUTOS = "produtos";
+/** Uma linha por CNPJ com produto ou medida, com as contagens por área. */
+const TABELA_EMPRESAS = "empresas";
+/** Os primeiros cosméticos de cada CNPJ (`ordem` 1..n, liberados antes, depois nome), um por processo. */
+const TABELA_COSMETICOS_EMPRESA = "cosmeticos_por_empresa";
 
 // As linhas das páginas de empresa a partir de `de` (a tabela produtos, ou outra com as mesmas colunas). As
 // colunas e os tipos são os do SELECT (getRowObjectsJson: INTEGER e BOOLEAN viram number e boolean, DATE
@@ -34,6 +39,19 @@ export const sqlSaneantesDe = (de = `"${TABELA_PRODUTOS}"`) =>
   FROM ${de} WHERE area = 'saneantes'`;
 
 const DE_PRODUTOS = { ativo: "ativo", cnpj: "cnpj" };
+
+/** Os cosméticos listados em cada página de empresa, de `de` (cosmeticos_por_empresa ou igual). */
+export const sqlCosmeticosDe = (de = `"${TABELA_COSMETICOS_EMPRESA}"`) =>
+  `SELECT id, nome, ativo, tipo, processo, registro, strftime(vencimento, '%Y-%m-%d') AS vencimento,
+    ${sqlGrupoValidade("vencimento")} AS grupo, cnpj, empresa
+  FROM ${de} WHERE ordem <= ${COSMETICOS_POR_EMPRESA} ORDER BY cnpj, ordem`;
+/** Os totais de cosméticos por empresa, de `empresas`. */
+export const sqlCosmeticosTotaisDe = (de = `"${TABELA_EMPRESAS}"`) =>
+  `SELECT cnpj, cosmeticos AS produtos, cosmeticos_ativos AS ativos FROM ${de} WHERE cosmeticos > 0`;
+/** Os totais do corredor de cosméticos (como sqlNumeros), de `empresas`. */
+export const sqlNumerosCosmeticos = (de = `"${TABELA_EMPRESAS}"`) =>
+  `SELECT sum(cosmeticos)::INTEGER AS produtos, sum(cosmeticos_ativos)::INTEGER AS ativos,
+    (count(*) FILTER (WHERE cosmeticos > 0))::INTEGER AS empresas FROM ${de}`;
 
 interface DoBuild {
   empresas: Map<string, Empresa>;
@@ -62,8 +80,11 @@ async function carregar(): Promise<DoBuild> {
   try {
     // tabela que o manifest ainda não tem fica sem seção, sem derrubar o build
     const medidas = TABELA_MEDIDAS in manifest.tables;
-    const cosmeticos = COSMETICOS in manifest.tables;
-    const opcionais = [...(medidas ? [TABELA_MEDIDAS] : []), ...(cosmeticos ? [COSMETICOS] : [])];
+    const cosmeticos = TABELA_COSMETICOS_EMPRESA in manifest.tables && TABELA_EMPRESAS in manifest.tables;
+    const opcionais = [
+      ...(medidas ? [TABELA_MEDIDAS] : []),
+      ...(cosmeticos ? [TABELA_COSMETICOS_EMPRESA, TABELA_EMPRESAS] : []),
+    ];
     const nomes = [TABELA_PRODUTOS, ...opcionais];
     // os downloads em paralelo; as views uma a uma, na mesma conexão
     const arquivos = await Promise.all(nomes.map((nome) => baixar(manifest, nome, pasta)));
@@ -71,12 +92,10 @@ async function carregar(): Promise<DoBuild> {
       await con.run(`CREATE VIEW "${nome}" AS SELECT * FROM read_parquet('${arquivos[i]!.replaceAll("'", "''")}')`);
     }
     if (medidas) await con.run(SQL_MEDIDAS);
-    if (cosmeticos) await con.run(`CREATE TABLE cos AS ${sqlCos(`"${COSMETICOS}"`)}`);
-    // os saneantes contam depois da deduplicação, como as linhas das páginas e como a ilha
     const consultas: [IdCorredor, string][] = [
       ["alimentos", sqlNumeros(`(${sqlAlimentosDe()})`, DE_PRODUTOS)],
       ["saneantes", sqlNumeros(`(${sqlSaneantesDe()})`, DE_PRODUTOS)],
-      ...(cosmeticos ? [["cosmeticos", sqlNumeros("cos")] as [IdCorredor, string]] : []),
+      ...(cosmeticos ? [["cosmeticos", sqlNumerosCosmeticos()] as [IdCorredor, string]] : []),
     ];
     const totais: DoBuild["totais"] = {};
     for (const [id, sql] of consultas) {
@@ -114,26 +133,10 @@ async function ler(con: DuckDBConnection, medidas: boolean, cosmeticos: boolean)
 
   const alimentos = await linhas<Entrada["alimentos"][number]>(sqlAlimentosDe());
   const saneantes = await linhas<Entrada["saneantes"][number]>(sqlSaneantesDe());
-  // os cosméticos seguem o SQL da ilha (cos), com os mesmos rótulos de situação, tipo e grupo
   // 1,19 milhão de cosméticos não cabem em páginas (nem na memória do build como objetos): cada empresa
   // lista os primeiros, liberados antes, e leva os totais para o resumo
-  const cos = cosmeticos
-    ? await linhas<Entrada["cosmeticos"][number]>(
-        `SELECT id, no_produto AS nome, situacao_registro = 'Ativo' AS ativo, tipo_regularizacao AS tipo,
-          nu_processo AS processo, nu_registro AS registro, dt_vencimento AS vencimento, grupo,
-          nu_cnpj_empresa AS cnpj, no_razao_social_empresa AS empresa
-        FROM cos
-        QUALIFY row_number() OVER (PARTITION BY nu_cnpj_empresa ORDER BY situacao_registro, no_produto, id)
-          <= ${COSMETICOS_POR_EMPRESA}`,
-      )
-    : [];
-  const cosmeticosTotais = cosmeticos
-    ? await linhas<Entrada["cosmeticosTotais"][number]>(
-        `SELECT nu_cnpj_empresa AS cnpj, count(*)::INTEGER AS produtos,
-          (count(*) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER AS ativos
-        FROM cos GROUP BY 1`,
-      )
-    : [];
+  const cos = cosmeticos ? await linhas<Entrada["cosmeticos"][number]>(sqlCosmeticosDe()) : [];
+  const cosmeticosTotais = cosmeticos ? await linhas<Entrada["cosmeticosTotais"][number]>(sqlCosmeticosTotaisDe()) : [];
   if (!medidas) return { alimentos, saneantes, cosmeticos: cos, cosmeticosTotais, medidas: [] };
 
   const tipos = [...CORREDOR_DO_TIPO.keys()].join(", ");

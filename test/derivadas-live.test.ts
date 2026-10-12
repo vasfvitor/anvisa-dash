@@ -12,7 +12,14 @@ import { SQL_PRODUTOS } from "../src/corredores/alimentos/consultas";
 import { sqlCos } from "../src/corredores/cosmeticos/consultas";
 import { SQL_SAN } from "../src/corredores/saneantes/consultas";
 import { MEDIDAS_BUSCA, SQL_MEDIDAS, sqlNumeros } from "../src/lib/consultas";
-import { sqlAlimentosDe, sqlSaneantesDe } from "../src/lib/estatico/dados";
+import {
+  sqlAlimentosDe,
+  sqlCosmeticosDe,
+  sqlCosmeticosTotaisDe,
+  sqlNumerosCosmeticos,
+  sqlSaneantesDe,
+} from "../src/lib/estatico/dados";
+import { COSMETICOS_POR_EMPRESA } from "../src/lib/estatico/empresas";
 import type { Numeros } from "../src/lib/fonte";
 import { deJson, resumirAlergia, type Sinal } from "../src/corredores/alimentos/alergia";
 
@@ -26,6 +33,7 @@ const TABELAS = [
   "produtos",
   "empresas",
   "medidas",
+  "cosmeticos_por_empresa",
 ];
 
 // o resumo de alergênicos como a ilha o monta (corredores/alimentos/fonte.ts): a referência das colunas novas
@@ -144,16 +152,50 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
   });
 
   it("cosméticos em empresas: processos distintos, ativos pela regra de sqlCos", async () => {
-    const e = await uma<{ cosmeticos: number; ativos: number; empresas: number }>(
-      `SELECT sum(cosmeticos)::INTEGER AS cosmeticos, sum(cosmeticos_ativos)::INTEGER AS ativos,
-        (count(*) FILTER (WHERE cosmeticos > 0))::INTEGER AS empresas FROM empresas`,
-    );
+    const e = await uma<Numeros>(sqlNumerosCosmeticos("empresas"));
     const { n } = await uma<{ n: number }>(`SELECT count(DISTINCT nu_processo)::INTEGER AS n FROM cosmeticos`);
-    expect(e.cosmeticos).toBe(n);
-    const c = await uma<Numeros>(sqlNumeros("cos"));
-    expect(e.cosmeticos).toBe(c.produtos);
-    expect(e.ativos).toBe(c.ativos);
-    expect(e.empresas).toBe(c.empresas);
+    expect(e.produtos).toBe(n);
+    expect(e).toEqual(await uma(sqlNumeros("cos")));
+  });
+
+  // cosmeticos_por_empresa: o que o build listava da tabela inteira (dados.ts até 2026-10-12), já cortado
+  it("cosmeticos_por_empresa são os primeiros de cada CNPJ pela regra do build, com ordem 1..n", async () => {
+    const cpe = "cosmeticos_por_empresa";
+    // ordem contígua a partir de 1, sem repetir
+    expect(
+      await contar(
+        `SELECT cnpj FROM ${cpe} GROUP BY cnpj
+         HAVING min(ordem) <> 1 OR max(ordem) <> count(*) OR count(DISTINCT ordem) <> count(*)`,
+      ),
+    ).toBe(0);
+    // liberados antes: nenhum ativo depois de um inativo
+    expect(
+      await contar(
+        `SELECT 1 FROM ${cpe} a JOIN ${cpe} b USING (cnpj) WHERE a.ordem < b.ordem AND NOT a.ativo AND b.ativo`,
+      ),
+    ).toBe(0);
+    // cada empresa com cosmético está, com min(total, teto) linhas; nenhuma a mais
+    expect(
+      await contar(
+        `SELECT 1 FROM (SELECT cnpj, count(*) AS n FROM ${cpe} GROUP BY cnpj) c
+         FULL JOIN (SELECT cnpj, cosmeticos FROM empresas WHERE cosmeticos > 0) e USING (cnpj)
+         WHERE n IS DISTINCT FROM least(cosmeticos, ${COSMETICOS_POR_EMPRESA})`,
+      ),
+    ).toBe(0);
+    // as linhas e os totais são os que o build tirava de cos (sqlCos sobre a tabela inteira)
+    const antigo = `SELECT id, no_produto AS nome, situacao_registro = 'Ativo' AS ativo, tipo_regularizacao AS tipo,
+        nu_processo AS processo, nu_registro AS registro, dt_vencimento AS vencimento, grupo,
+        nu_cnpj_empresa AS cnpj, no_razao_social_empresa AS empresa
+      FROM cos
+      QUALIFY row_number() OVER (PARTITION BY nu_cnpj_empresa ORDER BY situacao_registro, no_produto, id)
+        <= ${COSMETICOS_POR_EMPRESA}`;
+    const novo = sqlCosmeticosDe(cpe);
+    expect(await diferentes(antigo, novo)).toBe(0);
+    expect(await diferentes(novo, antigo)).toBe(0);
+    const totaisAntigos = `SELECT nu_cnpj_empresa AS cnpj, count(*)::INTEGER AS produtos,
+        (count(*) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER AS ativos FROM cos GROUP BY 1`;
+    expect(await diferentes(totaisAntigos, sqlCosmeticosTotaisDe("empresas"))).toBe(0);
+    expect(await diferentes(sqlCosmeticosTotaisDe("empresas"), totaisAntigos)).toBe(0);
   });
 
   it("registros nunca é nulo", async () => {
