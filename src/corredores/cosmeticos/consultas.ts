@@ -1,6 +1,7 @@
 // SQL dos cosméticos sem dependências: a ilha aplica sobre os pedaços baixados para cada busca (fonte.ts) e o
 // build (páginas de empresa) sobre a tabela inteira no DuckDB do Node, com a mesma deduplicação e os mesmos
 // rótulos.
+import { sqlGrupoValidade } from "../../lib/consultas";
 
 export const TABELA = "cosmeticos";
 
@@ -24,8 +25,7 @@ export function sqlCos(origem: string): string {
         WHEN ds_tipo_peticao = 'DESCARTAVEL' THEN 'Descartável'
         ELSE ds_tipo_peticao END AS tipo_regularizacao,
       strftime(dt_vencimento, '%Y-%m-%d') AS dt_vencimento,
-      CASE WHEN dt_vencimento IS NULL THEN 'Sem data'
-        WHEN dt_vencimento < current_date THEN 'Vencida' ELSE 'Em dia' END AS grupo,
+      ${sqlGrupoValidade("dt_vencimento")} AS grupo,
       -- só para ordenar; vencimento depois de 2100 conta como 2100, sem passar à frente (sem data fica NULL:
       -- least() ignoraria o NULL e o poria no topo)
       if(dt_vencimento > TIMESTAMP '2100-12-31', TIMESTAMP '2100-12-31', dt_vencimento) AS ordem_data,

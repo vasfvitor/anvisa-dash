@@ -15,16 +15,11 @@ const tabela: Tabela = {
 };
 const info = { titulo: "Produtos de limpeza", descricao: "Uma linha por processo.", palavras: ["saneantes"] };
 const montar = () =>
-  conjuntoDados(
-    "saneantes",
-    tabela,
-    info,
-    {
-      pagina: "https://contem.abelhaninja.de/dicionario/",
-      parquet: "https://exemplo.org/saneantes.parquet",
-      atualizado: "2026-10-06T00:00:00",
-    },
-  );
+  conjuntoDados("saneantes", tabela, info, {
+    pagina: "https://contem.abelhaninja.de/dicionario/",
+    parquet: "https://exemplo.org/saneantes.parquet",
+    atualizado: "2026-10-06T00:00:00",
+  });
 
 describe("conjuntoDados", () => {
   it("@id e url são a âncora da seção", () => {

@@ -5,6 +5,10 @@ export const TS = (expr: string, nome: string) => `strftime(${expr}, '%Y-%m-%dT%
 
 export const TABELA_MEDIDAS = "produtos_irregulares";
 
+/** O grupo da validade da liberação (Em dia, Vencida, Sem data) de uma coluna de data, com a data do dia. */
+export const sqlGrupoValidade = (coluna: string) =>
+  `CASE WHEN ${coluna} IS NULL THEN 'Sem data' WHEN ${coluna} < current_date THEN 'Vencida' ELSE 'Em dia' END`;
+
 /** medidas: uma linha por tipo de produto × dossiê × produto (a origem tem uma por ação e atividade). */
 export const SQL_MEDIDAS = `CREATE OR REPLACE TABLE medidas AS
     SELECT co_tipo_produto AS tipo, co_seq_dossie_investig_med AS dossie, prod AS produto,

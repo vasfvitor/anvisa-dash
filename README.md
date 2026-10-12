@@ -12,7 +12,8 @@ assistentes.
 
 O app só conhece o manifest (`src/lib/config.ts`). Os caminhos dos Parquet vêm dele e mudam a cada
 build. Cada tabela do manifest vira uma view no DuckDB, e o dicionário (`/dicionario/`) é gerado do
-manifest no build. Tabela nova aparece nos dois sem mudar código.
+manifest no build, com o título, as notas e as descrições das colunas que o próprio manifest traz (escritas
+no repo `anvisa`, desde o build 20261012T000746Z). Tabela nova aparece nos dois sem mudar código.
 
 Coisas medidas que o código assume (build de 2026-10-06):
 
@@ -47,7 +48,8 @@ limpeza); o termo técnico fica no hover e nos dados técnicos. Cada corredor é
 2. `fonte.ts`: a fonte de dados, que implementa `Fonte` (`src/lib/fonte.ts`) com o SQL compartilhado de
    `src/lib/sql.ts` e entra em `fontes.ts`;
 3. `Cartao.vue` e `Pagina.vue`: o cartão da lista e a página de detalhe, que entram em `telas.ts`;
-4. `colunas.ts` (opcional): descrições para o dicionário de dados;
+4. `colunas.ts` (opcional): a tabela no dicionário de dados como Dataset (schema.org): título, o que é
+   uma linha e palavras; as colunas são descritas no manifest;
 5. o CSS em `src/styles/corredores/<id>.css`, importado em `src/styles/global.css`: paleta e material
    (os tokens de `tokens.css`) em `[data-corredor="…"]`, a cor da placa e o que muda de caráter; os
    ícones novos em `public/icones.svg`;
@@ -64,7 +66,10 @@ verdade.
 As páginas Astro rodam no build e só podem ler o registro (`index.ts`, `tipos.ts`, `meta.ts`,
 `colunas.ts`) e o SQL puro (`consultas.ts`); o DuckDB-WASM, as fontes e os componentes da ilha só existem
 no navegador, e o ESLint barra o import no lugar errado. As páginas de empresa leem os Parquet no build com
-o DuckDB do Node (`src/lib/estatico/dados.ts`), rodando o mesmo SQL de `consultas.ts` que a ilha roda.
+o DuckDB do Node (`src/lib/estatico/dados.ts`): alimentos e saneantes da tabela `produtos`, que o repo
+`anvisa` deriva a cada build com a mesma definição de produto da ilha, e os cosméticos da tabela inteira
+com o mesmo SQL de `consultas.ts` que a ilha roda. `DADOS_LIVE=<pasta com os Parquet> pnpm test` confere,
+contra os dados reais, que `produtos` e `empresas` batem com o SQL da ilha (`test/derivadas-live.test.ts`).
 
 A página é gerada por `src/pages/[...corredor].astro`. A troca de corredor não recarrega: a ilha
 intercepta o clique na placa, troca `html[data-corredor]` numa View Transition (círculo a partir do
