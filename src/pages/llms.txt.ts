@@ -42,7 +42,7 @@ Arquivos Parquet do build ${m.build_id}, com os dados abertos da ANVISA. O [mani
 
 ${tabelas.map((t) => `- [${t}](${arquivo(t)}): ${fmtInt(m.tables[t]!.rows)} linhas${m.tables[t]!.source.loaded_at ? `, dados de ${fmtData(m.tables[t]!.source.loaded_at)}` : ""}`).join("\n")}
 
-- ${ALIMENTOS}: uma linha por apresentação; o produto é co_seq_produto. Situação em situacao_registro ('Ativo' é liberado), marcas separadas por ";".
+- ${ALIMENTOS}: uma linha por produto (co_seq_produto), com as apresentações agrupadas e o resumo de alergênicos (gluten, lactose, contem, pode_conter, nao_contem). ativo é liberado, marcas separadas por ";"; registros são os números das apresentações. A tabela por apresentação é alimentos; a de detalhe (ingredientes, embalagens, alergênicos por apresentação), alimentos_resultado.
 - ${SANEANTES}: produtos de limpeza, uma linha por processo; o produto é nu_expediente. st_produto_ativo é liberado, dt_vencimento_produto é o fim da liberação.
 - ${COSMETICOS}: cosméticos, perfumes e produtos de higiene, uma linha por processo e st_registrado (11 mil processos registrados aparecem duas vezes). st_situacao_produto é liberado, ds_tipo_peticao o tipo (REGISTRO, Notificado, ISENTO DE REGISTRO, DESCARTAVEL; vazio nas linhas de registro).${busca ? ` Os mesmos dados também em ${fmtInt(busca.arquivos)} pedaços por palavra do nome, CNPJ e número, com [índice](${new URL(busca.indice, MANIFEST_URL).href}).` : ""}
 - ${TABELA_MEDIDAS}: medidas de fiscalização (suspensão, proibição, recolhimento, interdição, apreensão, inutilização), uma linha por dossiê e produto, com acoes e atividades em lista e cnpj da empresa fiscalizada. area_codigo ${tipo("alimentos")} é alimento, ${tipo("saneantes")} é saneante, ${tipo("cosmeticos")} é cosmético.
@@ -52,12 +52,9 @@ ${tabelas.map((t) => `- [${t}](${arquivo(t)}): ${fmtInt(m.tables[t]!.rows)} linh
 Alimentos de uma marca, um produto por linha:
 
 \`\`\`sql
-SELECT co_seq_produto, any_value(no_produto) AS nome, any_value(marcas) AS marcas,
-  any_value(no_razao_social_empresa) AS empresa, any_value(situacao_registro) AS situacao,
-  any_value(nu_processo) AS processo
+SELECT id, nome, marcas, empresa, ativo, processo, contem
 FROM read_parquet('${arquivo(ALIMENTOS)}')
-WHERE lower(strip_accents(marcas)) LIKE '%whey%'
-GROUP BY co_seq_produto;
+WHERE lower(strip_accents(marcas)) LIKE '%whey%';
 \`\`\`
 
 Produtos de limpeza de uma empresa:

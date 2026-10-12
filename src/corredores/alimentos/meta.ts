@@ -7,7 +7,7 @@ export const meta: Corredor = {
   nome: "Alimentos e suplementos",
   curto: "Alimentos",
   slug: "alimentos",
-  tabela: "alimentos",
+  tabela: "alimentos_por_produto",
   icone: "capsula",
   deco: ["capsula", "folha", "pote", "trigo", "colher", "leite", "gota", "brilho", "etiqueta"],
   titulo: "Alimentos e suplementos liberados pela ANVISA",

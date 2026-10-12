@@ -31,7 +31,10 @@ Coisas medidas que o código assume (build de 2026-10-06):
   e os caminhos são imutáveis, então um download por build, com cache HTTP, é mais simples e mais
   barato.
 - Nome, marcas, empresa, processo e situação são iguais em todas as apresentações de um produto. A
-  busca agrupa por `co_seq_produto` numa consulta só.
+  busca lê `alimentos_por_produto` (uma linha por `co_seq_produto`, com o resumo de alergênicos, 2,8 MB),
+  que o repo `anvisa` deriva de `alimentos` e `alimentos_resultado` a cada build (desde 2026-10-12; antes
+  a ilha agrupava `alimentos` ela mesma, e `test/derivadas-live.test.ts` confere que dá no mesmo). As
+  duas tabelas de origem (3,3 e 1,7 MB) só baixam na primeira página de produto, para as apresentações.
 - 94 apresentações ativas (recentes) ainda não têm linha em `alimentos_resultado`. A interface avisa.
 
 ## Corredores

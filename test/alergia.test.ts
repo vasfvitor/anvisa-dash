@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alergenicos, intolerancias, nomeCurto, resumirAlergia } from "../src/corredores/alimentos/alergia";
+import { alergenicos, intolerancias, nomeCurto, resumirAlergia, resumoDe } from "../src/corredores/alimentos/alergia";
 
 const A1 =
   "Contém derivado de - Leites de todas as espécies de animais mamíferos#Soja | Não contém - Amendoim#Ovos#Trigo |";
@@ -51,5 +51,40 @@ describe("parsers", () => {
   it("nome curto só para os nomes legais longos", () => {
     expect(nomeCurto("Leites de todas as espécies de animais mamíferos")).toBe("Leite");
     expect(nomeCurto("Soja")).toBe("Soja");
+  });
+});
+
+describe("resumoDe", () => {
+  it("lê as colunas de alimentos_por_produto como o resumo", () => {
+    const r = resumoDe({
+      gluten: "Não",
+      lactose: "Varia",
+      contem: "Leites de todas as espécies de animais mamíferos|Soja",
+      pode_conter: null,
+      nao_contem: "Amendoim",
+      alergia_varia: true,
+    });
+    expect(r).toEqual({
+      gluten: "nao",
+      lactose: "varia",
+      contem: ["Leites de todas as espécies de animais mamíferos", "Soja"],
+      podeConter: [],
+      naoContem: ["Amendoim"],
+      varia: true,
+      temDados: true,
+    });
+  });
+
+  it("sem declaração (as seis colunas nulas) não tem dados", () => {
+    const r = resumoDe({
+      gluten: null,
+      lactose: null,
+      contem: null,
+      pode_conter: null,
+      nao_contem: null,
+      alergia_varia: null,
+    });
+    expect(r.temDados).toBe(false);
+    expect(r.varia).toBe(false);
   });
 });

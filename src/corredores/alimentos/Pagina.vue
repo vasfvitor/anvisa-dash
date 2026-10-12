@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from "vue";
-import { resumirAlergia } from "./alergia";
+import { resumoDe } from "./alergia";
 import { consenso, empresas, vazio } from "./apresentacoes";
 import { fatiar, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas, plural, url } from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
@@ -54,15 +54,8 @@ watch(titulo, (t) => t && emit("titulo", t));
 
 const comDetalhe = computed(() => (aps.value ?? []).filter((a) => a.tem_detalhe));
 const semDetalhe = computed(() => (aps.value ?? []).length - comDetalhe.value.length);
-// o resumo sai das próprias apresentações, que trazem a tabela de detalhes junto
-const resumo = computed(() =>
-  aps.value
-    ? resumirAlergia(
-        comDetalhe.value.map((a) => a.alergenicos),
-        comDetalhe.value.map((a) => a.intolerancias),
-      )
-    : null,
-);
+// o resumo vem na linha do produto (alimentos_por_produto): aparece antes das apresentações
+const resumo = computed(() => (p.value ? resumoDe(p.value) : null));
 
 // formatadores dos campos de apresentação
 const lista = (s: string) =>

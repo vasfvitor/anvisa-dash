@@ -20,7 +20,9 @@ const corredores = CORREDORES.flatMap((c) => {
   return m.tables[c.tabela]?.busca ? [] : [`${t} em ${c.curto.toLowerCase()}`];
 });
 const cosmeticos = m.tables.cosmeticos?.busca;
-const detalhe = tam("alimentos_resultado");
+// as apresentações de um alimento leem a tabela crua e a de detalhe, baixadas na primeira página de produto
+const detalheBytes = (m.tables.alimentos?.bytes ?? 0) + (m.tables.alimentos_resultado?.bytes ?? 0);
+const detalhe = detalheBytes ? fmtBytes(detalheBytes) : null;
 const medidas = tam(TABELA_MEDIDAS);
 ---
 

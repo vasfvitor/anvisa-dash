@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { SQL_PRODUTOS } from "../src/corredores/alimentos/consultas";
+import { TS } from "../src/lib/consultas";
 import { sqlCos } from "../src/corredores/cosmeticos/consultas";
 import { SQL_SAN } from "../src/corredores/saneantes/consultas";
 import { MEDIDAS_BUSCA, SQL_MEDIDAS, sqlNumeros } from "../src/lib/consultas";
@@ -37,7 +38,38 @@ const TABELAS = [
   "alimentos_por_produto",
 ];
 
-// o resumo de alergênicos como a ilha o monta (corredores/alimentos/fonte.ts): a referência das colunas novas
+// a tabela produtos como a ilha a derivava de alimentos até 2026-10-12 (SQL_PRODUTOS antigo): a referência de
+// tudo o que a ilha lê hoje de alimentos_por_produto
+const SQL_PRODUTOS_ANTIGO = `CREATE TABLE produtos AS
+    SELECT co_seq_produto,
+      any_value(no_produto) AS no_produto,
+      any_value(marcas) AS marcas,
+      any_value(no_razao_social_empresa) AS no_razao_social_empresa,
+      any_value(nu_cnpj_empresa) AS nu_cnpj_empresa,
+      any_value(nu_processo) AS nu_processo,
+      any_value(nu_registro_notificacao_produto) AS nu_registro_notificacao_produto,
+      any_value(ds_categoria_produto) AS ds_categoria_produto,
+      any_value(ds_categoria_produto) AS grupo,
+      any_value(tipo_regularizacao) AS tipo_regularizacao,
+      any_value(situacao_registro) AS situacao_registro,
+      any_value(ds_situacao_assunto_doc) AS ds_situacao_assunto_doc,
+      any_value(ds_alegacao_funcional) AS ds_alegacao_funcional,
+      ${TS("min(dt_regularizacao)", "dt_regularizacao")},
+      ${TS("max(dt_publicacao)", "dt_publicacao")},
+      ${TS("max(dt_situacao)", "dt_situacao")},
+      ${TS("min(dt_inicio_analise)", "dt_inicio_analise")},
+      strftime(max(dt_vencimento_registro), '%Y-%m-%d') AS dt_vencimento_registro,
+      count(*)::INTEGER AS n_apresentacoes,
+      min(dt_regularizacao) AS ordem_data,
+      list(nu_registro) FILTER (WHERE nu_registro IS NOT NULL) AS registros,
+      lower(strip_accents(concat_ws(' ', any_value(no_produto), any_value(marcas), any_value(no_razao_social_empresa)))) AS busca,
+      lower(strip_accents(any_value(no_produto))) AS busca_nome,
+      ';' || array_to_string(list_transform(string_split(coalesce(any_value(marcas), ''), ';'),
+        x -> lower(strip_accents(trim(x)))), ';') || ';' AS busca_marcas
+    FROM "alimentos"
+    GROUP BY co_seq_produto`;
+
+// o resumo de alergênicos como a ilha o montava (corredores/alimentos/fonte.ts até 2026-10-12): a referência das colunas novas
 const SQL_RESUMO = `CREATE TABLE resumo AS
     SELECT co_produto AS co_seq_produto,
       to_json(list(DISTINCT alergenicos) FILTER (WHERE alergenicos <> ''))::VARCHAR AS alergenicos_json,
@@ -81,7 +113,10 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
       const nome = t === "produtos" ? "produtos_pub" : t;
       await con.run(`CREATE VIEW "${nome}" AS SELECT * FROM read_parquet('${arquivo}')`);
     }
+    // a ilha de hoje (produtos_novo, de alimentos_por_produto) e a de antes (produtos, de alimentos)
     await con.run(SQL_PRODUTOS);
+    await con.run("ALTER TABLE produtos RENAME TO produtos_novo");
+    await con.run(SQL_PRODUTOS_ANTIGO);
     await con.run(SQL_SAN);
     await con.run(SQL_MEDIDAS);
     await con.run(SQL_MEDIDAS_ANTIGO);
@@ -184,6 +219,22 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
       FROM ${app}`;
     expect(await diferentes(ilha, nova)).toBe(0);
     expect(await diferentes(nova, ilha)).toBe(0);
+  });
+
+  // a ilha lendo alimentos_por_produto dá a mesma tabela produtos que lendo alimentos: coluna por coluna
+  it("SQL_PRODUTOS sobre alimentos_por_produto é o SQL_PRODUTOS antigo sobre alimentos", async () => {
+    // dt_regularizacao e ordem_data: antes com hora (min do timestamp), agora só a data (desde). registros:
+    // antes NULL sem nenhum e na ordem das apresentações, agora [] e em ordem; list_contains lê igual
+    const colunas = `co_seq_produto, no_produto, marcas, no_razao_social_empresa, nu_cnpj_empresa, nu_processo,
+      nu_registro_notificacao_produto, ds_categoria_produto, grupo, tipo_regularizacao, situacao_registro,
+      ds_situacao_assunto_doc, ds_alegacao_funcional, left(dt_regularizacao, 10) AS dt_regularizacao,
+      dt_publicacao, dt_situacao, dt_inicio_analise, dt_vencimento_registro, n_apresentacoes,
+      ordem_data::DATE AS ordem_data, list_sort(coalesce(registros, [])) AS registros, busca, busca_nome, busca_marcas`;
+    const antes = `SELECT ${colunas} FROM produtos`;
+    const agora = `SELECT ${colunas} FROM produtos_novo`;
+    expect(await diferentes(antes, agora)).toBe(0);
+    expect(await diferentes(agora, antes)).toBe(0);
+    expect(await uma(sqlNumeros("produtos_novo"))).toEqual(await uma(sqlNumeros("produtos")));
   });
 
   // cosmeticos_por_empresa: o que o build listava da tabela inteira (dados.ts até 2026-10-12), já cortado

@@ -101,6 +101,37 @@ export function resumirAlergia(
   };
 }
 
+/** As colunas de alergênicos de uma linha de `produtos` (de alimentos_por_produto), como o cartão as recebe. */
+export interface ColunasAlergia {
+  /** Sim, Não ou Varia; nulo sem declaração */
+  gluten: string | null;
+  lactose: string | null;
+  /** itens separados por "|"; nulo sem declaração */
+  contem: string | null;
+  pode_conter: string | null;
+  nao_contem: string | null;
+  alergia_varia: boolean | null;
+}
+
+const SINAL: Record<string, Sinal> = { sim: "sim", nao: "nao", varia: "varia" };
+
+/**
+ * O resumo a partir das colunas já calculadas (a mesma regra de resumirAlergia, aplicada no repo `anvisa`;
+ * test/derivadas-live.test.ts confere). Sem nenhuma declaração as seis colunas vêm nulas: temDados falso.
+ */
+export function resumoDe(c: ColunasAlergia): ResumoAlergia {
+  const sinalDe = (s: string | null) => (s ? (SINAL[normalizar(s)] ?? null) : null);
+  const r = {
+    gluten: sinalDe(c.gluten),
+    lactose: sinalDe(c.lactose),
+    contem: fatiar(c.contem, "|"),
+    podeConter: fatiar(c.pode_conter, "|"),
+    naoContem: fatiar(c.nao_contem, "|"),
+    varia: c.alergia_varia ?? false,
+  };
+  return { ...r, temDados: !!(r.gluten || r.lactose || r.contem.length || r.podeConter.length || r.naoContem.length) };
+}
+
 /** Lê as listas JSON que a tabela `resumo` guarda; vazio ou inválido vira lista vazia. */
 export function deJson(s: string | null | undefined): (string | null)[] {
   if (!s) return [];

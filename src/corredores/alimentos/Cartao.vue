@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ResumoAlergia as Resumo } from "./alergia";
+import { resumoDe } from "./alergia";
 import { fmtData, fmtProcesso, plural } from "../../lib/format";
 import { ativo, indeferido, MARCAS_NO_TITULO, marcasParaBusca, tituloAlimento } from "./produto";
 import type { Produto } from "./fonte";
@@ -11,8 +11,7 @@ import Destaque from "../../components/Destaque.vue";
 import Icone from "../../components/Icone.vue";
 import ResumoAlergia from "./ResumoAlergia.vue";
 
-// extra: o resumo de alergênicos, que chega depois da lista
-const props = defineProps<{ p: Produto; termo?: string | null; extra?: Resumo; medidas?: number }>();
+const props = defineProps<{ p: Produto; termo?: string | null; medidas?: number }>();
 const emit = defineEmits<{ abrir: [id: string] }>();
 
 const liberado = computed(() => ativo(props.p));
@@ -23,6 +22,8 @@ const titulo = computed(() => titulos.value.titulo);
 const outrasMarcas = computed(() => Math.max(0, listaMarcas.value.length - MARCAS_NO_TITULO));
 const subtitulo = computed(() => titulos.value.subtitulo);
 const href = computed(() => montarUrl({ produto: String(props.p.co_seq_produto) }));
+// o resumo de alergênicos vem na própria linha (alimentos_por_produto)
+const resumo = computed(() => resumoDe(props.p));
 
 function abrir(ev: MouseEvent): void {
   if (!cliqueInterno(ev)) return;
@@ -46,7 +47,7 @@ function abrir(ev: MouseEvent): void {
         <Destaque :texto="legivel(p.no_razao_social_empresa, 'nome')" :termo="termo" />
         <template v-if="p.ds_categoria_produto"> · {{ legivel(p.ds_categoria_produto) }}</template>
       </p>
-      <ResumoAlergia v-if="extra" :r="extra" compacto />
+      <ResumoAlergia :r="resumo" compacto />
       <p v-if="indeferido(p)" class="aviso-curto"><Icone nome="alerta" /> Petição indeferida pela ANVISA</p>
       <p
         v-if="medidas"

@@ -1,17 +1,17 @@
-// Corredor 1, alimentos e suplementos. Depois do download, três tabelas derivadas por build:
-// - produtos: uma linha por co_seq_produto (nome, marcas, empresa, processo e situação são iguais em
-//   todas as apresentações), com colunas de busca já normalizadas e `grupo` = categoria;
-// - resumo: alergênicos e intolerâncias de cada produto, da tabela de detalhes (chega depois: a busca
-//   não espera por ela; os cartões pedem o resumo dos produtos listados com resumosDe);
+// Corredor 1, alimentos e suplementos. A lista lê só alimentos_por_produto (uma linha por produto, com o
+// resumo de alergênicos, 2,8 MB); dela saem duas tabelas derivadas por build:
+// - produtos: a mesma tabela com os nomes de coluna que o cartão e a página leem, as colunas de busca já
+//   normalizadas e `grupo` = categoria;
 // - sugestoes: marcas e empresas com a contagem de produtos, para sugerir enquanto a pessoa digita.
-import { deJson, resumirAlergia, type ResumoAlergia } from "./alergia";
-import { SQL_PRODUTOS, TABELA, TABELA_DETALHE } from "./consultas";
+// As apresentações de um produto (página do produto) leem as tabelas crua e de detalhe, baixadas na primeira vez.
+import type { ColunasAlergia } from "./alergia";
+import { SQL_PRODUTOS, TABELA, TABELA_CRUA, TABELA_DETALHE } from "./consultas";
 import { carregar, consultar } from "../../lib/db";
 import type { Consulta } from "../../lib/detect";
 import { ID_PRODUTO, POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../../lib/fonte";
 import { contarFacetas, derivar, gruposAtivos, onde, sugerirEm, termo, type Trecho } from "../../lib/sql";
 
-export interface Produto {
+export interface Produto extends ColunasAlergia {
   co_seq_produto: number;
   no_produto: string;
   marcas: string | null;
@@ -58,19 +58,6 @@ export interface Apresentacao {
 
 function produtos(): Promise<void> {
   return derivar("produtos", () => carregar(TABELA), SQL_PRODUTOS);
-}
-
-function resumo(): Promise<void> {
-  return derivar(
-    "resumo",
-    () => carregar(TABELA_DETALHE),
-    `CREATE OR REPLACE TABLE resumo AS
-    SELECT co_produto AS co_seq_produto,
-      to_json(list(DISTINCT alergenicos) FILTER (WHERE alergenicos <> ''))::VARCHAR AS alergenicos_json,
-      to_json(list(DISTINCT intolerancias) FILTER (WHERE intolerancias <> ''))::VARCHAR AS intolerancias_json
-    FROM "${TABELA_DETALHE}"
-    GROUP BY co_produto`,
-  );
 }
 
 function sugestoes(): Promise<void> {
@@ -122,7 +109,8 @@ export function predicado(q: Consulta): Trecho {
 const COLUNAS = `co_seq_produto, no_produto, marcas, no_razao_social_empresa, nu_cnpj_empresa, nu_processo,
   nu_registro_notificacao_produto, ds_categoria_produto, tipo_regularizacao, situacao_registro,
   ds_situacao_assunto_doc, ds_alegacao_funcional, dt_regularizacao, dt_publicacao, dt_situacao,
-  dt_inicio_analise, dt_vencimento_registro, n_apresentacoes`;
+  dt_inicio_analise, dt_vencimento_registro, n_apresentacoes,
+  gluten, lactose, contem, pode_conter, nao_contem, alergia_varia`;
 
 async function buscar(q: Consulta, f: Filtros, pagina = 0): Promise<Produto[]> {
   await produtos();
@@ -159,55 +147,24 @@ async function porId(id: string): Promise<Produto | null> {
 }
 
 /**
- * Resumo de alergênicos dos produtos pedidos. Espera a tabela de detalhes (baixada em segundo plano
- * desde o início) e só consulta os ids da tela, em vez de juntar o resumo em toda busca.
+ * Apresentações de um produto com o detalhe (co_produto do detalhe é o co_seq_produto). As duas tabelas (uma
+ * linha por apresentação, 3,3 MB, e o detalhe, 1,7 MB) só baixam aqui, na primeira página de produto aberta.
  */
-async function resumosDe(ids: string[]): Promise<Map<string, ResumoAlergia>> {
-  // ids vêm dos resultados do próprio app, não do usuário: entram como literais depois de validados
-  const validos = ids.map(Number).filter(Number.isSafeInteger);
-  if (!validos.length) return new Map();
-  await resumo();
-  const linhas = await consultar<{
-    co_seq_produto: number;
-    alergenicos_json: string | null;
-    intolerancias_json: string | null;
-  }>(
-    [],
-    `SELECT co_seq_produto, alergenicos_json, intolerancias_json FROM resumo WHERE co_seq_produto IN (${validos.join(",")})`,
-  );
-  return new Map(
-    linhas.map((l) => [
-      String(l.co_seq_produto),
-      resumirAlergia(deJson(l.alergenicos_json), deJson(l.intolerancias_json)),
-    ]),
-  );
-}
-
-/** Apresentações de um produto com o detalhe (co_produto do detalhe é o co_seq_produto). */
 export async function buscarApresentacoes(id: number): Promise<Apresentacao[]> {
   const sql = `
     SELECT a.co_seq_apresentacao_produto, a.nu_registro, r.nu_apresentacao_produto, r.validade,
       r.ds_forma_fisica, r.situacao_apresentacao, r.material_embalagens, r.tipo_embalagens,
       r.empresas_envasadoras, r.empresas_internacionais, r.grupos_populacionais, r.vias_administracao,
       r.tabela_nutricional, r.intolerancias, r.alergenicos, r.co_seq_apresentacao_produto IS NOT NULL AS tem_detalhe
-    FROM "${TABELA}" a LEFT JOIN "${TABELA_DETALHE}" r USING (co_seq_apresentacao_produto)
+    FROM "${TABELA_CRUA}" a LEFT JOIN "${TABELA_DETALHE}" r USING (co_seq_apresentacao_produto)
     WHERE a.co_seq_produto = ?
     ORDER BY TRY_CAST(r.nu_apresentacao_produto AS INTEGER) NULLS LAST, a.co_seq_apresentacao_produto`;
-  return consultar<Apresentacao>([TABELA, TABELA_DETALHE], sql, [id]);
+  return consultar<Apresentacao>([TABELA_CRUA, TABELA_DETALHE], sql, [id]);
 }
 
 export const fonte: Fonte<Produto> = {
-  /**
-   * Prepara o necessário para buscar e já começa, sem esperar, a baixar a tabela de detalhes do
-   * resumo de alergênicos. As sugestões são montadas no primeiro uso, para não disputar o worker com
-   * a primeira busca de um link compartilhado.
-   */
-  async preparar() {
-    await produtos();
-    resumo().catch(() => {
-      // segundo plano: resumosDe tenta de novo quando os cartões pedirem
-    });
-  },
+  // as sugestões são montadas no primeiro uso, para não disputar o worker com a primeira busca de um link
+  preparar: produtos,
   buscar,
   facetas,
   async sugerir(texto) {
@@ -221,5 +178,4 @@ export const fonte: Fonte<Produto> = {
   },
   idDe: (p) => String(p.co_seq_produto),
   cnpjDe: (p) => p.nu_cnpj_empresa,
-  complementar: resumosDe,
 };
