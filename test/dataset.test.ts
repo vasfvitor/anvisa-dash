@@ -9,7 +9,7 @@ const tabela: Tabela = {
   bytes: 100,
   columns: [
     { name: "no_produto", type: "VARCHAR" },
-    { name: "nu_processo", type: "VARCHAR" },
+    { name: "nu_processo", type: "VARCHAR", description: "Nº do processo." },
   ],
   source: { name: "TA_CONSULTA_SANEANTES.CSV", url: "https://dados.anvisa.gov.br/x.csv" },
 };
@@ -19,7 +19,6 @@ const montar = () =>
     "saneantes",
     tabela,
     info,
-    { nu_processo: "Nº do processo." },
     {
       pagina: "https://contem.abelhaninja.de/dicionario/",
       parquet: "https://exemplo.org/saneantes.parquet",
@@ -35,7 +34,7 @@ describe("conjuntoDados", () => {
     expect(d.alternateName).toBe("saneantes");
   });
 
-  it("uma variável por coluna, na ordem do manifest, com descrição só quando se sabe", () => {
+  it("uma variável por coluna, na ordem do manifest, com a descrição que o manifest traz", () => {
     expect(montar().variableMeasured).toEqual([
       { "@type": "PropertyValue", name: "no_produto" },
       { "@type": "PropertyValue", name: "nu_processo", description: "Nº do processo." },

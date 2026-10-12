@@ -1,5 +1,7 @@
 // Uma tabela do manifest como Dataset (schema.org), o que o Google Dataset Search lê no dicionário de dados.
-// Só o que se sabe com segurança: sem licença (a ANVISA não declara uma nos arquivos) e sem cobertura temporal.
+// Só o que se sabe com segurança: sem licença (a ANVISA não declara uma nos arquivos; o `license.data` do
+// manifest só diz de onde os dados vêm) e sem cobertura temporal. As descrições das colunas são as do
+// manifest (escritas no repo `anvisa`, desde o build 20261012T000746Z).
 import type { Tabela } from "./manifest";
 
 /** Uma tabela do manifest no dicionário de dados: o título e o texto da seção, que também viram o Dataset. */
@@ -19,14 +21,13 @@ const ANVISA = {
 };
 
 /**
- * O Dataset de uma tabela. `pagina` é a URL do dicionário (a âncora da seção vira @id e url),
- * `parquet` a URL do arquivo e `colunas` as descrições conhecidas das colunas.
+ * O Dataset de uma tabela. `pagina` é a URL do dicionário (a âncora da seção vira @id e url) e
+ * `parquet` a URL do arquivo; as colunas levam a descrição que o manifest traz.
  */
 export function conjuntoDados(
   nome: string,
   t: Tabela,
   info: InfoTabela,
-  colunas: Record<string, string> | undefined,
   { pagina, parquet, atualizado }: { pagina: string; parquet: string; atualizado: string },
 ) {
   const id = `${pagina}#${nome}`;
@@ -44,10 +45,11 @@ export function conjuntoDados(
     dateModified: atualizado,
     isBasedOn: t.source.url,
     creator: ANVISA,
-    variableMeasured: t.columns.map((c) => {
-      const descricao = colunas?.[c.name];
-      return { "@type": "PropertyValue", name: c.name, ...(descricao ? { description: descricao } : {}) };
-    }),
+    variableMeasured: t.columns.map((c) => ({
+      "@type": "PropertyValue",
+      name: c.name,
+      ...(c.description ? { description: c.description } : {}),
+    })),
     distribution: [{ "@type": "DataDownload", encodingFormat: "application/vnd.apache.parquet", contentUrl: parquet }],
   };
 }

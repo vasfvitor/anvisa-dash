@@ -3,7 +3,7 @@
 // - meta.ts: o registro (tipos.ts), só dados; entra em CORREDORES abaixo;
 // - fonte.ts: a fonte de dados (Fonte, em lib/fonte.ts); entra em fontes.ts;
 // - Cartao.vue e Pagina.vue: o cartão da lista e a página de detalhe; entram em telas.ts;
-// - colunas.ts (opcional): descrições para o dicionário de dados.
+// - colunas.ts (opcional): as tabelas no dicionário de dados (título, o que é uma linha, palavras).
 // Este arquivo e os meta.ts/colunas.ts são lidos no build pelas páginas Astro: nada de DuckDB nem Vue aqui
 // (o ESLint barra).
 import { url } from "../lib/format";
@@ -19,7 +19,11 @@ export type { Corredor, IdCorredor, InfoTabela } from "./tipos";
 
 export const CORREDORES: Corredor[] = [alimentos, saneantes, cosmeticos];
 
-/** Tabelas e colunas que o dicionário de dados descreve, de todos os corredores. */
+/**
+ * As tabelas que o dicionário de dados descreve como Dataset (schema.org), de todos os corredores e as de
+ * todo o site. Tabela do manifest sem entrada aqui aparece no dicionário com o título e as notas do
+ * manifest, sem Dataset. As descrições das colunas são sempre as do manifest.
+ */
 export const TABELAS: Record<string, InfoTabela> = {
   ...colunasAlimentos.TABELAS,
   ...colunasSaneantes.TABELAS,
@@ -31,11 +35,19 @@ export const TABELAS: Record<string, InfoTabela> = {
       "Medidas de fiscalização da ANVISA contra produtos irregulares de todas as áreas (suspensão, proibição, recolhimento, interdição, apreensão, inutilização): uma linha por dossiê, ação, atividade e produto.",
     palavras: ["fiscalização", "produtos irregulares", "recolhimento", "proibição", "suspensão"],
   },
-};
-export const COLUNA_DESCRICAO: Record<string, Record<string, string>> = {
-  ...colunasAlimentos.COLUNA_DESCRICAO,
-  ...colunasSaneantes.COLUNA_DESCRICAO,
-  ...colunasCosmeticos.COLUNA_DESCRICAO,
+  // derivadas no repo `anvisa` a cada build (dados/derivar.py), com as mesmas colunas para alimentos e saneantes
+  produtos: {
+    titulo: "Produtos regularizados na ANVISA: alimentos e saneantes, uma linha por produto",
+    descricao:
+      "Uma linha por alimento ou suplemento (agrupadas as apresentações) e por saneante regularizado na ANVISA, com empresa, CNPJ, processo, registro, situação, tipo e vencimento nas mesmas colunas; derivada das tabelas alimentos e saneantes.",
+    palavras: ["alimentos", "suplementos alimentares", "saneantes", "produtos de limpeza", "registro", "notificação"],
+  },
+  empresas: {
+    titulo: "Empresas com produtos ou medidas na ANVISA, por CNPJ",
+    descricao:
+      "Uma linha por CNPJ que detém alimento, saneante ou cosmético regularizado na ANVISA ou que foi alvo de medida de fiscalização, com a razão social e a quantidade de produtos (total e ativos) por área e de medidas.",
+    palavras: ["empresas", "CNPJ", "alimentos", "saneantes", "cosméticos", "fiscalização"],
+  },
 };
 
 export const CORREDOR_PADRAO = CORREDORES[0]!;

@@ -1,14 +1,18 @@
 ---
 import Base from "../layouts/Base.astro";
-import { COLUNA_DESCRICAO, TABELAS } from "../corredores";
+import { TABELAS } from "../corredores";
 import { MANIFEST_URL } from "../lib/config";
 import { conjuntoDados } from "../lib/dataset";
 import { fmtBytes, fmtData, fmtDataLocal, fmtInt } from "../lib/format";
 import { manifestDoBuild, tabelaUrl } from "../lib/manifest";
 
-// gerado a cada build a partir do manifest: tabela ou coluna nova aparece aqui sem mudar código
+// gerado a cada build a partir do manifest: tabela ou coluna nova aparece aqui sem mudar código, com o título,
+// as notas e as descrições das colunas escritas no repo `anvisa` (desde o build 20261012T000746Z)
 const m = await manifestDoBuild(MANIFEST_URL);
 const tabelas = Object.entries(m.tables);
+// o dicionário que o pipeline gera ao lado do manifest (a mesma informação, sem o site em volta)
+const docs = m.docs ? new URL(m.docs, MANIFEST_URL).href : undefined;
+const titulo = (nome: string) => TABELAS[nome]?.titulo ?? m.tables[nome]!.title;
 
 // um Dataset (schema.org) por tabela que a página descreve, com o Parquet como distribuição
 const pagina = new URL(Astro.url.pathname, Astro.site).href;
@@ -16,7 +20,7 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
   const info = TABELAS[nome];
   if (!info) return [];
   return [
-    conjuntoDados(nome, t, info, COLUNA_DESCRICAO[nome], {
+    conjuntoDados(nome, t, info, {
       pagina,
       parquet: tabelaUrl(MANIFEST_URL, m, nome),
       atualizado: t.source.loaded_at ?? m.built_at,
@@ -38,6 +42,18 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
   <p class="note">
     Manifest: <a href={MANIFEST_URL}>{MANIFEST_URL}</a>. Os caminhos dos arquivos mudam a cada build; leia sempre o
     manifest primeiro.
+    {docs && (
+      <>
+        {" "}
+        O pipeline publica <a href={docs}>o mesmo dicionário</a> ao lado do manifest.
+      </>
+    )}
+    {m.license && (
+      <>
+        {" "}
+        Dados: {m.license.data}. Código do pipeline: licença {m.license.code}.
+      </>
+    )}
   </p>
 
   <nav class="badges" aria-label="Tabelas">
@@ -51,9 +67,9 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
   {tabelas.map(([nome, t]) => (
     <section id={nome}>
       <h2>
-        {TABELAS[nome] ? (
+        {titulo(nome) ? (
           <>
-            {TABELAS[nome].titulo}{" "}
+            {titulo(nome)}{" "}
             <span class="sub">
               <code>{nome}</code> · {fmtInt(t.rows)} linhas · {fmtBytes(t.bytes)}
             </span>
@@ -68,8 +84,32 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
         )}
       </h2>
       {TABELAS[nome] && <p>{TABELAS[nome].descricao}</p>}
+      {t.notes?.length ? (
+        <ul class="notas">
+          {t.notes.map((n) => (
+            <li>{n}</li>
+          ))}
+        </ul>
+      ) : null}
       <p class="note">
-        Origem: <a href={t.source.url}>{t.source.name}</a>
+        {t.fontes?.length ? (
+          <>
+            Derivada de{" "}
+            {t.fontes.map((f, i) => (
+              <>
+                {i > 0 && ", "}
+                <a href={`#${f}`}>
+                  <code>{f}</code>
+                </a>
+              </>
+            ))}{" "}
+            a cada build (<a href={t.source.url}>receita</a>)
+          </>
+        ) : (
+          <>
+            Origem: <a href={t.source.url}>{t.source.name}</a>
+          </>
+        )}
         {t.source.loaded_at && <>, dados de {fmtData(t.source.loaded_at)}</>}.
         {t.sort?.length ? (
           <>
@@ -98,11 +138,9 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
                 <td>
                   <code>{c.type}</code>
                 </td>
-                <td class="muted">
-                  <code>{c.source}</code>
-                </td>
+                <td class="muted">{c.source && <code>{c.source}</code>}</td>
                 <td>
-                  {COLUNA_DESCRICAO[nome]?.[c.name] ?? ""}
+                  {c.description ?? ""}
                   {(t.nulls_added?.[c.name] ?? 0) > 0 && (
                     <span class="note">
                       {" "}
@@ -118,3 +156,15 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
     </section>
   ))}
 </Base>
+
+<style>
+  /* as notas do manifest: frases para quem lê, não dados tabulares */
+  .notas {
+    max-width: 44rem;
+    padding-left: 1.2rem;
+    font-size: 0.95rem;
+  }
+  .notas li + li {
+    margin-top: 0.25rem;
+  }
+</style>

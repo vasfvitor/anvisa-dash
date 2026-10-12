@@ -1,5 +1,5 @@
-// Descrição da tabela dos saneantes para o dicionário de dados (as colunas aparecem com tipo e nome de
-// origem). Medido em 2026-10-07; ver fonte.ts.
+// A tabela dos saneantes no dicionário de dados: título, o que é uma linha e palavras do Dataset (schema.org).
+// As descrições das colunas vêm do manifest. Medido em 2026-10-07; ver fonte.ts.
 import type { InfoTabela } from "../tipos";
 
 export const TABELAS: Record<string, InfoTabela> = {
@@ -10,5 +10,3 @@ export const TABELAS: Record<string, InfoTabela> = {
     palavras: ["saneantes", "produtos de limpeza", "desinfetantes", "registro"],
   },
 };
-
-export const COLUNA_DESCRICAO: Record<string, Record<string, string>> = {};

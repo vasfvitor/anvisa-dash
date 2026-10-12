@@ -4,7 +4,10 @@
 export interface Coluna {
   name: string;
   type: string;
+  /** coluna do CSV de origem; as tabelas derivadas não têm */
   source?: string;
+  /** o que a coluna é, em português, escrito no repo `anvisa` (dados/descricoes.py) */
+  description?: string;
 }
 
 /** De onde a ANVISA publica a tabela (o arquivo aberto de origem). */
@@ -28,13 +31,20 @@ export interface Busca {
 }
 
 export interface Tabela {
+  /** título legível, em português */
+  title?: string;
   path: string;
   rows: number;
   bytes: number;
   sha256?: string;
   sort?: string[];
   columns: Coluna[];
+  /** o arquivo aberto de origem; nas derivadas, a receita (derivar.py no commit do build) */
   source: Origem;
+  /** frases para quem lê a tabela (o que é uma linha, armadilhas dos dados) */
+  notes?: string[];
+  /** só nas tabelas derivadas: as tabelas do manifest de que foi calculada */
+  fontes?: string[];
   nulls_added?: Record<string, number>;
   busca?: Busca;
 }
@@ -43,6 +53,10 @@ export interface Manifest {
   schema_version: number;
   build_id: string;
   built_at: string;
+  /** dicionário de dados gerado pelo pipeline, relativo ao manifest (dicionario.html) */
+  docs?: string;
+  /** licença dos dados (a ANVISA não declara uma; o texto diz de onde vêm) e do código do pipeline */
+  license?: { data: string; code: string };
   tables: Record<string, Tabela>;
 }
 
