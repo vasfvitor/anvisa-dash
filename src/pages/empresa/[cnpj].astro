@@ -7,7 +7,7 @@ import { corredorPorId, rotaDo, type Corredor } from "../../corredores";
 import { MARCAS_NO_TITULO, tituloAlimento } from "../../corredores/alimentos/produto";
 import { validade } from "../../lib/validade";
 import { empresasDoBuild } from "../../lib/estatico/dados";
-import { letraDe, resumo, type Empresa } from "../../lib/estatico/empresas";
+import { indexavel, letraDe, resumo, type Empresa } from "../../lib/estatico/empresas";
 import { fmtCnpj, fmtData, fmtInt, fmtProcesso, marcas, plural, url } from "../../lib/format";
 import { situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
@@ -67,6 +67,7 @@ const organizacao = {
 <Base
   title={`${nome}: ${semProdutos ? "medidas da ANVISA" : "produtos na ANVISA"}`}
   description={descricao}
+  noindex={!indexavel(e)}
   estruturados={[organizacao]}
 >
   <h1>{nome}</h1>

@@ -164,6 +164,20 @@ export function resumo(emp: Empresa) {
   };
 }
 
+/** Quantos produtos uma empresa precisa ter para a página entrar no índice dos buscadores e no sitemap. */
+export const PRODUTOS_PARA_INDEXAR = 2;
+
+/**
+ * Se a página da empresa entra no índice dos buscadores (e no sitemap). Com um produto só, ou só com medidas,
+ * a página é um parágrafo de modelo e uma linha de tabela: 4.363 das 16.466 páginas no build de 2026-10-13. O
+ * Google julga o site inteiro pela média das páginas que rastreia, e milhares dessas o levam a deixar de fora
+ * até as boas ("rastreada, mas não indexada"). As páginas finas continuam no ar e nas listas de A a Z.
+ */
+export function indexavel(emp: Empresa): boolean {
+  const r = resumo(emp);
+  return r.alimentos + r.saneantes + r.cosmeticos >= PRODUTOS_PARA_INDEXAR;
+}
+
 /** As letras da lista de empresas (/empresas/<letra>/), na ordem; "0-9" junta quem começa com dígito ou símbolo. */
 export const LETRAS = [..."abcdefghijklmnopqrstuvwxyz".split(""), "0-9"];
 

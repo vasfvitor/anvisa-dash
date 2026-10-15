@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { agrupar, LETRAS, letraDe, porLetra, resumo, type Entrada } from "../src/lib/estatico/empresas";
+import {
+  agrupar,
+  indexavel,
+  LETRAS,
+  letraDe,
+  porLetra,
+  PRODUTOS_PARA_INDEXAR,
+  resumo,
+  type Entrada,
+} from "../src/lib/estatico/empresas";
 
 const CNPJ_A = "11111111000111";
 const CNPJ_B = "22222222000122";
@@ -160,6 +169,30 @@ describe("resumo", () => {
   it("totais de CNPJ sem linha não criam empresa", () => {
     const m = agrupar({ ...vazio, cosmeticosTotais: [{ cnpj: CNPJ_B, produtos: 3, ativos: 1 }] });
     expect(m.size).toBe(0);
+  });
+});
+
+describe("indexavel", () => {
+  it("só com medidas, ou com um produto só, a página fica fora do índice e do sitemap", () => {
+    const m = agrupar({
+      ...vazio,
+      alimentos: [alimento(1, "A", false)],
+      medidas: [medida("X", "2026-01-01"), medida("Y", "2026-02-01", CNPJ_B, "EMPRESA B")],
+    });
+    expect(indexavel(m.get(CNPJ_A)!)).toBe(false);
+    expect(indexavel(m.get(CNPJ_B)!)).toBe(false);
+  });
+
+  it("os produtos somam entre corredores, e os cosméticos contam pelos totais", () => {
+    const m = agrupar({
+      ...vazio,
+      alimentos: [alimento(1, "A", true)],
+      saneantes: [saneante("1", "C", false)],
+      cosmeticos: [saneante("25351000000000001", "SHAMPOO", true, CNPJ_B, "EMPRESA B")],
+      cosmeticosTotais: [{ cnpj: CNPJ_B, produtos: PRODUTOS_PARA_INDEXAR, ativos: 1 }],
+    });
+    expect(indexavel(m.get(CNPJ_A)!)).toBe(true);
+    expect(indexavel(m.get(CNPJ_B)!)).toBe(true);
   });
 });
 
