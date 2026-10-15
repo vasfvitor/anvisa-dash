@@ -4,7 +4,8 @@
   --bg: #eef3f4;
   --line: #d3dfe3;
   --chip-bg: #e1eaee;
-  --accent: #0e8f8f;
+  /* 5,25:1 sobre o cartão (#fbfdfe): os links pequenos do rodapé pedem 4,5; o #0e8f8f de antes dava 3,85 */
+  --accent: #0b7777;
   --accent-fg: #f4f9fa;
   --pop: #2563eb;
   --pop-suave: #dbe7ff;

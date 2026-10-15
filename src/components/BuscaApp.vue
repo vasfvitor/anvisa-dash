@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // A ilha da busca: só liga as peças. Estado e URL em useEstado, troca de corredor e voltar/avançar em
 // useNavegacao, resultados em useBusca, motor e download em useCorredorPronto.
-import { computed, onMounted, reactive, shallowRef, watch, watchEffect } from "vue";
+import { computed, nextTick, onMounted, reactive, shallowRef, watch, watchEffect } from "vue";
 import { MODO_ROTULO } from "../lib/detect";
 import { CORREDORES, rotaDo } from "../corredores";
 import { FONTES } from "../corredores/fontes";
@@ -82,6 +82,10 @@ onMounted(async () => {
   estado.lerDaUrl();
   await motor.subir();
   if (!produto.value) buscar(false);
+  // a tela inicial já tem o tamanho dela: o texto do corredor abaixo da ilha pode aparecer sem ser
+  // empurrado depois (ver o script inline do Base)
+  await nextTick();
+  document.documentElement.dataset.ilha = "montada";
 });
 
 async function tentarDeNovo(): Promise<void> {

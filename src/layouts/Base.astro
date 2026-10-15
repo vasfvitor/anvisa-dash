@@ -78,6 +78,9 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
       h.dataset.corredor = (slugs.find(([s]) => s === seg) || slugs[0])[1];
       const q = new URLSearchParams(location.search);
       h.dataset.tela = q.has("p") ? "produto" : ["q", "marca", "cat"].some((k) => q.has(k)) ? "busca" : "inicio";
+      // com JavaScript a ilha vai montar: o texto abaixo dela espera (senão a ilha, ao crescer, o empurra:
+      // deslocamento de layout). Sem JavaScript o atributo não existe e o texto aparece de cara.
+      h.dataset.ilha = "carregando";
     </script>
   </head>
   <body>

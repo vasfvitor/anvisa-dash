@@ -411,7 +411,8 @@ a.badge:hover {
 [data-tela="busca"] .hero[data-hero],
 [data-tela="produto"] .hero[data-hero],
 [data-tela="busca"] .texto-corredor,
-[data-tela="produto"] .texto-corredor {
+[data-tela="produto"] .texto-corredor,
+[data-ilha="carregando"] astro-island ~ .texto-corredor {
   display: none !important;
 }
 /* o texto próprio da página (raiz e corredores), abaixo da busca: largura de leitura */
