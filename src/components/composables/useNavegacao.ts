@@ -25,13 +25,16 @@ function marcarPlacas(id: string): void {
 }
 
 /**
- * Põe a abertura do corredor no lugar da atual. A página só traz a sua viva (um <h1> por página para os
- * buscadores); as outras esperam em <template data-hero>, inertes, e entram por clone.
+ * Põe a abertura e o texto do corredor no lugar dos atuais. A página só traz os seus vivos (um <h1> e um
+ * texto por página para os buscadores); os outros esperam em <template data-hero> e <template data-texto>,
+ * inertes, e entram por clone.
  */
 function trocarAbertura(id: string): void {
-  const atual = document.querySelector(".hero[data-hero]");
-  const modelo = document.querySelector<HTMLTemplateElement>(`template[data-hero="${id}"]`);
-  if (atual && modelo) atual.replaceWith(modelo.content.cloneNode(true));
+  for (const atributo of ["data-hero", "data-texto"]) {
+    const atual = document.querySelector(`[${atributo}]:not(template)`);
+    const modelo = document.querySelector<HTMLTemplateElement>(`template[${atributo}="${id}"]`);
+    if (atual && modelo) atual.replaceWith(modelo.content.cloneNode(true));
+  }
 }
 
 const reduzido = () => matchMedia("(prefers-reduced-motion: reduce)").matches;

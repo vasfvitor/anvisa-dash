@@ -3,7 +3,19 @@ import BuscaApp from "../components/BuscaApp.vue";
 import Abertura from "../components/Abertura.astro";
 import Base from "../layouts/Base.astro";
 import { CORREDORES, type Corredor } from "../corredores";
+import TextoAlimentos from "../corredores/alimentos/Texto.astro";
+import TextoCosmeticos from "../corredores/cosmeticos/Texto.astro";
+import TextoSaneantes from "../corredores/saneantes/Texto.astro";
+import type { IdCorredor } from "../corredores/tipos";
 import { totaisDoBuild } from "../lib/estatico/dados";
+
+// o texto próprio de cada corredor (abaixo da busca, só na tela inicial): o que a consulta cobre e como ler.
+// Como a abertura, a página traz o seu vivo e os outros em <template data-texto>, que a troca de corredor clona
+const TEXTOS: Record<IdCorredor, typeof TextoAlimentos> = {
+  alimentos: TextoAlimentos,
+  saneantes: TextoSaneantes,
+  cosmeticos: TextoCosmeticos,
+};
 
 // uma página por corredor (/alimentos/, /limpeza/, /cosmeticos/); a raiz é a página inicial (index.astro)
 export function getStaticPaths() {
@@ -12,15 +24,24 @@ export function getStaticPaths() {
 const { id } = Astro.props;
 const corredor = CORREDORES.find((c) => c.id === id) as Corredor;
 const totais = await totaisDoBuild();
+const Texto = TEXTOS[corredor.id];
 ---
 
 <Base title={corredor.titulo} description={corredor.descricao} corredor={corredor.id}>
   <Abertura c={corredor} numeros={totais[corredor.id]} />
-  {CORREDORES.map((c) => (
-    <template data-hero={c.id}>
-      <Abertura c={c} numeros={totais[c.id]} />
-    </template>
-  ))}
+  {CORREDORES.map((c) => {
+    const Outro = TEXTOS[c.id];
+    return (
+      <>
+        <template data-hero={c.id}>
+          <Abertura c={c} numeros={totais[c.id]} />
+        </template>
+        <template data-texto={c.id}>
+          <Outro />
+        </template>
+      </>
+    );
+  })}
   <!-- DuckDB-WASM não roda no servidor: a ilha só existe no navegador -->
   <BuscaApp client:only="vue">
     <div slot="fallback" class="busca-esqueleto" aria-hidden="true">
@@ -31,4 +52,5 @@ const totais = await totaisDoBuild();
   <noscript>
     <p class="estado erro">A busca precisa de JavaScript: ela roda inteira no seu navegador.</p>
   </noscript>
+  <Texto />
 </Base>

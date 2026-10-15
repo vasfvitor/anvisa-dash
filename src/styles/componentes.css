@@ -409,8 +409,23 @@ a.badge:hover {
 /* ---------------------------------------------------------------- abertura (só na tela inicial) */
 /* !important: vence a regra por corredor que a página gera para mostrar a abertura certa */
 [data-tela="busca"] .hero[data-hero],
-[data-tela="produto"] .hero[data-hero] {
+[data-tela="produto"] .hero[data-hero],
+[data-tela="busca"] .texto-corredor,
+[data-tela="produto"] .texto-corredor {
   display: none !important;
+}
+/* o texto próprio da página (raiz e corredores), abaixo da busca: largura de leitura */
+.texto-corredor {
+  max-width: 40rem;
+  margin: 2.5rem 0 2rem;
+}
+.texto-corredor h2 {
+  font-size: 1.35rem;
+  line-height: 1.2;
+  margin: 1.6rem 0 0.5rem;
+}
+.texto-corredor p {
+  margin: 0 0 0.9rem;
 }
 .hero {
   position: relative;

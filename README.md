@@ -51,6 +51,9 @@ limpeza); o termo técnico fica no hover e nos dados técnicos. Cada corredor é
 2. `fonte.ts`: a fonte de dados, que implementa `Fonte` (`src/lib/fonte.ts`) com o SQL compartilhado de
    `src/lib/sql.ts` e entra em `fontes.ts`;
 3. `Cartao.vue` e `Pagina.vue`: o cartão da lista e a página de detalhe, que entram em `telas.ts`;
+   `Texto.astro`: o texto próprio do corredor abaixo da busca (o que a consulta cobre e como ler o que ela
+   mostra, para quem chega pelo buscador), que entra em `TEXTOS` na página `[...corredor].astro` e, como a
+   abertura, espera em `<template data-texto>` nos outros corredores para a troca sem recarregar;
 4. `colunas.ts` (opcional): a tabela no dicionário de dados como Dataset (schema.org): título, o que é
    uma linha e palavras; as colunas são descritas no manifest;
 5. o CSS em `src/styles/corredores/<id>.css`, importado em `src/styles/global.css`: paleta e material
