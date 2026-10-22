@@ -107,8 +107,8 @@ const site = {
 </Base>
 
 <style>
-  /* a home fala com a letra de texto (Figtree), mais leve que a Fraunces em 700 dos corredores; os cartões
-     seguem com a letra do próprio corredor */
+  /* a home fala com a letra de texto (Figtree), mais leve que a Fraunces em 700 dos corredores; as faixas
+     também, para os cinco parecerem pares (a letra de cada corredor fica na página dele) */
   h1,
   .texto-corredor h2 {
     font-family: var(--fonte-texto);
@@ -128,7 +128,9 @@ const site = {
     gap: 0.75rem;
     margin: 1.1rem 0 2.5rem;
   }
-  /* cada faixa com o papel, a tinta e o fundo do seu corredor */
+  /* cada faixa com a paleta e o fundo do seu corredor, mas o mesmo material em todas: na home os cinco são
+     pares, e o contorno escuro de um ao lado do plástico sem contorno de outro lia como destaque. O caráter
+     de cada corredor (papel, plástico, estojo) fica na página dele. */
   .secao-inicial {
     display: flex;
     flex-direction: column;
@@ -138,15 +140,42 @@ const site = {
     background-color: var(--bg);
     background-image: var(--padrao);
     background-size: var(--padrao-tam);
-    border: 2px solid var(--contorno);
-    border-radius: var(--raio);
-    box-shadow: var(--sombra-superficie);
+    border: 1.5px solid var(--line);
+    border-radius: 16px;
+    box-shadow: none;
+  }
+  .secao-inicial .busca .field {
+    background: var(--card);
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    box-shadow: none;
+  }
+  .secao-inicial .busca .field:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--pop-suave);
+    transform: none;
+  }
+  .secao-inicial .busca .btn {
+    border: 0;
+    border-radius: 12px;
+    background: var(--accent);
+    color: var(--accent-fg);
+    box-shadow: none;
+  }
+  .secao-inicial .busca .btn:hover {
+    transform: none;
+    box-shadow: none;
+    background: color-mix(in srgb, var(--accent) 85%, #000);
   }
   .secao-inicial h2 {
     display: flex;
     align-items: center;
     gap: 0.45rem;
     margin: 0;
+    font-family: var(--fonte-texto);
+    font-variation-settings: normal;
+    font-weight: 650;
+    letter-spacing: -0.01em;
     font-size: 1.25rem;
   }
   /* o número e o ícone não encolhem quando o nome quebra em duas linhas (Alimentos e suplementos) */
