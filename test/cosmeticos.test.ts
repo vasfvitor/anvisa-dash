@@ -6,8 +6,10 @@ import { join } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
 import { describe, expect, it } from "vitest";
 import { detectar } from "../src/lib/detect";
-import { sqlCos } from "../src/corredores/cosmeticos/consultas";
-import { faixasDe, lerIndice, linhasDa, rota, type Indice } from "../src/corredores/cosmeticos/indice";
+import { COLUNAS_LINHA, sqlCos } from "../src/corredores/cosmeticos/consultas";
+import { faixasDe, lerIndice, linhasDa, rota, type Indice } from "../src/lib/indice";
+
+const LINHA = { colunas: COLUNAS_LINHA, nome: "no_produto" };
 
 const ix: Indice = lerIndice({
   versao: 1,
@@ -75,7 +77,11 @@ describe("rota", () => {
 
   it("valores da busca só como parâmetros", () => {
     // "loreal" cai na faixa de "aaa" (10 linhas): é ela que se lê; "shampoo" filtra pelo nome
-    const l = linhasDa(rota(ix, q("shampoo l'oréal"), 3), (as) => `[${as.map((a) => `'${a.caminho}'`).join(", ")}]`)!;
+    const l = linhasDa(
+      rota(ix, q("shampoo l'oréal"), 3),
+      (as) => `[${as.map((a) => `'${a.caminho}'`).join(", ")}]`,
+      LINHA,
+    )!;
     expect(l.params).toEqual(["loreal", "shampoo"]);
     expect(l.sql).not.toMatch(/shampoo|loreal/);
     // fora das strings (o regex das palavras tem "(?:")
@@ -103,6 +109,7 @@ describe.skipIf(!PASTA || !existsSync(join(PASTA, "indice.json")))("contra os ar
         const l = linhasDa(
           rota(real, q(texto), 3),
           (as) => `[${as.map((a) => `'${join(PASTA!, a.caminho)}'`).join(", ")}]`,
+          LINHA,
         );
         const n = l
           ? Number(
@@ -120,6 +127,7 @@ describe.skipIf(!PASTA || !existsSync(join(PASTA, "indice.json")))("contra os ar
       const l = linhasDa(
         rota(real, q("protetor solar"), 3),
         (as) => `[${as.map((a) => `'${join(PASTA!, a.caminho)}'`).join(", ")}]`,
+        LINHA,
       )!;
       await con.run(
         `CREATE TABLE t AS ${sqlCos(`(SELECT *, NULL::VARCHAR AS no_razao_social_empresa FROM (${l.sql}))`)}`,

@@ -1,12 +1,18 @@
-// Que arquivos de busca dos cosméticos uma consulta precisa (SPEC.md do repo `anvisa`, formato 1). Puro: a
-// fonte baixa o que sair daqui; os testes usam um índice falso.
+// Que arquivos de busca uma consulta precisa numa tabela publicada em pedaços (SPEC.md do repo `anvisa`,
+// formato 1; hoje os cosméticos). Puro: a fonte (fonteIndice.ts) baixa o que sair daqui; os testes usam um
+// índice falso.
 //
 // O repo `anvisa` publica, além do Parquet inteiro (24 MB, grande demais para baixar), os mesmos dados em
 // pedaços: por palavra do nome, por CNPJ e pelos 3 últimos dígitos de processo e registro, com um índice.
 // Uma busca baixa um ou dois pedaços (45 a 850 KB no comum; 2,5 MB para "shampoo").
-import type { Consulta } from "../../lib/detect";
-import { palavrasDaBusca, palavrasSql } from "../../lib/palavras";
-import { COLUNAS_LINHA } from "./consultas";
+import type { Consulta } from "./detect";
+import { palavrasDaBusca, sqlPalavras } from "./palavras";
+
+/** As colunas de uma linha nos arquivos de busca e a do nome do produto (a dos arquivos por palavra). */
+export interface Linha {
+  colunas: string;
+  nome: string;
+}
 
 /** [primeira chave, linhas, caminho relativo à pasta do índice, bytes] */
 export type Faixa = [string, number, string, number];
@@ -116,8 +122,12 @@ export function arquivosDa(r: Rota): Arquivo[] {
  * As linhas da rota (COLUNAS_LINHA, antes de deduplicar), com `lista` dando o argumento de read_parquet para
  * cada grupo de arquivos; null quando não há o que ler. Valores da busca só como parâmetros.
  */
-export function linhasDa(r: Rota, lista: (a: Arquivo[]) => string): { sql: string; params: string[] } | null {
-  const de = (a: Arquivo[], onde: string) => `SELECT ${COLUNAS_LINHA} FROM read_parquet(${lista(a)}) WHERE ${onde}`;
+export function linhasDa(
+  r: Rota,
+  lista: (a: Arquivo[]) => string,
+  linha: Linha,
+): { sql: string; params: string[] } | null {
+  const de = (a: Arquivo[], onde: string) => `SELECT ${linha.colunas} FROM read_parquet(${lista(a)}) WHERE ${onde}`;
   switch (r.modo) {
     case "cnpj": {
       const partes: [string, string][] = [];
@@ -131,9 +141,7 @@ export function linhasDa(r: Rota, lista: (a: Arquivo[]) => string): { sql: strin
     case "texto": {
       if (!r.palavras.length) return null;
       // cada outra palavra da busca começa alguma palavra do nome, pela mesma regra dos arquivos
-      const outras = r.outras.map(
-        () => ` AND len(list_filter(${palavrasSql("no_produto")}, lambda w: starts_with(w, ?))) > 0`,
-      );
+      const outras = r.outras.map(() => ` AND contains(${sqlPalavras(linha.nome)}, ' ' || ?)`);
       return { sql: de(r.palavras, `starts_with(palavra, ?)${outras.join("")}`), params: [r.palavra, ...r.outras] };
     }
     case "nada":

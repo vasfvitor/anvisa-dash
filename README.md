@@ -51,8 +51,14 @@ limpeza); o termo técnico fica no hover e nos dados técnicos. Cada corredor é
    o id também entra em `IdCorredor`), que entra em `CORREDORES` (`src/corredores/index.ts`). Com `tipoProduto` (o `co_tipo_produto` da área em
    `medidas` e `produtos_irregulares`: 6 alimento, 3 saneantes, 2 cosmético, 1 medicamento, 8 dispositivo médico…), o corredor ganha as medidas de
    fiscalização (`src/lib/medidas.ts`) na busca, na abertura, na página do produto e nos cartões;
-2. `fonte.ts`: a fonte de dados, que implementa `Fonte` (`src/lib/fonte.ts`) com o SQL compartilhado de
-   `src/lib/sql.ts` e entra em `fontes.ts`;
+2. `fonte.ts`: a fonte de dados (`Fonte` em `src/lib/fonte.ts`), que entra em `fontes.ts`. Tabela que cabe
+   inteira no navegador é uma configuração de `fonteTabela` (`src/lib/fonteTabela.ts`): o SQL da tabela
+   derivada (`consultas.ts`, com as colunas de busca no formato de `sqlPalavras`), as colunas, o id, as
+   condições de CNPJ e número, a coluna secundária da relevância e as sugestões. A regra de casar texto é uma
+   só em todo corredor (`src/lib/sql.ts`): cada palavra digitada, em qualquer ordem, pelo começo de uma
+   palavra do nome, das marcas, do princípio ativo ou nome técnico, ou da empresa, pela regra de
+   `src/lib/palavras.ts` (sem acento, hífen nem apóstrofo); relevância em quatro níveis (nome começa pela
+   primeira palavra e tem todas, nome tem todas, a secundária tem todas, o resto);
 3. `Cartao.vue` e `Pagina.vue`: o cartão da lista e a página de detalhe, que entram em `telas.ts`;
    `Texto.astro`: o texto próprio do corredor abaixo da busca (o que a consulta cobre e como ler o que ela
    mostra, para quem chega pelo buscador), que entra em `TEXTOS` na página `[...corredor].astro` e, como a
@@ -66,9 +72,11 @@ limpeza); o termo técnico fica no hover e nos dados técnicos. Cada corredor é
    Z) e no `src/pages/llms.txt.ts`.
 
 Tabela grande demais para baixar inteira (os cosméticos, 24 MB) vem também em pedaços com índice (a chave
-`busca` da tabela no manifest; formato no repo `anvisa`): a fonte baixa só os pedaços de cada busca
-(`src/corredores/cosmeticos/indice.ts`) e cria com eles uma tabela pequena, sobre a qual vale o mesmo SQL
-de filtros e facetas. A regra das palavras é a mesma dos dois lados (`src/lib/palavras.ts`, casos em
+`busca` da tabela no manifest; formato no repo `anvisa`): a fonte é então uma configuração de `fonteIndice`
+(`src/lib/fonteIndice.ts`), que baixa só os pedaços de cada busca (`src/lib/indice.ts`) e cria com eles uma
+tabela pequena, sobre a qual vale o mesmo SQL de filtros, facetas e relevância. Trocar o transporte de um
+corredor é trocar `fonteTabela` por `fonteIndice` no `fonte.ts` dele, quando o repo `anvisa` publicar os
+pedaços. A regra das palavras é a mesma dos dois lados (`src/lib/palavras.ts`, casos em
 `test/fixtures/tokens.json`); `COSMETICOS_BUSCA=<pasta> pnpm test` confere as buscas contra uma pasta de
 verdade.
 

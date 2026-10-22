@@ -174,11 +174,13 @@ describe("cosméticos", () => {
     await cosmeticos.buscar(texto("Shampoo Solar"), filtros(), 0);
     const cria = chamadas.map(comValores).find((s) => s.startsWith("CREATE OR REPLACE TABLE cos_q"))!;
     expect(cria).toContain("read_parquet(['data_b_cosmeticos_palavras_0002.parquet'])");
-    expect(cria).toContain("WHERE starts_with(palavra, 'solar') AND len(list_filter(");
-    expect(cria).toContain("lambda w: starts_with(w, 'shampoo'))) > 0");
+    expect(cria).toContain("WHERE starts_with(palavra, 'solar') AND contains(' ' || array_to_string(");
+    expect(cria).toContain(", ' ') || ' ', ' ' || 'shampoo')");
     // um produto por processo, a linha sem registro primeiro
     expect(cria).toContain("QUALIFY row_number() OVER (PARTITION BY nu_processo ORDER BY st_registrado) = 1");
-    expect(ultima()).toMatch(/CASE WHEN starts_with\(busca_nome, 'shampoo'\) THEN 0 .* situacao_registro = 'Ativo'/);
+    expect(ultima()).toMatch(
+      /CASE WHEN starts_with\(busca_nome, ' ' \|\| 'shampoo'\) AND contains\(busca_nome, ' ' \|\| 'shampoo'\) AND contains\(busca_nome, ' ' \|\| 'solar'\) THEN 0 .* situacao_registro = 'Ativo'/,
+    );
     expect(ultima()).toMatch(/OFFSET 0$/);
   });
 

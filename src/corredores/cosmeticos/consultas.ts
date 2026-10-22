@@ -2,6 +2,7 @@
 // build (páginas de empresa) sobre a tabela inteira no DuckDB do Node, com a mesma deduplicação e os mesmos
 // rótulos.
 import { sqlGrupoValidade } from "../../lib/consultas";
+import { sqlPalavras } from "../../lib/palavras";
 
 export const TABELA = "cosmeticos";
 
@@ -29,7 +30,7 @@ export function sqlCos(origem: string): string {
       -- só para ordenar; vencimento depois de 2100 conta como 2100, sem passar à frente (sem data fica NULL:
       -- least() ignoraria o NULL e o poria no topo)
       if(dt_vencimento > TIMESTAMP '2100-12-31', TIMESTAMP '2100-12-31', dt_vencimento) AS ordem_data,
-      lower(strip_accents(no_produto)) AS busca_nome
+      ${sqlPalavras("no_produto")} AS busca_nome
     FROM ${origem}
     QUALIFY row_number() OVER (PARTITION BY nu_processo ORDER BY st_registrado) = 1`;
 }
