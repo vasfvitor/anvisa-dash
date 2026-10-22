@@ -247,12 +247,13 @@ const titulo = computed(() => {
     />
     <p v-if="b.erro" class="estado erro" role="alert">Erro na busca: {{ b.erro }}</p>
     <template v-else-if="b.buscada">
-      <h2 class="resultado-titulo" aria-live="polite">
+      <!-- h1: o da abertura some na tela de busca (componentes.css), e a página precisa de um -->
+      <h1 class="resultado-titulo" aria-live="polite">
         <template v-if="b.total">{{ titulo }}</template>
         <template v-else-if="!b.carregando"
           >Nenhum {{ corredor.item[0] }} {{ encerrados ? "liberado" : "encontrado" }}</template
         >
-      </h2>
+      </h1>
       <p v-if="b.corrigida" class="corrigida" role="status">
         Nada para “{{ b.corrigida.de }}”. Mostrando “{{ b.corrigida.para }}”.
         <button type="button" class="link" @click="insistir">Buscar “{{ b.corrigida.de }}” mesmo assim</button>
