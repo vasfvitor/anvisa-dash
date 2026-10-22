@@ -13,11 +13,11 @@ export const meta: Corredor = {
   deco: ["borrifador", "bolhas", "gota", "certo", "bolhas", "documento", "gota", "brilho", "etiqueta"],
   titulo: "Produtos de limpeza liberados pela ANVISA",
   descricao:
-    "Veja se um produto de limpeza (saneante) está liberado pela ANVISA e até quando: água sanitária, desinfetante, inseticida. Busque por nome, empresa ou CNPJ.",
-  lead: "Registrados ou notificados na ANVISA.",
+    "Veja se um produto de limpeza (saneante) está liberado pela ANVISA e até quando: água sanitária, desinfetante, inseticida. Busque pelo nome, empresa ou CNPJ.",
+  lead: "Água sanitária, detergente, desinfetante, inseticida.",
   placeholder: "Produto, empresa ou CNPJ",
-  rotuloTexto: "Nome do produto ou empresa",
-  rotuloNumero: "Nº do processo, registro ou expediente",
+  rotuloTexto: "nome do produto ou empresa",
+  rotuloNumero: "nº do processo, do registro ou do expediente",
   exemplos: [
     { valor: "ypê", texto: "ypê" },
     { valor: "bombril", texto: "bombril" },

@@ -19,8 +19,9 @@ export interface Consulta {
 
 export const MODO_ROTULO: Record<Modo, string> = {
   cnpj: "CNPJ",
-  numero: "Nº do processo ou registro",
-  texto: "Nome, marca ou empresa",
+  // numero e texto entram no meio de frase ("Buscando por: “whey” em nome, marca ou empresa"); todos é título
+  numero: "nº do processo ou do registro",
+  texto: "nome, marca ou empresa",
   marca: "Marca",
   todos: "Todos os produtos",
 };

@@ -13,11 +13,11 @@ export const meta: Corredor = {
   deco: ["comprimido", "capsula", "gota", "documento", "certo", "brilho", "etiqueta", "comprimido", "gota"],
   titulo: "Remédios registrados na ANVISA",
   descricao:
-    "Veja se um remédio tem registro na ANVISA, de qual laboratório, com qual princípio ativo e até quando vale: genérico, similar, novo, biológico. Busque pelo nome, pelo princípio ativo, pela empresa ou pelo CNPJ.",
-  lead: "Registrados na ANVISA, com preço máximo da CMED.",
+    "Veja se um remédio tem registro na ANVISA, de qual empresa e até quando, com o preço máximo da CMED: genérico, similar, de marca. Busque pelo nome, princípio ativo ou CNPJ.",
+  lead: "Genéricos, similares e de marca, com o preço máximo da CMED.",
   placeholder: "Remédio, princípio ativo ou CNPJ",
-  rotuloTexto: "Nome, princípio ativo ou empresa",
-  rotuloNumero: "Nº do registro (9 ou 13 dígitos) ou do processo",
+  rotuloTexto: "nome, princípio ativo ou empresa",
+  rotuloNumero: "nº do registro (o da caixa) ou do processo",
   exemplos: [
     { valor: "dipirona", texto: "dipirona" },
     { valor: "losartana", texto: "losartana" },

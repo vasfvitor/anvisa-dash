@@ -14,10 +14,10 @@ export const meta: Corredor = {
   titulo: "Cosméticos liberados pela ANVISA",
   descricao:
     "Veja se um cosmético, perfume ou produto de higiene está liberado pela ANVISA e até quando: shampoo, protetor solar, desodorante. Busque pelo nome, pela empresa ou pelo CNPJ.",
-  lead: "Registrados ou notificados na ANVISA.",
+  lead: "Shampoo, protetor solar, maquiagem, perfume, fralda.",
   placeholder: "Produto, empresa ou CNPJ",
-  rotuloTexto: "Palavras do nome do produto",
-  rotuloNumero: "Nº do processo ou registro",
+  rotuloTexto: "palavras do nome do produto",
+  rotuloNumero: "nº do processo ou do registro",
   exemplos: [
     { valor: "nivea", texto: "nivea" },
     { valor: "protetor solar", texto: "protetor solar" },

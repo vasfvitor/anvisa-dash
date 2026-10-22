@@ -29,6 +29,16 @@ describe("corredores", () => {
       }
     }
   });
+  it("a copy de cada corredor cabe no buscador e lê em frases curtas", () => {
+    const frases = (t: string) => t.split(/(?<=[.!?])\s+/).filter(Boolean);
+    for (const c of CORREDORES) {
+      expect(c.descricao.length, c.id).toBeLessThanOrEqual(175);
+      for (const f of frases(c.descricao)) expect(f.split(/\s+/).length, `${c.id}: ${f}`).toBeLessThanOrEqual(25);
+      expect(c.lead, c.id).toMatch(/\.$/);
+      // rótulos entram no meio de frase: começam em minúscula
+      for (const r of [c.rotuloTexto, c.rotuloNumero]) if (r) expect(r, c.id).toMatch(/^[a-zº]/);
+    }
+  });
   it("números e slugs únicos", () => {
     expect(new Set(CORREDORES.map((c) => c.numero)).size).toBe(CORREDORES.length);
     expect(new Set(CORREDORES.map((c) => c.slug)).size).toBe(CORREDORES.length);

@@ -13,11 +13,11 @@ export const meta: Corredor = {
   deco: ["pulso", "documento", "caixas", "certo", "etiqueta", "brilho", "pulso", "gota", "documento"],
   titulo: "Dispositivos médicos liberados pela ANVISA",
   descricao:
-    "Veja se um dispositivo médico (produto para saúde) está registrado ou cadastrado na ANVISA, de qual empresa e fabricante, com qual classe de risco: termômetro, seringa, preservativo, teste, implante. Busque pelo nome, pela empresa ou pelo CNPJ.",
-  lead: "Registrados ou cadastrados na ANVISA.",
+    "Veja se um dispositivo médico (produto para saúde) está liberado pela ANVISA, de qual empresa e com que risco: termômetro, seringa, implante. Busque pelo nome ou CNPJ.",
+  lead: "Termômetro, seringa, preservativo, teste rápido, implante.",
   placeholder: "Produto, empresa ou CNPJ",
-  rotuloTexto: "Nome comercial, nome técnico ou empresa",
-  rotuloNumero: "Nº do registro ou cadastro (10 ou 11 dígitos) ou do processo",
+  rotuloTexto: "nome comercial, nome técnico ou empresa",
+  rotuloNumero: "nº do registro ou do cadastro (10 ou 11 dígitos) ou do processo",
   exemplos: [
     { valor: "termômetro", texto: "termômetro" },
     { valor: "preservativo", texto: "preservativo" },
