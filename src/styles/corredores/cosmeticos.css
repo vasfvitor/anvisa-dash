@@ -9,6 +9,7 @@
   --pop: #d6336c;
   --pop-suave: #fbdbe6;
   --mark: #fbd0de;
+  --pop-forte: var(--pop);
   --padrao: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%23d6336c' fill-opacity='.11'%3E%3Ccircle cx='18' cy='22' r='2.5'/%3E%3Ccircle cx='74' cy='14' r='1.5'/%3E%3Ccircle cx='98' cy='64' r='3'/%3E%3Ccircle cx='40' cy='88' r='2'/%3E%3Ccircle cx='60' cy='50' r='1.2'/%3E%3Ccircle cx='10' cy='70' r='1.6'/%3E%3Ccircle cx='108' cy='110' r='2'/%3E%3C/g%3E%3C/svg%3E");
   --padrao-tam: 120px 120px;
 }

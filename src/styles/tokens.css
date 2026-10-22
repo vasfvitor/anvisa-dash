@@ -45,4 +45,8 @@
   --raio-botao: 10px;
   --chip-ativo: var(--fg);
   --chip-ativo-fg: var(--bg);
+  /* o laranja como contorno de foco, sublinhado ou ícone sobre --pop-suave: #f2602f dá 2,9:1 no papel e 2,7 no
+     --pop-suave; este dá 4,9 e 4,6 (medido em 2026-10-22). Os outros corredores têm --pop escuro o bastante e
+     apontam --pop-forte para ele */
+  --pop-forte: #b8400f;
 }

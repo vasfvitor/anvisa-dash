@@ -42,7 +42,9 @@ function abrir(ev: MouseEvent): void {
           ><Icone nome="pulso" />{{ p.grupo }}</span
         >
         <span v-if="!cadastro" class="selo" :class="val.classe === 'neutro' ? '' : val.classe" :title="val.dica"
-          ><Icone nome="gota" />{{ val.curto }}</span
+          ><Icone :nome="val.classe === 'perigo' ? 'alerta' : val.classe === 'ok' ? 'certo' : 'gota'" />{{
+            val.curto
+          }}</span
         >
       </div>
       <EmpresaComMedidas v-if="medidas" :n="medidas" />

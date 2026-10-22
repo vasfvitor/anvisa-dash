@@ -100,7 +100,7 @@ header.site .nav-site a:hover {
   border-bottom-color: var(--line);
 }
 header.site .nav-site a[aria-current="page"] {
-  border-bottom-color: var(--pop);
+  border-bottom-color: var(--pop-forte);
 }
 
 /* placas dos corredores: cada uma com a cor do próprio corredor, penduradas por duas cordinhas */
@@ -325,7 +325,7 @@ button {
 .field:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  outline: 2.5px solid var(--pop);
+  outline: 2.5px solid var(--pop-forte);
   outline-offset: 2px;
 }
 .btn {
@@ -578,7 +578,7 @@ a.badge:hover {
   width: 2.1rem;
   height: 2.1rem;
   background: var(--pop-suave);
-  color: var(--pop);
+  color: var(--pop-forte);
 }
 @keyframes flutuar {
   from {
@@ -718,7 +718,7 @@ a.badge:hover {
   height: 1.9rem;
   border-radius: 50%;
   background: var(--pop-suave);
-  color: var(--pop);
+  color: var(--pop-forte);
 }
 .sugestao-tipo.empresa {
   background: var(--ok-bg);
@@ -855,12 +855,16 @@ a.badge:hover {
   border-color: var(--chip-ativo);
   color: var(--chip-ativo-fg);
 }
+/* o filtro ligado não se diz só pela cor */
+.chip[aria-pressed="true"]::before {
+  content: "✓ ";
+}
 .chip[aria-pressed="true"] .chip-n {
   color: inherit;
   opacity: 0.75;
 }
 .chip:disabled {
-  opacity: 0.4;
+  opacity: 0.6;
   cursor: default;
 }
 .chip-n {
@@ -1354,7 +1358,7 @@ a.badge:hover {
   padding: 0.38rem;
   border-radius: 50%;
   background: var(--pop-suave);
-  color: var(--pop);
+  color: var(--pop-forte);
 }
 .secao h2 .sub {
   margin-left: auto;
@@ -1509,7 +1513,7 @@ a.badge:hover {
   display: none;
 }
 .medida > summary:focus-visible {
-  outline: 2px solid var(--pop);
+  outline: 2px solid var(--pop-forte);
   outline-offset: 4px;
   border-radius: 4px;
 }

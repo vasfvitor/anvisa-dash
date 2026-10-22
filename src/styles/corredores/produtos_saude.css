@@ -10,6 +10,7 @@
   --pop: #15803d;
   --pop-suave: #dcfce7;
   --mark: #bbf7d0;
+  --pop-forte: var(--pop);
   --padrao: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cg fill='none' stroke='%2315803d' stroke-opacity='.12' stroke-width='1.5'%3E%3Cpath d='M0 30h18l6-12 8 24 6-16 4 4h28'/%3E%3Cpath d='M70 100h18l6-12 8 24 6-16 4 4h28'/%3E%3C/g%3E%3C/svg%3E");
   --padrao-tam: 140px 140px;
 }

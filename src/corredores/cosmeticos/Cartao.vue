@@ -37,7 +37,9 @@ function abrir(ev: MouseEvent): void {
       <div class="alergia compacta">
         <span class="selo" :title="dicaTipos(meta.tipos)">{{ p.tipo_regularizacao }}</span>
         <span class="selo" :class="val.classe === 'neutro' ? '' : val.classe" :title="val.dica"
-          ><Icone nome="gota" />{{ val.curto }}</span
+          ><Icone :nome="val.classe === 'perigo' ? 'alerta' : val.classe === 'ok' ? 'certo' : 'gota'" />{{
+            val.curto
+          }}</span
         >
       </div>
       <EmpresaComMedidas v-if="medidas" :n="medidas" />

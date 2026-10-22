@@ -36,7 +36,7 @@ const datas = computed(() =>
       }}</span>
       <span class="medida-acoes">
         <span v-for="a in m.acoes" :key="a" class="selo" :class="grave(a) ? 'perigo' : 'atencao'">
-          <Icone nome="alerta" />{{ a }}
+          <Icone :nome="grave(a) ? 'alerta' : 'documento'" />{{ a }}
         </span>
       </span>
     </summary>

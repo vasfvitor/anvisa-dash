@@ -106,7 +106,9 @@ watch(titulo, (t) => t && emit("titulo", t));
         <h2><Icone nome="gota" />Até quando vale</h2>
         <div class="selos-validade">
           <span class="selo grande" :class="val.classe === 'neutro' ? '' : val.classe"
-            ><Icone nome="gota" />{{ val.curto }}</span
+            ><Icone :nome="val.classe === 'perigo' ? 'alerta' : val.classe === 'ok' ? 'certo' : 'gota'" />{{
+              val.curto
+            }}</span
           >
         </div>
         <p v-if="val.estranha" class="note">Data como publicada pela ANVISA.</p>
