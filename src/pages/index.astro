@@ -116,6 +116,14 @@ const site = {
 </Base>
 
 <style>
+  /* a home fala com a letra de texto (Figtree), mais leve que a Fraunces em 700 dos corredores; os cartões
+     seguem com a letra do próprio corredor */
+  h1,
+  .texto-corredor h2 {
+    font-family: var(--fonte-texto);
+    font-variation-settings: normal;
+    font-weight: 600;
+  }
   h1 {
     font-size: clamp(2rem, 5vw, 3rem);
     line-height: 1.05;
