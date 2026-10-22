@@ -18,10 +18,12 @@ interface Props {
   corredor?: string;
   /** fora dos buscadores (a página de erro) */
   noindex?: boolean;
+  /** a página inicial: fundo próprio (inicio.css), para os cartões dos corredores não sumirem nele */
+  inicio?: boolean;
   /** JSON-LD (schema.org) que descreve o que a página mostra */
   estruturados?: Record<string, unknown>[];
 }
-const { title, corredor, description = DESCRICAO, noindex = false, estruturados = [] } = Astro.props;
+const { title, corredor, description = DESCRICAO, noindex = false, inicio = false, estruturados = [] } = Astro.props;
 const titulo = tituloPagina(title);
 // endereço canônico: o da página sem query (?q=, ?p= são estado da busca, não páginas)
 const canonico = new URL(Astro.url.pathname, Astro.site).href;
@@ -49,7 +51,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 <!doctype html>
 <!-- o corredor já vem no HTML (o script inline só confirma pela URL): sem JavaScript, a abertura certa aparece -->
-<html lang="pt-BR" data-corredor={corredor ?? CORREDOR_PADRAO.id}>
+<html lang="pt-BR" data-corredor={corredor ?? CORREDOR_PADRAO.id} data-pagina={inicio ? "inicio" : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -66,7 +68,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     {estruturados.map((d) => (
       <script type="application/ld+json" set:html={jsonLd(d)} />
     ))}
-    <meta name="theme-color" content="#f6f1e6" />
+    <meta name="theme-color" content={inicio ? "#e8e2d6" : "#f6f1e6"} />
     <link rel="icon" href={url("/favicon.svg")} type="image/svg+xml" />
     <link rel="sitemap" href={url("/sitemap-index.xml")} />
     <script is:inline define:vars={{ slugs, base }}>

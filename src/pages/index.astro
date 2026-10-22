@@ -30,7 +30,7 @@ const site = {
 };
 ---
 
-<Base title="Produtos liberados pela ANVISA" description={DESCRICAO} estruturados={[site]}>
+<Base title="Produtos liberados pela ANVISA" description={DESCRICAO} estruturados={[site]} inicio>
   <h1>Está liberado pela ANVISA?</h1>
   <p class="lead">
     Digite o nome, a marca, o CNPJ ou o número do processo que vem no rótulo. Os dados são os da própria ANVISA,
@@ -179,6 +179,10 @@ const site = {
     gap: 0.45rem;
     margin: 0;
     font-size: 1.35rem;
+  }
+  /* o número e o ícone não encolhem quando o nome quebra em duas linhas (Alimentos e suplementos) */
+  .secao-inicial h2 > :not(a) {
+    flex: none;
   }
   .secao-inicial h2 a {
     color: inherit;

@@ -4,8 +4,8 @@
    a troca de corredor faz o papel que o modo escuro fazia (que saiu). */
 
 /* A ordem importa: tokens, base e componentes; o celular; os corredores (que ganham por especificidade
-   das regras de tela estreita, mas trocam tokens no mesmo nível de :root e por isso vêm depois); e o
-   movimento reduzido por último. */
+   das regras de tela estreita, mas trocam tokens no mesmo nível de :root e por isso vêm depois); a página
+   inicial (um fundo só dela, fora dos tokens); e o movimento reduzido por último. */
 @import "./tokens.css";
 @import "./base.css";
 @import "./componentes.css";
@@ -14,4 +14,5 @@
 @import "./corredores/cosmeticos.css";
 @import "./corredores/medicamentos.css";
 @import "./corredores/produtos_saude.css";
+@import "./inicio.css";
 @import "./movimento.css";
