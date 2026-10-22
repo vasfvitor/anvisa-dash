@@ -127,7 +127,7 @@ watch(titulo, (t) => t && emit("titulo", t));
           com ICMS de 18 %, a alíquota mais comum; a lista traz as outras.
         </p>
         <div class="table-wrap">
-          <table class="produtos">
+          <table class="precos">
             <thead>
               <tr>
                 <th>Apresentação</th>

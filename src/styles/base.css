@@ -87,6 +87,10 @@ code {
   font-size: 0.88rem;
   color: var(--muted);
 }
+/* cada informação numa linha própria dentro de uma célula: a página de empresa e os preços da CMED */
+.linha {
+  display: block;
+}
 .lead {
   font-size: 1.08rem;
   max-width: 44rem;
