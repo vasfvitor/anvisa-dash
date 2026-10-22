@@ -39,14 +39,17 @@ Coisas medidas que o código assume (build de 2026-10-06):
 
 ## Corredores
 
-Cada fonte de dados é um corredor: `/alimentos/` (alimentos e suplementos), `/limpeza/` (saneantes) e
-`/cosmeticos/`. A raiz (`src/pages/index.astro`) apresenta os três, com os totais do build e uma busca
-em cada um que funciona sem JavaScript. Os textos falam a língua de quem compra (liberado, encerrado,
+Cada fonte de dados é um corredor: `/alimentos/` (alimentos e suplementos), `/limpeza/` (saneantes),
+`/cosmeticos/`, `/remedios/` (medicamentos, com os preços da CMED na página do produto) e `/dispositivos/`
+(produtos para saúde). A raiz (`src/pages/index.astro`) apresenta os cinco, com os totais do build e uma
+busca em cada um que funciona sem JavaScript. Os dois últimos leem as tabelas `medicamentos_por_produto`,
+`produtos_saude_por_produto` e `cmed` do manifest (repo `anvisa`, 2026-10-22); antes de um build de dados
+que as publique, a página do corredor abre sem números e a ilha diz que os dados ainda não foram publicados. Os textos falam a língua de quem compra (liberado, encerrado,
 limpeza); o termo técnico fica no hover e nos dados técnicos. Cada corredor é uma pasta em `src/corredores/`; para criar outro:
 
 1. `meta.ts`: o registro (nome, número, rota, tabela, textos, exemplos, ícones; tipo em `tipos.ts`, onde
    o id também entra em `IdCorredor`), que entra em `CORREDORES` (`src/corredores/index.ts`). Com `tipoProduto` (o `co_tipo_produto` da área em
-   `medidas` e `produtos_irregulares`: 6 alimento, 3 saneantes, 2 cosmético…), o corredor ganha as medidas de
+   `medidas` e `produtos_irregulares`: 6 alimento, 3 saneantes, 2 cosmético, 1 medicamento, 8 dispositivo médico…), o corredor ganha as medidas de
    fiscalização (`src/lib/medidas.ts`) na busca, na abertura, na página do produto e nos cartões;
 2. `fonte.ts`: a fonte de dados, que implementa `Fonte` (`src/lib/fonte.ts`) com o SQL compartilhado de
    `src/lib/sql.ts` e entra em `fontes.ts`;

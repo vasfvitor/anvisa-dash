@@ -2,7 +2,9 @@
 import type { Fonte } from "../lib/fonte";
 import { fonte as alimentos } from "./alimentos/fonte";
 import { fonte as cosmeticos } from "./cosmeticos/fonte";
+import { fonte as medicamentos } from "./medicamentos/fonte";
+import { fonte as produtos_saude } from "./produtos_saude/fonte";
 import { fonte as saneantes } from "./saneantes/fonte";
 import type { IdCorredor } from "./tipos";
 
-export const FONTES: Record<IdCorredor, Fonte> = { alimentos, saneantes, cosmeticos };
+export const FONTES: Record<IdCorredor, Fonte> = { alimentos, saneantes, cosmeticos, medicamentos, produtos_saude };

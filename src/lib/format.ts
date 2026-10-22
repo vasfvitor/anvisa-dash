@@ -70,6 +70,20 @@ export function fmtInt(n: number): string {
   return n.toLocaleString("pt-BR");
 }
 
+/** Centavos como R$ 1.234,56 (a CMED publica os preços em centavos no Parquet); nulo vira "". */
+export function fmtReais(centavos: number | null | undefined): string {
+  if (centavos === null || centavos === undefined) return "";
+  return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+/** O registro de medicamento como a caixa escreve: 9 dígitos viram 1.8620.0018, 13 viram 1.8620.0018.001-5. */
+export function fmtRegistroMedicamento(d: string | null | undefined): string {
+  if (!d) return "";
+  if (d.length === 9) return `${d.slice(0, 1)}.${d.slice(1, 5)}.${d.slice(5, 9)}`;
+  if (d.length === 13) return `${d.slice(0, 1)}.${d.slice(1, 5)}.${d.slice(5, 9)}.${d.slice(9, 12)}-${d.slice(12)}`;
+  return d;
+}
+
 export function fmtBytes(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 ** 2) return `${(n / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} KB`;

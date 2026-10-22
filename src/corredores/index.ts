@@ -11,13 +11,17 @@ import * as colunasAlimentos from "./alimentos/colunas";
 import * as colunasCosmeticos from "./cosmeticos/colunas";
 import { meta as cosmeticos } from "./cosmeticos/meta";
 import { meta as alimentos } from "./alimentos/meta";
+import * as colunasMedicamentos from "./medicamentos/colunas";
+import { meta as medicamentos } from "./medicamentos/meta";
+import * as colunasProdutosSaude from "./produtos_saude/colunas";
+import { meta as produtosSaude } from "./produtos_saude/meta";
 import * as colunasSaneantes from "./saneantes/colunas";
 import { meta as saneantes } from "./saneantes/meta";
 import type { Corredor, InfoTabela } from "./tipos";
 
 export type { Corredor, IdCorredor, InfoTabela } from "./tipos";
 
-export const CORREDORES: Corredor[] = [alimentos, saneantes, cosmeticos];
+export const CORREDORES: Corredor[] = [alimentos, saneantes, cosmeticos, medicamentos, produtosSaude];
 
 /**
  * As tabelas que o dicionário de dados descreve como Dataset (schema.org), de todos os corredores e as de
@@ -28,6 +32,8 @@ export const TABELAS: Record<string, InfoTabela> = {
   ...colunasAlimentos.TABELAS,
   ...colunasSaneantes.TABELAS,
   ...colunasCosmeticos.TABELAS,
+  ...colunasMedicamentos.TABELAS,
+  ...colunasProdutosSaude.TABELAS,
   // de todos os corredores (cada um vê as do seu tipoProduto; ver lib/medidas.ts)
   produtos_irregulares: {
     titulo: "Medidas de fiscalização da ANVISA contra produtos irregulares",
@@ -37,16 +43,25 @@ export const TABELAS: Record<string, InfoTabela> = {
   },
   // derivadas no repo `anvisa` a cada build (dados/derivar.py), com as mesmas colunas para alimentos e saneantes
   produtos: {
-    titulo: "Produtos regularizados na ANVISA: alimentos e saneantes, uma linha por produto",
+    titulo: "Produtos regularizados na ANVISA: uma linha por produto, cinco áreas",
     descricao:
-      "Uma linha por alimento ou suplemento (agrupadas as apresentações) e por saneante regularizado na ANVISA, com empresa, CNPJ, processo, registro, situação, tipo e vencimento nas mesmas colunas; derivada das tabelas alimentos e saneantes.",
-    palavras: ["alimentos", "suplementos alimentares", "saneantes", "produtos de limpeza", "registro", "notificação"],
+      "Uma linha por alimento ou suplemento (agrupadas as apresentações), saneante, medicamento e produto para saúde regularizado na ANVISA, com empresa, CNPJ, processo, registro, situação, tipo e vencimento nas mesmas colunas; derivada das tabelas de cada área.",
+    palavras: [
+      "alimentos",
+      "suplementos alimentares",
+      "saneantes",
+      "produtos de limpeza",
+      "medicamentos",
+      "dispositivos médicos",
+      "registro",
+      "notificação",
+    ],
   },
   empresas: {
     titulo: "Empresas com produtos ou medidas na ANVISA, por CNPJ",
     descricao:
-      "Uma linha por CNPJ que detém alimento, saneante ou cosmético regularizado na ANVISA ou que foi alvo de medida de fiscalização, com a razão social e a quantidade de produtos (total e ativos) por área e de medidas.",
-    palavras: ["empresas", "CNPJ", "alimentos", "saneantes", "cosméticos", "fiscalização"],
+      "Uma linha por CNPJ que detém alimento, saneante, cosmético, medicamento ou produto para saúde regularizado na ANVISA ou que foi alvo de medida de fiscalização, com a razão social e a quantidade de produtos (total e ativos) por área e de medidas.",
+    palavras: ["empresas", "CNPJ", "alimentos", "saneantes", "cosméticos", "medicamentos", "fiscalização"],
   },
 };
 

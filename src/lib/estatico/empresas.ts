@@ -63,6 +63,10 @@ export interface Entrada {
   /** até COSMETICOS_POR_EMPRESA por empresa; os totais vêm em cosmeticosTotais */
   cosmeticos: (LinhaValidade & DaEmpresa)[];
   cosmeticosTotais: (Totais & { cnpj: string })[];
+  /** medicamentos: `tipo` é a categoria regulatória, `registro` os 9 dígitos, `vencimento` com precisão de mês */
+  medicamentos?: (LinhaValidade & DaEmpresa)[];
+  /** produtos para saúde: `tipo` Registrado ou Cadastrado, `vencimento` só nos registros */
+  produtosSaude?: (LinhaValidade & DaEmpresa)[];
   medidas: (LinhaMedida & DaEmpresa)[];
 }
 
@@ -74,6 +78,8 @@ export interface Empresa {
   cosmeticos: LinhaValidade[];
   /** todos os cosméticos da empresa, não só os listados */
   cosmeticosTotais: Totais;
+  medicamentos: LinhaValidade[];
+  produtosSaude: LinhaValidade[];
   medidas: LinhaMedida[];
 }
 
@@ -101,6 +107,8 @@ export function agrupar(e: Entrada): Map<string, Empresa> {
         saneantes: [],
         cosmeticos: [],
         cosmeticosTotais: { produtos: 0, ativos: 0 },
+        medicamentos: [],
+        produtosSaude: [],
         medidas: [],
       };
       empresas.set(cnpj, emp);
@@ -116,6 +124,12 @@ export function agrupar(e: Entrada): Map<string, Empresa> {
   for (const { cnpj, empresa, ...linha } of e.alimentos) da(cnpj, empresa, "produtos")?.alimentos.push(linha);
   for (const { cnpj, empresa, ...linha } of e.saneantes) da(cnpj, empresa, "produtos")?.saneantes.push(linha);
   for (const { cnpj, empresa, ...linha } of e.cosmeticos) da(cnpj, empresa, "produtos")?.cosmeticos.push(linha);
+  for (const { cnpj, empresa, ...linha } of e.medicamentos ?? []) {
+    da(cnpj, empresa, "produtos")?.medicamentos.push(linha);
+  }
+  for (const { cnpj, empresa, ...linha } of e.produtosSaude ?? []) {
+    da(cnpj, empresa, "produtos")?.produtosSaude.push(linha);
+  }
   for (const { cnpj, produtos, ativos } of e.cosmeticosTotais) {
     const emp = empresas.get(cnpj);
     if (emp) emp.cosmeticosTotais = { produtos, ativos };
@@ -135,6 +149,8 @@ export function agrupar(e: Entrada): Map<string, Empresa> {
     emp.alimentos.sort(porNome);
     emp.saneantes.sort(porNome);
     emp.cosmeticos.sort(porNome);
+    emp.medicamentos.sort(porNome);
+    emp.produtosSaude.sort(porNome);
     emp.medidas.sort((a, b) => b.data.localeCompare(a.data) || a.produto.localeCompare(b.produto, "pt-BR"));
   }
   return empresas;
@@ -160,8 +176,18 @@ export function resumo(emp: Empresa) {
     saneantesAtivos: ativos(emp.saneantes),
     cosmeticos: cos.produtos,
     cosmeticosAtivos: cos.ativos,
+    medicamentos: emp.medicamentos.length,
+    medicamentosAtivos: ativos(emp.medicamentos),
+    produtosSaude: emp.produtosSaude.length,
+    produtosSaudeAtivos: ativos(emp.produtosSaude),
     medidas: emp.medidas.length,
   };
+}
+
+/** Quantos produtos a empresa tem, somadas as áreas. */
+export function totalProdutos(emp: Empresa): number {
+  const r = resumo(emp);
+  return r.alimentos + r.saneantes + r.cosmeticos + r.medicamentos + r.produtosSaude;
 }
 
 /** Quantos produtos uma empresa precisa ter para a página entrar no índice dos buscadores e no sitemap. */
@@ -174,8 +200,7 @@ export const PRODUTOS_PARA_INDEXAR = 2;
  * até as boas ("rastreada, mas não indexada"). As páginas finas continuam no ar e nas listas de A a Z.
  */
 export function indexavel(emp: Empresa): boolean {
-  const r = resumo(emp);
-  return r.alimentos + r.saneantes + r.cosmeticos >= PRODUTOS_PARA_INDEXAR;
+  return totalProdutos(emp) >= PRODUTOS_PARA_INDEXAR;
 }
 
 /** As letras da lista de empresas (/empresas/<letra>/), na ordem; "0-9" junta quem começa com dígito ou símbolo. */

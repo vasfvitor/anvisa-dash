@@ -5,6 +5,8 @@ import Base from "../layouts/Base.astro";
 import { CORREDORES, type Corredor } from "../corredores";
 import TextoAlimentos from "../corredores/alimentos/Texto.astro";
 import TextoCosmeticos from "../corredores/cosmeticos/Texto.astro";
+import TextoMedicamentos from "../corredores/medicamentos/Texto.astro";
+import TextoProdutosSaude from "../corredores/produtos_saude/Texto.astro";
 import TextoSaneantes from "../corredores/saneantes/Texto.astro";
 import type { IdCorredor } from "../corredores/tipos";
 import { totaisDoBuild } from "../lib/estatico/dados";
@@ -15,6 +17,8 @@ const TEXTOS: Record<IdCorredor, typeof TextoAlimentos> = {
   alimentos: TextoAlimentos,
   saneantes: TextoSaneantes,
   cosmeticos: TextoCosmeticos,
+  medicamentos: TextoMedicamentos,
+  produtos_saude: TextoProdutosSaude,
 };
 
 // uma página por corredor (/alimentos/, /limpeza/, /cosmeticos/); a raiz é a página inicial (index.astro)

@@ -7,6 +7,7 @@ import {
   porLetra,
   PRODUTOS_PARA_INDEXAR,
   resumo,
+  totalProdutos,
   type Entrada,
 } from "../src/lib/estatico/empresas";
 
@@ -149,8 +150,37 @@ describe("resumo", () => {
       saneantesAtivos: 1,
       cosmeticos: 0,
       cosmeticosAtivos: 0,
+      medicamentos: 0,
+      medicamentosAtivos: 0,
+      produtosSaude: 0,
+      produtosSaudeAtivos: 0,
       medidas: 0,
     });
+  });
+
+  it("remédios e dispositivos médicos contam como as outras áreas e entram na indexação", () => {
+    const m = agrupar({
+      ...vazio,
+      medicamentos: [saneante("186200018", "NOVALGINA", true), saneante("101810583", "NORFLOXACINO", false)],
+      produtosSaude: [saneante("10163770014", "PRESERV EXTRA", true, CNPJ_B, "EMPRESA B LTDA")],
+    });
+    const a = m.get(CNPJ_A)!;
+    expect(a.medicamentos.map((p) => p.nome)).toEqual(["NOVALGINA", "NORFLOXACINO"]); // liberados antes
+    expect(resumo(a)).toMatchObject({ medicamentos: 2, medicamentosAtivos: 1, produtosSaude: 0 });
+    expect(totalProdutos(a)).toBe(2);
+    expect(indexavel(a)).toBe(true); // dois produtos: o mínimo (PRODUTOS_PARA_INDEXAR)
+    const b = m.get(CNPJ_B)!;
+    expect(resumo(b)).toMatchObject({ produtosSaude: 1, produtosSaudeAtivos: 1, medicamentos: 0 });
+    expect(b.nome).toBe("EMPRESA B LTDA");
+  });
+
+  it("entrada sem as áreas novas (build de dados anterior) continua valendo", () => {
+    const antiga: Entrada = { ...vazio, alimentos: [alimento(1, "A", true)] };
+    delete antiga.medicamentos;
+    delete antiga.produtosSaude;
+    const emp = agrupar(antiga).get(CNPJ_A)!;
+    expect(emp.medicamentos).toEqual([]);
+    expect(emp.produtosSaude).toEqual([]);
   });
 
   it("cosméticos contam pelos totais, não pela lista cortada", () => {

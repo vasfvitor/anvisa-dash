@@ -12,4 +12,6 @@
 @import "./celular.css";
 @import "./corredores/saneantes.css";
 @import "./corredores/cosmeticos.css";
+@import "./corredores/medicamentos.css";
+@import "./corredores/produtos_saude.css";
 @import "./movimento.css";

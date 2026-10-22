@@ -1,6 +1,6 @@
 // O que cada corredor declara sobre si: textos, exemplos, ícones e a tabela principal. Só dados, para as
 // páginas Astro gerarem tudo no build sem carregar o DuckDB.
-export type IdCorredor = "alimentos" | "saneantes" | "cosmeticos";
+export type IdCorredor = "alimentos" | "saneantes" | "cosmeticos" | "medicamentos" | "produtos_saude";
 
 export interface Corredor {
   id: IdCorredor;

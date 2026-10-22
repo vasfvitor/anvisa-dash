@@ -38,6 +38,16 @@ export const sqlSaneantesDe = (de = `"${TABELA_PRODUTOS}"`) =>
     strftime(vencimento, '%Y-%m-%d') AS vencimento, ${sqlGrupoValidade("vencimento")} AS grupo, cnpj, empresa
   FROM ${de} WHERE area = 'saneantes'`;
 
+/** Medicamentos e produtos para saúde: a mesma forma dos saneantes (situação, tipo, validade e números). */
+export const sqlMedicamentosDe = (de = `"${TABELA_PRODUTOS}"`) =>
+  `SELECT id, nome, ativo, tipo, processo, registro,
+    strftime(vencimento, '%Y-%m-%d') AS vencimento, ${sqlGrupoValidade("vencimento")} AS grupo, cnpj, empresa
+  FROM ${de} WHERE area = 'medicamentos'`;
+export const sqlProdutosSaudeDe = (de = `"${TABELA_PRODUTOS}"`) =>
+  `SELECT id, nome, ativo, tipo, processo, registro,
+    strftime(vencimento, '%Y-%m-%d') AS vencimento, ${sqlGrupoValidade("vencimento")} AS grupo, cnpj, empresa
+  FROM ${de} WHERE area = 'produtos_saude'`;
+
 const DE_PRODUTOS = { ativo: "ativo", cnpj: "cnpj" };
 
 /** Os cosméticos listados em cada página de empresa, de `de` (cosmeticos_por_empresa ou igual). */
@@ -92,10 +102,19 @@ async function carregar(): Promise<DoBuild> {
       await con.run(`CREATE VIEW "${nome}" AS SELECT * FROM read_parquet('${arquivos[i]!.replaceAll("'", "''")}')`);
     }
     if (medidas) await con.run(SQL_MEDIDAS);
+    // os corredores novos só contam quando o build de dados já os publicou (a tabela deles no manifest);
+    // antes disso `produtos` não tem as áreas e a abertura fica sem números, não com zeros
+    const publicada = (id: IdCorredor) => CORREDORES.some((c) => c.id === id && c.tabela in manifest.tables);
     const consultas: [IdCorredor, string][] = [
       ["alimentos", sqlNumeros(`(${sqlAlimentosDe()})`, DE_PRODUTOS)],
       ["saneantes", sqlNumeros(`(${sqlSaneantesDe()})`, DE_PRODUTOS)],
       ...(cosmeticos ? [["cosmeticos", sqlNumerosCosmeticos()] as [IdCorredor, string]] : []),
+      ...(publicada("medicamentos")
+        ? [["medicamentos", sqlNumeros(`(${sqlMedicamentosDe()})`, DE_PRODUTOS)] as [IdCorredor, string]]
+        : []),
+      ...(publicada("produtos_saude")
+        ? [["produtos_saude", sqlNumeros(`(${sqlProdutosSaudeDe()})`, DE_PRODUTOS)] as [IdCorredor, string]]
+        : []),
     ];
     const totais: DoBuild["totais"] = {};
     for (const [id, sql] of consultas) {
@@ -133,11 +152,15 @@ async function ler(con: DuckDBConnection, medidas: boolean, cosmeticos: boolean)
 
   const alimentos = await linhas<Entrada["alimentos"][number]>(sqlAlimentosDe());
   const saneantes = await linhas<Entrada["saneantes"][number]>(sqlSaneantesDe());
+  // `produtos` sem as áreas novas (build de dados anterior) devolve listas vazias: as páginas ficam sem a seção
+  const medicamentos = await linhas<NonNullable<Entrada["medicamentos"]>[number]>(sqlMedicamentosDe());
+  const produtosSaude = await linhas<NonNullable<Entrada["produtosSaude"]>[number]>(sqlProdutosSaudeDe());
   // 1,19 milhão de cosméticos não cabem em páginas (nem na memória do build como objetos): cada empresa
   // lista os primeiros, liberados antes, e leva os totais para o resumo
   const cos = cosmeticos ? await linhas<Entrada["cosmeticos"][number]>(sqlCosmeticosDe()) : [];
   const cosmeticosTotais = cosmeticos ? await linhas<Entrada["cosmeticosTotais"][number]>(sqlCosmeticosTotaisDe()) : [];
-  if (!medidas) return { alimentos, saneantes, cosmeticos: cos, cosmeticosTotais, medidas: [] };
+  const base = { alimentos, saneantes, cosmeticos: cos, cosmeticosTotais, medicamentos, produtosSaude };
+  if (!medidas) return { ...base, medidas: [] };
 
   const tipos = [...CORREDOR_DO_TIPO.keys()].join(", ");
   const brutas = await linhas<{
@@ -152,10 +175,7 @@ async function ler(con: DuckDBConnection, medidas: boolean, cosmeticos: boolean)
     FROM ${MEDIDAS_BUSCA} WHERE cnpj IS NOT NULL AND tipo IN (${tipos})`,
   );
   return {
-    alimentos,
-    saneantes,
-    cosmeticos: cos,
-    cosmeticosTotais,
+    ...base,
     medidas: brutas.map((x) => ({
       corredor: CORREDOR_DO_TIPO.get(x.tipo)!,
       produto: x.produto,

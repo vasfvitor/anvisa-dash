@@ -1,0 +1,25 @@
+/* Corredor 4, remédios: paleta e a cor da placa. O material (papel e tinta) é o padrão de tokens.css. */
+/* corredor 4, medicamentos: papel lilás claro, tinta violeta, cruzes de farmácia no fundo */
+[data-corredor="medicamentos"] {
+  --bg: #f4f1f9;
+  --line: #ddd5ec;
+  --chip-bg: #e9e3f5;
+  /* 7,0:1 sobre o cartão; os links pequenos do rodapé pedem 4,5 */
+  --accent: #5b21b6;
+  --accent-fg: #f7f3fd;
+  --pop: #7c3aed;
+  --pop-suave: #ede9fe;
+  --mark: #ddd6fe;
+  --padrao: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='%237c3aed' fill-opacity='.09'%3E%3Cpath d='M20 10h6v6h6v6h-6v6h-6v-6h-6v-6h6z'/%3E%3Cpath d='M86 60h4v4h4v4h-4v4h-4v-4h-4v-4h4z'/%3E%3Cpath d='M46 92h4v4h4v4h-4v4h-4v-4h-4v-4h4z'/%3E%3Ccircle cx='100' cy='18' r='2'/%3E%3Ccircle cx='12' cy='76' r='1.6'/%3E%3C/g%3E%3C/svg%3E");
+  --padrao-tam: 120px 120px;
+}
+
+/* a placa do corredor no cabeçalho tem a cor dele em qualquer página */
+.placa[data-placa="medicamentos"] {
+  --cor: #7c3aed;
+  --cor-suave: #ede9fe;
+}
+
+[data-corredor="medicamentos"] .numeros div .icone {
+  color: var(--pop-suave);
+}

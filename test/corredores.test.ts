@@ -8,6 +8,8 @@ describe("corredores", () => {
     expect(corredorDaUrl("/").id).toBe("alimentos");
     expect(corredorDaUrl("/limpeza/").id).toBe("saneantes");
     expect(corredorDaUrl("/limpeza").id).toBe("saneantes");
+    expect(corredorDaUrl("/remedios/").id).toBe("medicamentos");
+    expect(corredorDaUrl("/dispositivos/").id).toBe("produtos_saude");
     expect(corredorDaUrl("/dicionario/").id).toBe("alimentos");
   });
   it("rota e id de cada corredor batem com o caminho", () => {

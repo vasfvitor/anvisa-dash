@@ -42,6 +42,9 @@ vi.mock("../src/lib/db", () => ({
 const { fonte: alimentos, predicado: predicadoAlimentos } = await import("../src/corredores/alimentos/fonte");
 const { fonte: saneantes, predicado: predicadoSaneantes } = await import("../src/corredores/saneantes/fonte");
 const { fonte: cosmeticos } = await import("../src/corredores/cosmeticos/fonte");
+const { fonte: medicamentos, predicado: predicadoMedicamentos } = await import("../src/corredores/medicamentos/fonte");
+const { fonte: produtosSaude, predicado: predicadoProdutosSaude } =
+  await import("../src/corredores/produtos_saude/fonte");
 const { onde } = await import("../src/lib/sql");
 
 /** SQL com cada `?` trocado pelo valor (texto entre aspas), em uma linha. */
@@ -183,11 +186,61 @@ describe("cosméticos", () => {
   });
 });
 
+describe("medicamentos", () => {
+  it("número procura em processo, no registro de 9 dígitos e nos 9 primeiros do número da caixa", () => {
+    const w = comValores(predicadoMedicamentos(numero("1862000180015")));
+    expect(w).toContain("processo = '1862000180015'");
+    expect(w).toContain("registro_produto = '1862000180015'");
+    expect(w).toContain("registro_produto = substr('1862000180015', 1, 9)");
+  });
+
+  it("texto: nome, depois princípio ativo, com o termo normalizado", async () => {
+    await medicamentos.buscar(texto("Dipirona"), filtros(), 0);
+    const sql = ultima();
+    expect(sql).toContain(
+      "CASE WHEN starts_with(busca_nome, 'dipirona') THEN 0 WHEN contains(busca_nome, 'dipirona') THEN 1",
+    );
+    expect(sql).toContain("WHEN contains(busca_principio, 'dipirona') THEN 2");
+    expect(sql).toContain("FROM med) s WHERE contains(busca, 'dipirona') AND situacao_registro = 'Ativo'");
+  });
+
+  it("id é o registro de 9 dígitos ou o id de quem não tem registro", async () => {
+    await medicamentos.porId("186200018");
+    expect(ultima()).toMatch(/WHERE id = '186200018'$/);
+    await medicamentos.porId("sem-registro-078f9930c52e");
+    expect(ultima()).toMatch(/WHERE id = 'sem-registro-078f9930c52e'$/);
+  });
+
+  it("facetas: categoria regulatória e classe terapêutica além da situação", async () => {
+    await medicamentos.facetas(texto("losartana"), filtros({ tipo: "Genérico" }));
+    const partes = ultima().split(" UNION ALL ");
+    expect(partes).toHaveLength(3);
+    expect(partes.filter((x) => x.includes("tipo_regularizacao = 'Genérico'"))).toHaveLength(2);
+  });
+});
+
+describe("produtos para saúde", () => {
+  it("número procura em processo e no registro, sem zeros à esquerda", () => {
+    const w = comValores(predicadoProdutosSaude(numero("08003400137")));
+    expect(w).toContain("processo = '08003400137'");
+    expect(w).toContain("ltrim(registro, '0') = ltrim('08003400137', '0')");
+  });
+
+  it("texto: nome, depois nome técnico", async () => {
+    await produtosSaude.buscar(texto("Sonda"), filtros({ grupo: "Classe II" }), 0);
+    const sql = ultima();
+    expect(sql).toContain("WHEN contains(busca_tecnico, 'sonda') THEN 2");
+    expect(sql).toContain("WHERE contains(busca, 'sonda') AND situacao_registro = 'Ativo' AND grupo = 'Classe II'");
+  });
+});
+
 describe("id inválido", () => {
   it("não existe em nenhum corredor e não consulta nada", async () => {
     expect(await alimentos.porId("abc")).toBeNull();
     expect(await saneantes.porId("12a")).toBeNull();
     expect(await cosmeticos.porId("x1")).toBeNull();
+    expect(await medicamentos.porId("sem-registro-xyz")).toBeNull();
+    expect(await produtosSaude.porId("10163770014x")).toBeNull();
     expect(chamadas).toHaveLength(0);
   });
 });

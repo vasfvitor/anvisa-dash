@@ -1,0 +1,25 @@
+/* Corredor 5, dispositivos médicos: paleta e a cor da placa. O material (papel e tinta) é o padrão de tokens.css. */
+/* corredor 5, produtos para saúde: papel verde-claro, tinta verde-escuro, linhas de monitor no fundo */
+[data-corredor="produtos_saude"] {
+  --bg: #eef4ef;
+  --line: #d1e2d4;
+  --chip-bg: #e1ede3;
+  /* 6,9:1 sobre o cartão; os links pequenos do rodapé pedem 4,5 */
+  --accent: #166534;
+  --accent-fg: #f2faf4;
+  --pop: #15803d;
+  --pop-suave: #dcfce7;
+  --mark: #bbf7d0;
+  --padrao: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cg fill='none' stroke='%2315803d' stroke-opacity='.12' stroke-width='1.5'%3E%3Cpath d='M0 30h18l6-12 8 24 6-16 4 4h28'/%3E%3Cpath d='M70 100h18l6-12 8 24 6-16 4 4h28'/%3E%3C/g%3E%3C/svg%3E");
+  --padrao-tam: 140px 140px;
+}
+
+/* a placa do corredor no cabeçalho tem a cor dele em qualquer página */
+.placa[data-placa="produtos_saude"] {
+  --cor: #15803d;
+  --cor-suave: #dcfce7;
+}
+
+[data-corredor="produtos_saude"] .numeros div .icone {
+  color: var(--pop-suave);
+}
