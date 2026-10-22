@@ -1,6 +1,7 @@
 // SQL das tabelas derivadas dos alimentos, sem dependências: a ilha cria a tabela no DuckDB-WASM e o build
 // (páginas de empresa) no DuckDB do Node, com a mesma definição de produto.
 import { TS } from "../../lib/consultas";
+import { sqlPalavras } from "../../lib/palavras";
 
 /**
  * Tabela principal da busca: uma linha por produto (co_seq_produto), derivada no repo `anvisa` de alimentos e
@@ -45,9 +46,10 @@ export const SQL_PRODUTOS = `CREATE OR REPLACE TABLE produtos AS
       -- só para busca e ordenação
       desde AS ordem_data,
       registros,
-      lower(strip_accents(concat_ws(' ', nome, marcas, empresa))) AS busca,
-      lower(strip_accents(nome)) AS busca_nome,
-      -- ";marca a;marca b;": casa marca inteira com ';x;' e começo de marca com ';x'
+      ${sqlPalavras("concat_ws(' ', nome, marcas, empresa)")} AS busca,
+      ${sqlPalavras("nome")} AS busca_nome,
+      ${sqlPalavras("coalesce(marcas, '')")} AS busca_marcas_palavras,
+      -- ";marca a;marca b;": a marca escolhida numa sugestão casa inteira com ';x;'
       ';' || array_to_string(list_transform(string_split(coalesce(marcas, ''), ';'),
         x -> lower(strip_accents(trim(x)))), ';') || ';' AS busca_marcas
     FROM "${TABELA}"`;

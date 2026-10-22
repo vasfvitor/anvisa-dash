@@ -153,13 +153,13 @@ describe("alimentos", () => {
     );
   });
 
-  it("texto: relevância por marca e nome antes do filtro", async () => {
+  it("texto: nome, depois as marcas, antes do filtro; a marca também por palavra", async () => {
     await alimentos.buscar(texto("Whey"), filtros({ situacao: "todos" }), 0);
     const sql = ultima();
     expect(sql).toContain(
-      "CASE WHEN contains(busca_marcas, ';' || 'whey' || ';') THEN 0 WHEN contains(busca_marcas, ';' || 'whey') THEN 1 WHEN contains(busca_nome, 'whey') THEN 2",
+      "CASE WHEN starts_with(busca_nome, ' ' || 'whey') AND contains(busca_nome, ' ' || 'whey') THEN 0 WHEN contains(busca_nome, ' ' || 'whey') THEN 1 WHEN contains(busca_marcas_palavras, ' ' || 'whey') THEN 2 ELSE 3 END",
     );
-    expect(sql).toContain("WHERE contains(busca, 'whey') ORDER BY");
+    expect(sql).toContain("WHERE (contains(busca, ' ' || 'whey')) ORDER BY");
     expect(sql).toMatch(/OFFSET 0$/);
   });
 
@@ -209,14 +209,18 @@ describe("medicamentos", () => {
     expect(w).toContain("registro_produto = substr('1862000180015', 1, 9)");
   });
 
-  it("texto: nome, depois princípio ativo, com o termo normalizado", async () => {
-    await medicamentos.buscar(texto("Dipirona"), filtros(), 0);
+  it("texto: nome, depois princípio ativo, cada palavra por começo", async () => {
+    await medicamentos.buscar(texto("Dipirona 500"), filtros(), 0);
     const sql = ultima();
     expect(sql).toContain(
-      "CASE WHEN starts_with(busca_nome, 'dipirona') THEN 0 WHEN contains(busca_nome, 'dipirona') THEN 1",
+      "CASE WHEN starts_with(busca_nome, ' ' || 'dipirona') AND contains(busca_nome, ' ' || 'dipirona') AND contains(busca_nome, ' ' || '500') THEN 0",
     );
-    expect(sql).toContain("WHEN contains(busca_principio, 'dipirona') THEN 2");
-    expect(sql).toContain("FROM med) s WHERE contains(busca, 'dipirona') AND situacao_registro = 'Ativo'");
+    expect(sql).toContain(
+      "WHEN contains(busca_principio, ' ' || 'dipirona') AND contains(busca_principio, ' ' || '500') THEN 2",
+    );
+    expect(sql).toContain(
+      "FROM med) s WHERE (contains(busca, ' ' || 'dipirona') AND contains(busca, ' ' || '500')) AND situacao_registro = 'Ativo'",
+    );
   });
 
   it("id é o registro de 9 dígitos ou o id de quem não tem registro", async () => {
@@ -244,8 +248,10 @@ describe("produtos para saúde", () => {
   it("texto: nome, depois nome técnico", async () => {
     await produtosSaude.buscar(texto("Sonda"), filtros({ grupo: "Classe II" }), 0);
     const sql = ultima();
-    expect(sql).toContain("WHEN contains(busca_tecnico, 'sonda') THEN 2");
-    expect(sql).toContain("WHERE contains(busca, 'sonda') AND situacao_registro = 'Ativo' AND grupo = 'Classe II'");
+    expect(sql).toContain("WHEN contains(busca_tecnico, ' ' || 'sonda') THEN 2");
+    expect(sql).toContain(
+      "WHERE (contains(busca, ' ' || 'sonda')) AND situacao_registro = 'Ativo' AND grupo = 'Classe II'",
+    );
   });
 });
 

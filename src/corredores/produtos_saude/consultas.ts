@@ -1,6 +1,7 @@
 // SQL da tabela derivada dos produtos para saúde, sem dependências: a ilha cria a tabela no DuckDB-WASM e o
 // build (páginas de empresa) no DuckDB do Node, com os mesmos rótulos.
 import { sqlGrupoValidade } from "../../lib/consultas";
+import { sqlPalavras } from "../../lib/palavras";
 
 /** Uma linha por registro ou cadastro, derivada no repo `anvisa` de `produtos_saude` (uma por fabricante). */
 export const TABELA = "produtos_saude_por_produto";
@@ -22,7 +23,7 @@ export const SQL_PS = `CREATE OR REPLACE TABLE ps AS
       array_to_string(fabricantes, '|') AS fabricantes,
       -- só para ordenação: sem data (os cadastros) por último
       vencimento AS ordem_data,
-      lower(strip_accents(concat_ws(' ', nome, nome_tecnico, empresa))) AS busca,
-      lower(strip_accents(nome)) AS busca_nome,
-      lower(strip_accents(nome_tecnico)) AS busca_tecnico
+      ${sqlPalavras("concat_ws(' ', nome, nome_tecnico, empresa)")} AS busca,
+      ${sqlPalavras("nome")} AS busca_nome,
+      ${sqlPalavras("coalesce(nome_tecnico, '')")} AS busca_tecnico
     FROM "${TABELA}"`;

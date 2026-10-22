@@ -1,5 +1,6 @@
 // SQL da tabela derivada dos medicamentos, sem dependências: a ilha cria a tabela no DuckDB-WASM e o build
 // (páginas de empresa) no DuckDB do Node, com os mesmos rótulos.
+import { sqlPalavras } from "../../lib/palavras";
 
 /** Uma linha por medicamento (registro de 9 dígitos), derivada no repo `anvisa` de `medicamentos`. */
 export const TABELA = "medicamentos_por_produto";
@@ -21,9 +22,9 @@ export const SQL_MED = `CREATE OR REPLACE TABLE med AS
       strftime(vencimento, '%Y-%m-%d') AS dt_vencimento,
       -- só para ordenação: sem data por último
       vencimento AS ordem_data,
-      lower(strip_accents(concat_ws(' ', nome, principio_ativo, empresa))) AS busca,
-      lower(strip_accents(nome)) AS busca_nome,
-      lower(strip_accents(coalesce(principio_ativo, ''))) AS busca_principio
+      ${sqlPalavras("concat_ws(' ', nome, principio_ativo, empresa)")} AS busca,
+      ${sqlPalavras("nome")} AS busca_nome,
+      ${sqlPalavras("coalesce(principio_ativo, '')")} AS busca_principio
     FROM "${TABELA}"`;
 
 /** Os preços de um medicamento na CMED, uma linha por apresentação; `cmed` entra na view só quando há. */

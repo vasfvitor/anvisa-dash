@@ -11,7 +11,7 @@ import Destaque from "../../components/Destaque.vue";
 import Icone from "../../components/Icone.vue";
 import ResumoAlergia from "./ResumoAlergia.vue";
 
-const props = defineProps<{ p: Produto; termo?: string | null; medidas?: number }>();
+const props = defineProps<{ p: Produto; termo?: string | readonly string[] | null; medidas?: number }>();
 const emit = defineEmits<{ abrir: [id: string] }>();
 
 const liberado = computed(() => ativo(props.p));

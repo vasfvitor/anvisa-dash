@@ -1,7 +1,8 @@
 // Leituras de um produto usadas tanto no cartão da lista quanto na página do produto.
 import { marcas } from "../../lib/format";
 import type { Produto } from "./fonte";
-import { legivel, normalizar } from "../../lib/texto";
+import { palavras } from "../../lib/palavras";
+import { legivel } from "../../lib/texto";
 
 export const ativo = (p: Produto): boolean => p.situacao_registro === "Ativo";
 
@@ -30,10 +31,12 @@ export const marcaPrincipal = (p: Produto): string => marcas(p.marcas)[0] ?? leg
  * Marcas na ordem do registro, com a que casou com a busca logo depois da primeira: o título do
  * cartão começa igual ao da página do produto e mostra por que o produto apareceu.
  */
-export function marcasParaBusca(p: Produto, termo?: string | null): string[] {
+export function marcasParaBusca(p: Produto, termo?: string | readonly string[] | null): string[] {
   const [primeira, ...resto] = marcas(p.marcas);
   if (!primeira) return [];
-  const t = termo ? normalizar(termo.trim()) : "";
-  const casou = t && !normalizar(primeira).includes(t) ? resto.find((m) => normalizar(m).includes(t)) : undefined;
+  // a marca casa quando alguma palavra buscada começa uma palavra dela (a regra da busca)
+  const ps = typeof termo === "string" ? palavras(termo) : (termo ?? []);
+  const casa = (m: string) => palavras(m).some((w) => ps.some((t) => w.startsWith(t)));
+  const casou = ps.length && !casa(primeira) ? resto.find(casa) : undefined;
   return casou ? [primeira, casou, ...resto.filter((m) => m !== casou)] : [primeira, ...resto];
 }

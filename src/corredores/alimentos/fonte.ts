@@ -6,10 +6,11 @@
 // As apresentações de um produto (página do produto) leem as tabelas crua e de detalhe, baixadas na primeira vez.
 import type { ColunasAlergia } from "./alergia";
 import { SQL_PRODUTOS, TABELA, TABELA_CRUA, TABELA_DETALHE } from "./consultas";
-import { carregar, consultar } from "../../lib/db";
+import { consultar } from "../../lib/db";
 import type { Consulta } from "../../lib/detect";
-import { ID_PRODUTO, POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../../lib/fonte";
-import { contarFacetas, derivar, gruposAtivos, onde, sugerirEm, termo, type Trecho } from "../../lib/sql";
+import { ID_PRODUTO, type Fonte } from "../../lib/fonte";
+import { fonteTabela, predicadoDe, type ConfigTabela } from "../../lib/fonteTabela";
+import type { Trecho } from "../../lib/sql";
 
 export interface Produto extends ColunasAlergia {
   co_seq_produto: number;
@@ -53,18 +54,29 @@ export interface Apresentacao {
   tem_detalhe: boolean;
 }
 
-// ---------------------------------------------------------------------------------------------
-// tabelas derivadas
-
-function produtos(): Promise<void> {
-  return derivar("produtos", () => carregar(TABELA), SQL_PRODUTOS);
-}
-
-function sugestoes(): Promise<void> {
-  return derivar(
-    "sugestoes",
-    produtos,
-    `CREATE OR REPLACE TABLE sugestoes AS
+const config: ConfigTabela<Produto> = {
+  tabela: TABELA,
+  derivada: "produtos",
+  sql: SQL_PRODUTOS,
+  colunas: `co_seq_produto, no_produto, marcas, no_razao_social_empresa, nu_cnpj_empresa, nu_processo,
+  nu_registro_notificacao_produto, ds_categoria_produto, tipo_regularizacao, situacao_registro,
+  ds_situacao_assunto_doc, ds_alegacao_funcional, dt_regularizacao, dt_publicacao, dt_situacao,
+  dt_inicio_analise, dt_vencimento_registro, n_apresentacoes,
+  gluten, lactose, contem, pode_conter, nao_contem, alergia_varia`,
+  id: { coluna: "co_seq_produto", valida: ID_PRODUTO, numerico: true },
+  // 400 processos antigos também têm 14 dígitos
+  cnpj: (v) => ({ sql: "(nu_cnpj_empresa = ? OR nu_processo = ?)", params: [v, v] }),
+  // processo (6 a 17 dígitos), registro do produto (9) ou da apresentação (13)
+  numero: (v) => ({
+    sql: "(nu_processo = ? OR nu_registro_notificacao_produto = ? OR list_contains(registros, ?))",
+    params: [v, v, v],
+  }),
+  // a marca escolhida numa sugestão casa inteira
+  marca: (t) => ({ sql: "contains(busca_marcas, ';' || ? || ';')", params: [t] }),
+  // texto: nome, depois as marcas, depois o resto (empresa)
+  secundaria: "busca_marcas_palavras",
+  ordem: "ordem_data DESC NULLS LAST, co_seq_produto",
+  sugestoes: `CREATE OR REPLACE TABLE produtos_sugestoes AS
     WITH m AS (
       SELECT trim(unnest(string_split(marcas, ';'))) AS rotulo, situacao_registro, co_seq_produto
       FROM produtos WHERE marcas IS NOT NULL
@@ -78,73 +90,13 @@ function sugestoes(): Promise<void> {
     SELECT 'empresa', any_value(no_razao_social_empresa), lower(strip_accents(any_value(no_razao_social_empresa))),
       nu_cnpj_empresa, count(*)::INTEGER, (count(*) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER
     FROM produtos GROUP BY nu_cnpj_empresa`,
-  );
-}
-
-// ---------------------------------------------------------------------------------------------
-// busca
+  cnpjDe: (p) => p.nu_cnpj_empresa,
+};
 
 /** Condição da busca para cada modo de consulta (exportada para os testes). */
-export function predicado(q: Consulta): Trecho {
-  switch (q.modo) {
-    case "cnpj":
-      // 400 processos antigos também têm 14 dígitos
-      return { sql: "(nu_cnpj_empresa = ? OR nu_processo = ?)", params: [q.valor, q.valor] };
-    case "numero":
-      // processo (6 a 17 dígitos), registro do produto (9) ou da apresentação (13)
-      return {
-        sql: "(nu_processo = ? OR nu_registro_notificacao_produto = ? OR list_contains(registros, ?))",
-        params: [q.valor, q.valor, q.valor],
-      };
-    case "marca":
-      return { sql: "contains(busca_marcas, ';' || ? || ';')", params: [termo(q)] };
-    case "texto":
-      // contains() em vez de ILIKE: sem curingas, então % e _ digitados não precisam de escape
-      return { sql: "contains(busca, ?)", params: [termo(q)] };
-    case "todos":
-      return { sql: "true", params: [] };
-  }
-}
+export const predicado = (q: Consulta): Trecho => predicadoDe(config, q);
 
-const COLUNAS = `co_seq_produto, no_produto, marcas, no_razao_social_empresa, nu_cnpj_empresa, nu_processo,
-  nu_registro_notificacao_produto, ds_categoria_produto, tipo_regularizacao, situacao_registro,
-  ds_situacao_assunto_doc, ds_alegacao_funcional, dt_regularizacao, dt_publicacao, dt_situacao,
-  dt_inicio_analise, dt_vencimento_registro, n_apresentacoes,
-  gluten, lactose, contem, pode_conter, nao_contem, alergia_varia`;
-
-async function buscar(q: Consulta, f: Filtros, pagina = 0): Promise<Produto[]> {
-  await produtos();
-  const w = onde(predicado(q), f);
-  const params = [...w.params];
-  // texto: marca exata, depois marca que começa com o termo, depois nome, depois o resto (empresa)
-  let relevancia = "0";
-  if (q.modo === "texto") {
-    const t = termo(q);
-    relevancia = `CASE WHEN contains(busca_marcas, ';' || ? || ';') THEN 0
-      WHEN contains(busca_marcas, ';' || ?) THEN 1 WHEN contains(busca_nome, ?) THEN 2 ELSE 3 END`;
-    params.unshift(t, t, t);
-  }
-  const sql = `
-    SELECT ${COLUNAS}, (count(*) OVER ())::INTEGER AS total
-    FROM (SELECT *, ${relevancia} AS relevancia FROM produtos) p
-    WHERE ${w.sql}
-    ORDER BY relevancia, situacao_registro, ordem_data DESC NULLS LAST, co_seq_produto
-    LIMIT ${POR_PAGINA} OFFSET ?`;
-  return consultar<Produto>([], sql, [...params, pagina * POR_PAGINA]);
-}
-
-async function facetas(q: Consulta, f: Filtros): Promise<Facetas> {
-  await produtos();
-  return contarFacetas("produtos", predicado(q), f);
-}
-
-async function porId(id: string): Promise<Produto | null> {
-  if (!ID_PRODUTO.test(id)) return null;
-  await produtos();
-  const sql = `SELECT ${COLUNAS}, 1 AS total FROM produtos WHERE co_seq_produto = ?`;
-  const [p] = await consultar<Produto>([], sql, [Number(id)]);
-  return p ?? null;
-}
+export const fonte: Fonte<Produto> = fonteTabela(config);
 
 /**
  * Apresentações de um produto com o detalhe (co_produto do detalhe é o co_seq_produto). As duas tabelas (uma
@@ -161,21 +113,3 @@ export async function buscarApresentacoes(id: number): Promise<Apresentacao[]> {
     ORDER BY TRY_CAST(r.nu_apresentacao_produto AS INTEGER) NULLS LAST, a.co_seq_apresentacao_produto`;
   return consultar<Apresentacao>([TABELA_CRUA, TABELA_DETALHE], sql, [id]);
 }
-
-export const fonte: Fonte<Produto> = {
-  // as sugestões são montadas no primeiro uso, para não disputar o worker com a primeira busca de um link
-  preparar: produtos,
-  buscar,
-  facetas,
-  async sugerir(texto) {
-    await sugestoes();
-    return sugerirEm("sugestoes", texto);
-  },
-  porId,
-  async grupos() {
-    await produtos();
-    return gruposAtivos("produtos");
-  },
-  idDe: (p) => String(p.co_seq_produto),
-  cnpjDe: (p) => p.nu_cnpj_empresa,
-};
