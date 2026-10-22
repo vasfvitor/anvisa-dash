@@ -6,7 +6,9 @@ CNPJ, registro, nome, marca, empresa e categoria. Site estático (Astro + uma il
 com DuckDB-WASM sobre os Parquet que o repo [`anvisa`](https://github.com/vasfvitor/anvisa-api)
 publica diariamente. Não há backend. No build, uma página estática por empresa (`/empresa/<cnpj>/`), a
 lista delas de A a Z (`/empresas/`) e o `/llms.txt` levam os dados a quem não roda JavaScript: buscadores e
-assistentes.
+assistentes. A página de cada corredor ainda traz, no HTML, uma seção "Sem JavaScript" (`SemJs.astro`,
+`lib/semjs.ts`) com a consulta DuckDB ao Parquet do build para o produto de `?p=`, que o script da página
+esconde assim que roda: um LLM ou crawler que abrir um link de produto lê onde o dado está.
 
 ## Dados
 

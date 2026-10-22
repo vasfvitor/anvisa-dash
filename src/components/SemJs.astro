@@ -1,0 +1,48 @@
+---
+// O que a página diz a quem não roda JavaScript sobre o produto de `?p=`: a página de empresa, o Parquet
+// com a consulta pronta e o llms.txt. Fica no HTML para qualquer leitor; o script inline do <head> marca
+// html[data-ilha] antes da primeira pintura, e o CSS esconde esta seção a partir daí.
+import type { Corredor } from "../corredores";
+import { TABELA_CRUA, TABELA_DETALHE } from "../corredores/alimentos/consultas";
+import { MANIFEST_URL } from "../lib/config";
+import { url } from "../lib/format";
+import { manifestDoBuild, tabelaUrl } from "../lib/manifest";
+import { apresentacoesAlimento, CONSULTAS, consultaProduto } from "../lib/semjs";
+
+interface Props {
+  corredor: Corredor;
+}
+const { corredor } = Astro.props;
+const m = await manifestDoBuild(MANIFEST_URL);
+const arquivo = (nome: string) => (nome in m.tables ? tabelaUrl(MANIFEST_URL, m, nome) : null);
+const c = CONSULTAS[corredor.id];
+const sql = consultaProduto(corredor.id, arquivo(c.tabela));
+const sqlApresentacoes =
+  corredor.id === "alimentos" && arquivo(TABELA_CRUA) && arquivo(TABELA_DETALHE)
+    ? apresentacoesAlimento(arquivo(TABELA_CRUA)!, arquivo(TABELA_DETALHE)!)
+    : null;
+---
+
+<section class="sem-js texto-corredor" aria-label="Sem JavaScript">
+  <h2>Sem JavaScript</h2>
+  <p>A busca e a página de produto rodam no navegador. Sem JavaScript, os mesmos dados estão em três lugares:</p>
+  <ol>
+    <li>
+      Na <a href={url("/empresas/")}>página da empresa</a>, HTML puro: todos os produtos dela, com situação e datas.
+    </li>
+    <li>
+      No arquivo Parquet deste build, que o <a href={MANIFEST_URL}>manifest</a> lista. A consulta abaixo devolve o
+      produto desta página: troque <code>{"<p>"}</code> {c.oQueE}, o valor depois de <code>?p=</code> na URL.
+    </li>
+    <li>
+      No <a href={url("/llms.txt")}>llms.txt</a>, com as mesmas consultas para os cinco corredores.
+    </li>
+  </ol>
+  <pre><code>{sql}</code></pre>
+  {sqlApresentacoes && (
+    <>
+      <p>As apresentações, com ingredientes e alergênicos:</p>
+      <pre><code>{sqlApresentacoes}</code></pre>
+    </>
+  )}
+</section>

@@ -435,6 +435,14 @@ a.badge:hover {
 [data-ilha="carregando"] astro-island ~ .texto-corredor {
   display: none !important;
 }
+/* a seção "Sem JavaScript" (SemJs.astro) fica no HTML para quem não roda script; com script, some */
+[data-ilha] .sem-js {
+  display: none !important;
+}
+.sem-js pre {
+  overflow-x: auto;
+  font-size: 0.85em;
+}
 /* o texto próprio da página (raiz e corredores), abaixo da busca: largura de leitura */
 .texto-corredor {
   max-width: 40rem;

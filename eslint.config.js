@@ -24,7 +24,7 @@ const modulosDoBuild = [
   "src/corredores/*/meta.ts",
   "src/corredores/*/colunas.ts",
   "src/corredores/*/consultas.ts",
-  "src/lib/{config,consultas,detect,fonte,format,manifest,marca,texto}.ts",
+  "src/lib/{config,consultas,detect,fonte,format,manifest,marca,semjs,texto}.ts",
   "src/lib/estatico/empresas.ts",
 ];
 const proibidosNoBuild = [

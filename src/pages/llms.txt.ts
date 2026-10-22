@@ -13,6 +13,7 @@ import { TABELA_MEDIDAS } from "../lib/consultas";
 import { fmtData, fmtInt } from "../lib/format";
 import { manifestDoBuild, tabelaUrl } from "../lib/manifest";
 import { DESCRICAO, NOME } from "../lib/marca";
+import { CONSULTAS, consultaProduto } from "../lib/semjs";
 
 export const GET: APIRoute = async ({ site }) => {
   const m = await manifestDoBuild(MANIFEST_URL);
@@ -55,6 +56,10 @@ ${tabelas.map((t) => `- [${t}](${arquivo(t)}): ${fmtInt(m.tables[t]!.rows)} linh
 - ${TABELA_MEDIDAS}: medidas de fiscalização (suspensão, proibição, recolhimento, interdição, apreensão, inutilização), uma linha por dossiê e produto, com acoes e atividades em lista e cnpj da empresa fiscalizada. area_codigo ${tipo("alimentos")} é alimento, ${tipo("saneantes")} é saneante, ${tipo("cosmeticos")} é cosmético, ${tipo("medicamentos")} é medicamento, ${tipo("produtos_saude")} é dispositivo médico.
 
 ## Consultas (DuckDB)
+
+Um produto pelo id da URL (\`?p=\`), a mesma consulta que a página mostra a quem não roda JavaScript; troque \`<p>\` pelo valor:
+
+${CORREDORES.map((c) => `${c.nome} (${raiz(`/${c.slug}/`)}?p=…, troque <p> ${CONSULTAS[c.id].oQueE}):\n\n\`\`\`sql\n${consultaProduto(c.id, CONSULTAS[c.id].tabela in m.tables ? arquivo(CONSULTAS[c.id].tabela) : null)}\n\`\`\``).join("\n\n")}
 
 Alimentos de uma marca, um produto por linha:
 

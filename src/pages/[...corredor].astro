@@ -1,6 +1,7 @@
 ---
 import BuscaApp from "../components/BuscaApp.vue";
 import Abertura from "../components/Abertura.astro";
+import SemJs from "../components/SemJs.astro";
 import Base from "../layouts/Base.astro";
 import { CORREDORES, type Corredor } from "../corredores";
 import TextoAlimentos from "../corredores/alimentos/Texto.astro";
@@ -56,5 +57,6 @@ const Texto = TEXTOS[corredor.id];
   <noscript>
     <p class="estado erro">A busca precisa de JavaScript: ela roda inteira no seu navegador.</p>
   </noscript>
+  <SemJs corredor={corredor} />
   <Texto />
 </Base>
