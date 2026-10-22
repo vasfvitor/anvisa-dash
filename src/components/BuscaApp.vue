@@ -219,7 +219,10 @@ const titulo = computed(() => {
     </p>
   </div>
   <div v-else-if="motor.status === 'erro'" class="estado erro" role="alert">
-    <p>Não foi possível abrir este corredor: {{ motor.erro }}</p>
+    <p>
+      Não foi possível carregar os dados de {{ corredor.nome.toLocaleLowerCase("pt-BR") }}.
+      <span class="note">({{ motor.erro }})</span>
+    </p>
     <button class="btn" type="button" @click="tentarDeNovo">Tentar de novo</button>
   </div>
 
@@ -247,7 +250,9 @@ const titulo = computed(() => {
       :tipos="corredor.tipos"
       @update:model-value="filtrar"
     />
-    <p v-if="b.erro" class="estado erro" role="alert">Erro na busca: {{ b.erro }}</p>
+    <p v-if="b.erro" class="estado erro" role="alert">
+      A busca falhou. <span class="note">({{ b.erro }})</span>
+    </p>
     <template v-else-if="b.buscada">
       <!-- h1: o da abertura some na tela de busca (componentes.css), e a página precisa de um -->
       <h1 class="resultado-titulo" aria-live="polite">

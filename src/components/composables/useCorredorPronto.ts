@@ -47,7 +47,7 @@ export function useCorredorPronto(corredor: Ref<Corredor>) {
       if (!minhaVez()) return;
       origem.value = t?.source ?? null;
       tamanho.value = t?.bytes ?? 0;
-      if (!t) throw new Error(`os dados de ${c.nome.toLowerCase()} ainda não foram publicados`);
+      if (!t) throw new Error("ainda não publicados neste build");
       await FONTES[c.id].preparar();
       if (!minhaVez()) return;
       status.value = "pronto";

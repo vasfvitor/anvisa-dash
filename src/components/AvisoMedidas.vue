@@ -33,7 +33,7 @@ onMounted(() => {
   <div v-if="doProduto.length" class="aviso perigo aviso-medidas" role="alert">
     <Icone nome="alerta" />
     <div>
-      <strong>A ANVISA tomou {{ doProduto.length === 1 ? "medida" : "medidas" }} contra este produto.</strong>
+      <strong>A ANVISA tomou {{ doProduto.length === 1 ? "uma medida" : "medidas" }} contra este produto.</strong>
       <div class="medidas-lista">
         <MedidaCartao v-for="m in doProduto" :key="m.id" :m="m" @empresa="(c: string) => emit('empresa', c)" />
       </div>

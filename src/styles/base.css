@@ -87,6 +87,11 @@ code {
   font-size: 0.88rem;
   color: var(--muted);
 }
+/* um número (processo, registro, data) no meio de texto: mono, algarismos alinhados */
+.numero {
+  font-family: var(--fonte-mono);
+  font-variant-numeric: tabular-nums;
+}
 /* cada informação numa linha própria dentro de uma célula: a página de empresa e os preços da CMED */
 .linha {
   display: block;

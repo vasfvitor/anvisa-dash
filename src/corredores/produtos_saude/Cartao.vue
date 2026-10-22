@@ -8,6 +8,7 @@ import { meta } from "./meta";
 import { validade } from "../../lib/validade";
 import { cliqueInterno, montarUrl } from "../../components/composables/useUrlState";
 import Destaque from "../../components/Destaque.vue";
+import EmpresaComMedidas from "../../components/EmpresaComMedidas.vue";
 import Icone from "../../components/Icone.vue";
 
 const props = defineProps<{ p: ProdutoSaude; termo?: string | readonly string[] | null; medidas?: number }>();
@@ -44,16 +45,14 @@ function abrir(ev: MouseEvent): void {
           ><Icone nome="gota" />{{ val.curto }}</span
         >
       </div>
-      <p
-        v-if="medidas"
-        class="aviso-curto"
-        title="Medidas de fiscalização contra a empresa, não necessariamente sobre este produto"
-      >
-        <Icone nome="alerta" /> Empresa com medidas da ANVISA ({{ medidas }})
-      </p>
+      <EmpresaComMedidas v-if="medidas" :n="medidas" />
       <p class="cartao-rodape">
-        <span>{{ cadastro ? "Cadastro" : "Registro" }} {{ p.registro }}</span>
-        <span v-if="p.processo">Processo {{ fmtProcesso(p.processo) }}</span>
+        <span
+          >{{ cadastro ? "Cadastro" : "Registro" }} <span class="numero">{{ p.registro }}</span></span
+        >
+        <span v-if="p.processo"
+          >Processo <span class="numero">{{ fmtProcesso(p.processo) }}</span></span
+        >
         <Icone nome="seta" class="seta" />
       </p>
     </a>

@@ -2,7 +2,7 @@
 import { computed, ref, shallowRef, watch } from "vue";
 import { resumoDe } from "./alergia";
 import { consenso, empresas, vazio } from "./apresentacoes";
-import { fatiar, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas, plural, url } from "../../lib/format";
+import { fatiar, fmtCnpj, fmtData, fmtInt, fmtMesAno, fmtProcesso, marcas, plural, url } from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
 import { ativo as estaAtivo, indeferido as foiIndeferido, marcaPrincipal } from "./produto";
 import { buscarApresentacoes, fonte, type Apresentacao, type Produto } from "./fonte";
@@ -248,7 +248,7 @@ const linkAnvisa = computed(() =>
 
       <section id="apresentacoes" class="secao">
         <h2>
-          <Icone nome="caixas" />Apresentações <span class="sub">{{ p.n_apresentacoes }}</span>
+          <Icone nome="caixas" />Apresentações <span class="sub">{{ fmtInt(p.n_apresentacoes) }}</span>
         </h2>
         <p v-if="!aps" class="note" role="status">Carregando apresentações…</p>
         <template v-else>

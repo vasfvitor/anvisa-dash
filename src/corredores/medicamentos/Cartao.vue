@@ -7,6 +7,7 @@ import { legivel } from "../../lib/texto";
 import { meta } from "./meta";
 import { cliqueInterno, montarUrl } from "../../components/composables/useUrlState";
 import Destaque from "../../components/Destaque.vue";
+import EmpresaComMedidas from "../../components/EmpresaComMedidas.vue";
 import Icone from "../../components/Icone.vue";
 
 const props = defineProps<{ p: Medicamento; termo?: string | readonly string[] | null; medidas?: number }>();
@@ -40,17 +41,15 @@ function abrir(ev: MouseEvent): void {
           ><Icone nome="comprimido" />{{ legivel(p.classe_terapeutica) }}</span
         >
       </div>
-      <p
-        v-if="medidas"
-        class="aviso-curto"
-        title="Medidas de fiscalização contra a empresa, não necessariamente sobre este produto"
-      >
-        <Icone nome="alerta" /> Empresa com medidas da ANVISA ({{ medidas }})
-      </p>
+      <EmpresaComMedidas v-if="medidas" :n="medidas" />
       <p class="cartao-rodape">
-        <span v-if="p.registro_produto">Registro {{ fmtRegistroMedicamento(p.registro_produto) }}</span>
+        <span v-if="p.registro_produto"
+          >Registro <span class="numero">{{ fmtRegistroMedicamento(p.registro_produto) }}</span></span
+        >
         <span v-else>Sem nº de registro na ANVISA</span>
-        <span v-if="p.processo">Processo {{ fmtProcesso(p.processo) }}</span>
+        <span v-if="p.processo"
+          >Processo <span class="numero">{{ fmtProcesso(p.processo) }}</span></span
+        >
         <Icone nome="seta" class="seta" />
       </p>
     </a>

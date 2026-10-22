@@ -104,7 +104,9 @@ function lida(c: Consulta): string {
   if (c.modo === "numero") return `${props.rotuloNumero ?? MODO_ROTULO.numero} ${fmtProcesso(c.valor)}`;
   if (c.modo === "marca") return `${MODO_ROTULO.marca} “${c.valor}”`;
   if (c.modo === "todos") return "Navegando pelo filtro escolhido";
-  return props.rotuloTexto ?? MODO_ROTULO.texto;
+  // o termo e onde ele é procurado: “whey” em nome, marca ou empresa
+  const campos = props.rotuloTexto ?? MODO_ROTULO.texto;
+  return `“${c.valor}” em ${campos.charAt(0).toLocaleLowerCase("pt-BR")}${campos.slice(1)}`;
 }
 </script>
 
@@ -153,7 +155,7 @@ function lida(c: Consulta): string {
           </span>
           <!-- sem contagem (as empresas dos cosméticos), só o nome -->
           <span v-if="s.n" class="sugestao-n">
-            {{ s.ativos ? plural(s.ativos, "ativo") : plural(s.n, "inativo") }}
+            {{ s.ativos ? plural(s.ativos, "liberado") : plural(s.n, "encerrado") }}
           </span>
         </li>
       </ul>

@@ -12,6 +12,8 @@ import { derivar, palavrasDe, predicadoPalavras, type Trecho } from "./sql";
 
 const TABELA = TABELA_MEDIDAS;
 export const MEDIDAS_POR_PAGINA = 20;
+/** O que o cartão e a página lembram ao lado do número de medidas da empresa. */
+export const SOBRE_A_EMPRESA = "Medidas contra a empresa, não necessariamente sobre este produto.";
 
 export interface Medida {
   /** dossiê e produto: a chave de um cartão */

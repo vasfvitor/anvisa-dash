@@ -1032,7 +1032,6 @@ a.badge:hover {
   border-top: 1px dashed var(--line);
   font-size: 0.78rem;
   color: var(--muted);
-  font-family: var(--fonte-mono);
 }
 .cartao-rodape .seta {
   margin-left: auto;
