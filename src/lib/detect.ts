@@ -27,11 +27,15 @@ export function soDigitos(s: string): string {
   return s.replace(/\D/g, "");
 }
 
+// o que vem antes do número no rótulo ou na caixa ("MS 1.0068.1234", "Reg. 123456789", "Processo nº 25351…")
+const PREFIXO = /^(?:(?:ms|registro|reg\.?|processo|proc\.?|n[ºo°]?\.?|cnpj)[\s:.]*)*/i;
+
 export function detectar(entrada: string): Consulta | null {
   const t = entrada.trim();
   if (!t) return null;
-  // só pontuação de documento (. / - espaço) em volta dos dígitos: "Whey 100" continua texto
-  if (/^[\d./\-\s]+$/.test(t)) {
+  // só pontuação de documento (. / - espaço) em volta dos dígitos, com ou sem o prefixo do rótulo: "Whey 100"
+  // continua texto
+  if (/^[\d./\-\s]+$/.test(t.replace(PREFIXO, ""))) {
     const d = soDigitos(t);
     if (d.length === 14) return { modo: "cnpj", valor: d };
     if (d.length >= 6 && d.length <= 17) return { modo: "numero", valor: d };

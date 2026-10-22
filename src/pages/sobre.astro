@@ -73,12 +73,17 @@ const medidas = tam(TABELA_MEDIDAS);
   <ul>
     <li>
       Um número de 14 dígitos busca o <strong>CNPJ</strong>. Outros números buscam o <strong>processo</strong>, o{" "}
-      <strong>registro</strong> e, na limpeza, o <strong>expediente</strong>. Pontuação é ignorada.
+      <strong>registro</strong> e, na limpeza, o <strong>expediente</strong>. Pontuação é ignorada, e o que vem antes no
+      rótulo também (“MS 1.0068.1234”, “Reg. 441280003”).
     </li>
-    <li>Texto busca no nome do produto, nas marcas e na empresa, sem diferenciar acentos.</li>
     <li>
-      Nos cosméticos, o texto busca pelo começo das palavras do nome, com ao menos 3 letras: “sham” acha shampoo. A
-      empresa se escolhe na sugestão, que busca pelo CNPJ.
+      Texto busca palavra por palavra, em qualquer ordem, pelo começo de cada uma: “ype detergente” acha “Detergente
+      Ypê”, “prot sol” acha protetor solar. Acentos, hífens e apóstrofos não contam (“antiqueda”, “loreal”). Procura no
+      nome do produto, nas marcas, no princípio ativo ou nome técnico, e na empresa.
+    </li>
+    <li>
+      Nos cosméticos cada palavra precisa de 3 letras (a palavra escolhe o pedaço a baixar) e a empresa se escolhe na
+      sugestão, que busca pelo CNPJ.
     </li>
     <li>Só aparecem os produtos liberados, a não ser que você mude o filtro de situação.</li>
   </ul>

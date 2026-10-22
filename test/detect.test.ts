@@ -13,6 +13,14 @@ describe("detectar", () => {
     expect(detectar("2500400401691")).toEqual({ modo: "numero", valor: "2500400401691" });
     expect(detectar("441280003")).toEqual({ modo: "numero", valor: "441280003" });
   });
+  it("o prefixo do rótulo ou da caixa não atrapalha", () => {
+    expect(detectar("MS 1.0068.1234")).toEqual({ modo: "numero", valor: "100681234" });
+    expect(detectar("Reg. 441280003")).toEqual({ modo: "numero", valor: "441280003" });
+    expect(detectar("processo nº 25351.161029/2026-55")).toEqual({ modo: "numero", valor: "25351161029202655" });
+    expect(detectar("CNPJ: 00.000.000/0554-17")).toEqual({ modo: "cnpj", valor: "00000000055417" });
+    // palavra que não é prefixo continua texto
+    expect(detectar("Whey 441280003")?.modo).toBe("texto");
+  });
   it("o resto é texto", () => {
     expect(detectar("colageno")).toEqual({ modo: "texto", valor: "colageno" });
     expect(detectar("Whey 100")).toEqual({ modo: "texto", valor: "Whey 100" });
