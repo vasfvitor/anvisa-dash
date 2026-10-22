@@ -1,4 +1,5 @@
 // SQL sem dependências, para a ilha (DuckDB-WASM) e o build (DuckDB do Node) usarem a mesma definição.
+import { sqlPalavras } from "./palavras";
 
 // datas saem como texto sem fuso: o tipo temporal do Arrow muda de unidade conforme a versão
 export const TS = (expr: string, nome: string) => `strftime(${expr}, '%Y-%m-%dT%H:%M:%S') AS ${nome}`;
@@ -22,7 +23,7 @@ export const SQL_MEDIDAS = `CREATE OR REPLACE VIEW ${MEDIDAS_BUSCA} AS
     SELECT area_codigo AS tipo, dossie, produto, empresa, cnpj, pessoa, registros, processo, risco,
       array_to_string(acoes, '|') AS acoes, array_to_string(atividades, '|') AS atividades,
       strftime(primeira, '%Y-%m-%d') AS dt_primeira, strftime(ultima, '%Y-%m-%d') AS dt_ultima,
-      lower(strip_accents(concat_ws(' ', produto, empresa))) AS busca
+      ${sqlPalavras("concat_ws(' ', produto, empresa)")} AS busca
     FROM "${TABELA_MEDIDAS}"`;
 
 /**

@@ -23,11 +23,6 @@ export async function derivar(nome: string, deps: () => Promise<void>, sql: stri
   return p;
 }
 
-/** Termo como as colunas de busca guardam: sem acento, minúsculo. */
-export function termo(q: Consulta): string {
-  return normalizar(q.valor.trim());
-}
-
 export interface Trecho {
   sql: string;
   params: Valor[];

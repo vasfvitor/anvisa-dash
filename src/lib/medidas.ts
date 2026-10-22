@@ -8,7 +8,7 @@ import { MEDIDAS_BUSCA, SQL_MEDIDAS, TABELA_MEDIDAS } from "./consultas";
 import { carregar, consultar, iniciar } from "./db";
 import type { Consulta } from "./detect";
 import { fatiar } from "./format";
-import { derivar, termo, type Trecho } from "./sql";
+import { derivar, palavrasDe, predicadoPalavras, type Trecho } from "./sql";
 
 const TABELA = TABELA_MEDIDAS;
 export const MEDIDAS_POR_PAGINA = 20;
@@ -65,7 +65,7 @@ export function predicado(q: Consulta, registros: string[] = []): Trecho | null 
     }
     case "marca":
     case "texto":
-      return { sql: "contains(busca, ?)", params: [termo(q)] };
+      return predicadoPalavras(palavrasDe(q));
     case "todos":
       return null;
   }

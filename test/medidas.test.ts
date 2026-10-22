@@ -49,7 +49,9 @@ describe("medidas", () => {
     expect(sql({ modo: "numero", valor: "341750056" })).toBe(
       "(processo = '341750056' OR list_contains(registros, '341750056'))",
     );
-    expect(sql({ modo: "texto", valor: "Água Sanitária" })).toBe("contains(busca, 'agua sanitaria')");
+    expect(sql({ modo: "texto", valor: "Água Sanitária" })).toBe(
+      "(contains(busca, ' ' || 'agua') AND contains(busca, ' ' || 'sanitaria'))",
+    );
     expect(sql({ modo: "todos", valor: "" })).toBeNull();
   });
 
@@ -71,7 +73,7 @@ describe("medidas", () => {
     await medidasPorEmpresa(6, ["29822523000103"]);
     const qs = consultas();
     expect(qs).toHaveLength(4);
-    expect(qs[0]).toContain("WHERE tipo = 3 AND contains(busca, 'biojet')");
+    expect(qs[0]).toContain("WHERE tipo = 3 AND (contains(busca, ' ' || 'biojet'))");
     expect(qs[0]).toMatch(/LIMIT 20 OFFSET 20$/);
     expect(qs[1]).toContain("WHERE tipo = 6 ORDER BY");
     expect(qs[2]).toContain("WHERE tipo = 3 AND list_contains(registros, '341750056')");
