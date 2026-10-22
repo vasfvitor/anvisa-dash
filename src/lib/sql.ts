@@ -2,7 +2,8 @@
 // facetas. Valores do usuário entram só como parâmetros; o WHERE é montado com fragmentos fixos.
 import { buildAtual, consultar, type Valor } from "./db";
 import type { Consulta } from "./detect";
-import type { Dimensao, Facetas, Filtros, Sugestao, ValorFaceta } from "./fonte";
+import { PALAVRA_MINIMA, type Dimensao, type Facetas, type Filtros, type Sugestao, type ValorFaceta } from "./fonte";
+import { palavrasDaBusca } from "./palavras";
 import { normalizar } from "./texto";
 
 const derivadas = new Map<string, Promise<void>>();
@@ -30,6 +31,37 @@ export function termo(q: Consulta): string {
 export interface Trecho {
   sql: string;
   params: Valor[];
+}
+
+/** As palavras de uma busca por texto ou marca que dá para procurar (a mesma regra em todo corredor). */
+export function palavrasDe(q: Consulta, minimo = PALAVRA_MINIMA): string[] {
+  return q.modo === "texto" || q.modo === "marca" ? palavrasDaBusca(q.valor, minimo) : [];
+}
+
+/**
+ * Cada palavra da busca começa alguma palavra de `coluna` (formato `' a b c '` de sqlPalavras), em qualquer
+ * ordem; sem palavra não há o que casar.
+ */
+export function predicadoPalavras(palavras: string[], coluna = "busca"): Trecho {
+  if (!palavras.length) return { sql: "false", params: [] };
+  return { sql: `(${palavras.map(() => `contains(${coluna}, ' ' || ?)`).join(" AND ")})`, params: palavras };
+}
+
+/**
+ * Relevância de uma busca por palavras, em quatro níveis: 0 o nome começa pela primeira palavra e tem todas;
+ * 1 o nome tem todas; 2 a coluna secundária (marcas, princípio ativo, nome técnico) tem todas; 3 o resto (a
+ * empresa). Dentro do nível, a fonte ordena por situação e data.
+ */
+export function relevanciaPalavras(palavras: string[], nome = "busca_nome", secundaria?: string): Trecho {
+  if (!palavras.length) return { sql: "0", params: [] };
+  const todas = (col: string) => palavras.map(() => `contains(${col}, ' ' || ?)`).join(" AND ");
+  const partes = [`WHEN starts_with(${nome}, ' ' || ?) AND ${todas(nome)} THEN 0`, `WHEN ${todas(nome)} THEN 1`];
+  const params: Valor[] = [palavras[0]!, ...palavras, ...palavras];
+  if (secundaria) {
+    partes.push(`WHEN ${todas(secundaria)} THEN 2`);
+    params.push(...palavras);
+  }
+  return { sql: `CASE ${partes.join(" ")} ELSE 3 END`, params };
 }
 
 /** Colunas que cada fonte expõe com os mesmos nomes na tabela derivada. */

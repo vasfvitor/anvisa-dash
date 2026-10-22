@@ -2,11 +2,11 @@
 // sem apresentações, marcas, categoria ou alergênicos. Medido em 2026-10-07: 144.384 linhas e 144.378
 // expedientes distintos (6 registros repetidos: a tabela derivada fica com um por expediente). Situação
 // e validade são independentes: há saneantes ativos com vencimento já passado e inativos com data futura.
-import { carregar, consultar } from "../../lib/db";
 import { SQL_SAN, TABELA } from "./consultas";
 import type { Consulta } from "../../lib/detect";
-import { ID_PRODUTO, POR_PAGINA, type Facetas, type Filtros, type Fonte } from "../../lib/fonte";
-import { contarFacetas, derivar, gruposAtivos, onde, sugerirEm, termo, type Trecho } from "../../lib/sql";
+import { ID_PRODUTO, type Fonte } from "../../lib/fonte";
+import { fonteTabela, predicadoDe, type ConfigTabela } from "../../lib/fonteTabela";
+import type { Trecho } from "../../lib/sql";
 
 export interface Saneante {
   /** nu_expediente: o id na URL (?p=) */
@@ -26,90 +26,32 @@ export interface Saneante {
   total: number;
 }
 
-function tabela(): Promise<void> {
-  return derivar("san", () => carregar(TABELA), SQL_SAN);
-}
-
-function sugestoes(): Promise<void> {
-  return derivar(
-    "san_sugestoes",
-    tabela,
-    `CREATE OR REPLACE TABLE san_sugestoes AS
+const config: ConfigTabela<Saneante> = {
+  tabela: TABELA,
+  derivada: "san",
+  sql: SQL_SAN,
+  colunas: `id, no_produto, nu_processo, nu_cnpj_empresa, no_razao_social_empresa, nu_registro_produto,
+  nu_expediente, situacao_registro, tipo_regularizacao, dt_vencimento, grupo`,
+  id: { coluna: "id", valida: ID_PRODUTO },
+  // 400 processos antigos também têm 14 dígitos
+  cnpj: (v) => ({ sql: "(nu_cnpj_empresa = ? OR nu_processo = ?)", params: [v, v] }),
+  // processo, registro (9 dígitos) ou expediente (9 ou 10, com zeros à esquerda que nem sempre se digita)
+  numero: (v) => ({
+    sql: "(nu_processo = ? OR nu_registro_produto = ? OR ltrim(nu_expediente, '0') = ltrim(?, '0'))",
+    params: [v, v, v],
+  }),
+  // texto: nome, depois o resto (empresa)
+  ordem: "ordem_data DESC NULLS LAST, id",
+  sugestoes: `CREATE OR REPLACE TABLE san_sugestoes AS
     SELECT 'empresa' AS tipo, any_value(no_razao_social_empresa) AS rotulo,
       lower(strip_accents(any_value(no_razao_social_empresa))) AS chave, nu_cnpj_empresa,
       count(*)::INTEGER AS n, (count(*) FILTER (WHERE situacao_registro = 'Ativo'))::INTEGER AS ativos
     FROM san GROUP BY nu_cnpj_empresa`,
-  );
-}
-
-/** Condição da busca para cada modo de consulta (exportada para os testes). */
-export function predicado(q: Consulta): Trecho {
-  switch (q.modo) {
-    case "cnpj":
-      return { sql: "(nu_cnpj_empresa = ? OR nu_processo = ?)", params: [q.valor, q.valor] };
-    case "numero":
-      // processo, registro (9 dígitos) ou expediente (9 ou 10, com zeros à esquerda que nem sempre se digita)
-      return {
-        sql: "(nu_processo = ? OR nu_registro_produto = ? OR ltrim(nu_expediente, '0') = ltrim(?, '0'))",
-        params: [q.valor, q.valor, q.valor],
-      };
-    case "marca":
-    case "texto":
-      return { sql: "contains(busca, ?)", params: [termo(q)] };
-    case "todos":
-      return { sql: "true", params: [] };
-  }
-}
-
-const COLUNAS = `id, no_produto, nu_processo, nu_cnpj_empresa, no_razao_social_empresa, nu_registro_produto,
-  nu_expediente, situacao_registro, tipo_regularizacao, dt_vencimento, grupo`;
-
-async function buscar(q: Consulta, f: Filtros, pagina = 0): Promise<Saneante[]> {
-  await tabela();
-  const w = onde(predicado(q), f);
-  const params = [...w.params];
-  // texto: nome que começa com o termo, depois nome que contém, depois o resto (empresa)
-  let relevancia = "0";
-  if (q.modo === "texto" || q.modo === "marca") {
-    const t = termo(q);
-    relevancia = "CASE WHEN starts_with(busca_nome, ?) THEN 0 WHEN contains(busca_nome, ?) THEN 1 ELSE 2 END";
-    params.unshift(t, t);
-  }
-  const sql = `
-    SELECT ${COLUNAS}, (count(*) OVER ())::INTEGER AS total
-    FROM (SELECT *, ${relevancia} AS relevancia FROM san) s
-    WHERE ${w.sql}
-    ORDER BY relevancia, situacao_registro, ordem_data DESC NULLS LAST, id
-    LIMIT ${POR_PAGINA} OFFSET ?`;
-  return consultar<Saneante>([], sql, [...params, pagina * POR_PAGINA]);
-}
-
-async function facetas(q: Consulta, f: Filtros): Promise<Facetas> {
-  await tabela();
-  return contarFacetas("san", predicado(q), f);
-}
-
-async function porId(id: string): Promise<Saneante | null> {
-  if (!ID_PRODUTO.test(id)) return null;
-  await tabela();
-  const [s] = await consultar<Saneante>([], `SELECT ${COLUNAS}, 1 AS total FROM san WHERE id = ?`, [id]);
-  return s ?? null;
-}
-
-export const fonte: Fonte<Saneante> = {
-  preparar: tabela,
-  buscar,
-  facetas,
-  async sugerir(texto) {
-    await sugestoes();
-    return sugerirEm("san_sugestoes", texto);
-  },
-  porId,
-  async grupos() {
-    await tabela();
-    return gruposAtivos("san");
-  },
-  idDe: (s) => s.id,
   cnpjDe: (s) => s.nu_cnpj_empresa,
   registroDe: (s) => s.nu_registro_produto,
 };
+
+/** Condição da busca para cada modo de consulta (exportada para os testes). */
+export const predicado = (q: Consulta): Trecho => predicadoDe(config, q);
+
+export const fonte: Fonte<Saneante> = fonteTabela(config);

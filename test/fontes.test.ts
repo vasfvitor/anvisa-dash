@@ -106,19 +106,34 @@ describe("saneantes", () => {
     );
   });
 
-  it("texto: relevância e filtro com o termo normalizado, na ordem certa", async () => {
-    await saneantes.buscar(texto("Ypê"), filtros(), 1);
+  it("texto: cada palavra por começo de palavra, em qualquer ordem; relevância antes do filtro", async () => {
+    await saneantes.buscar(texto("Ypê detergente"), filtros(), 1);
     const sql = ultima();
-    expect(sql).toContain("CASE WHEN starts_with(busca_nome, 'ype') THEN 0 WHEN contains(busca_nome, 'ype') THEN 1");
-    expect(sql).toContain("WHERE contains(busca, 'ype') AND situacao_registro = 'Ativo'");
+    expect(sql).toContain(
+      "CASE WHEN starts_with(busca_nome, ' ' || 'ype') AND contains(busca_nome, ' ' || 'ype') AND contains(busca_nome, ' ' || 'detergente') THEN 0",
+    );
+    expect(sql).toContain(
+      "WHEN contains(busca_nome, ' ' || 'ype') AND contains(busca_nome, ' ' || 'detergente') THEN 1 ELSE 3 END",
+    );
+    expect(sql).toContain(
+      "WHERE (contains(busca, ' ' || 'ype') AND contains(busca, ' ' || 'detergente')) AND situacao_registro = 'Ativo'",
+    );
     expect(sql).toMatch(/LIMIT 30 OFFSET 30$/);
+  });
+
+  it("hífen e apóstrofo não atrapalham: o composto entra junto e separado", () => {
+    expect(comValores(predicadoSaneantes(texto("L'Oréal anti-queda")))).toBe(
+      "(contains(busca, ' ' || 'loreal') AND contains(busca, ' ' || 'anti') AND contains(busca, ' ' || 'queda') AND contains(busca, ' ' || 'antiqueda'))",
+    );
+    // só palavras vazias ou de uma letra: nada casa
+    expect(comValores(predicadoSaneantes(texto("a de")))).toBe("false");
   });
 
   it("facetas: as três dimensões com os filtros certos", async () => {
     await saneantes.facetas(texto("cloro"), filtros({ grupo: "Vencida" }));
     const partes = ultima().split(" UNION ALL ");
     expect(partes).toHaveLength(3);
-    for (const parte of partes) expect(parte).toContain("contains(busca, 'cloro')");
+    for (const parte of partes) expect(parte).toContain("contains(busca, ' ' || 'cloro')");
     const grupo = partes.find((x) => x.includes("'grupo' AS dim"));
     expect(grupo).not.toContain("grupo = 'Vencida'");
     expect(partes.filter((x) => x.includes("grupo = 'Vencida'"))).toHaveLength(2);

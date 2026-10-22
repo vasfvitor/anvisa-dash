@@ -4,6 +4,12 @@ import type { Consulta } from "./detect";
 
 export const POR_PAGINA = 30;
 
+/**
+ * Letras que uma palavra da busca precisa ter para valer: as de uma letra casariam com metade da tabela. Os
+ * cosméticos pedem 3 (`palavraMinima` no meta), porque lá a palavra escolhe o arquivo a baixar.
+ */
+export const PALAVRA_MINIMA = 2;
+
 /** Ids de produto são só dígitos (co_seq_produto, nu_expediente com zeros à esquerda); outro não existe. */
 export const ID_PRODUTO = /^\d{1,20}$/;
 

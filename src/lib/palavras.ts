@@ -43,6 +43,15 @@ const COMPATIVEIS: [number, string][] = [
   [0xb3, "3"], // ³
 ];
 
+/**
+ * Expressão SQL com as palavras de `expr` numa string `' a b c '`, a coluna de busca das tabelas inteiras:
+ * `contains(col, ' ' || p)` é "alguma palavra começa com p" e `contains(col, ' ' || p || ' ')` é "a palavra
+ * p"; duas chamadas de string por linha, sem lista nem lambda (medido em 2026-10-22: o mesmo custo da frase).
+ */
+export function sqlPalavras(expr: string): string {
+  return `' ' || array_to_string(${palavrasSql(expr)}, ' ') || ' '`;
+}
+
 /** Expressão SQL com a lista das palavras de `expr` (repetidas, se houver; a ordem não importa). */
 export function palavrasSql(expr: string): string {
   let s = `regexp_replace(${expr}, '[''\\x{2019}\\x{2018}\\x{60}\\x{B4}]', '', 'g')`;

@@ -7,6 +7,7 @@ import { CORREDORES, rotaDo } from "../corredores";
 import { FONTES } from "../corredores/fontes";
 import { fmtBytes, fmtCnpj, fmtInt, plural } from "../lib/format";
 import { tituloPagina } from "../lib/marca";
+import { PALAVRA_MINIMA } from "../lib/fonte";
 import { palavrasDaBusca } from "../lib/palavras";
 import { legivel } from "../lib/texto";
 import CaixaBusca from "./CaixaBusca.vue";
@@ -130,20 +131,21 @@ const outros = computed(() => {
   }));
 });
 
-// corredor que busca por palavra (os cosméticos): sem nenhuma do tamanho mínimo não há o que procurar
+// a busca é por palavra em todo corredor: sem nenhuma do tamanho mínimo não há o que procurar; nos cosméticos
+// (índice em pedaços) também não há o que navegar sem termo
+const palavraMinima = computed(() => corredor.value.palavraMinima ?? PALAVRA_MINIMA);
 const semPalavra = computed(() => {
-  const min = corredor.value.palavraMinima;
   const q = consulta.value;
-  if (!min || !q) return false;
-  return q.modo === "todos" || ((q.modo === "texto" || q.modo === "marca") && !palavrasDaBusca(q.valor, min).length);
+  if (!q) return false;
+  if (q.modo === "todos") return corredor.value.palavraMinima !== undefined;
+  return (q.modo === "texto" || q.modo === "marca") && !palavrasDaBusca(q.valor, palavraMinima.value).length;
 });
 
-// o que os cartões destacam: a frase buscada, ou cada palavra nos corredores que buscam por palavra
+// o que os cartões destacam: cada palavra buscada, onde começa uma palavra do texto
 const termo = computed(() => {
   const q = b.buscada;
   if (!q || (q.modo !== "texto" && q.modo !== "marca")) return null;
-  const min = corredor.value.palavraMinima;
-  return min ? palavrasDaBusca(q.valor, min) : q.valor;
+  return palavrasDaBusca(q.valor, palavraMinima.value);
 });
 
 const titulo = computed(() => {
@@ -223,7 +225,7 @@ const titulo = computed(() => {
   />
 
   <p v-else-if="consulta && semPalavra" class="estado" role="status">
-    Digite ao menos {{ corredor.palavraMinima }} letras de uma palavra do nome.
+    Digite ao menos {{ palavraMinima }} letras de uma palavra do nome.
   </p>
 
   <template v-else-if="consulta">
