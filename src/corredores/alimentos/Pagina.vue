@@ -6,7 +6,7 @@ import { fatiar, fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas, plural, url }
 import { CNPJ } from "../../lib/estatico/empresas";
 import { ativo as estaAtivo, indeferido as foiIndeferido, marcaPrincipal } from "./produto";
 import { buscarApresentacoes, fonte, type Apresentacao, type Produto } from "./fonte";
-import { situacaoDe } from "../../lib/situacao";
+import { notaTipo, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 import { useCopia } from "../../components/composables/useCopia";
 import Copiar from "../../components/Copiar.vue";
@@ -354,16 +354,12 @@ const linkAnvisa = computed(() =>
           <dd>
             {{ sit.tecnico }} <span class="note">({{ sit.dica }})</span>
           </dd>
-          <dt>Tipo</dt>
+          <dt>{{ meta.rotuloTipo ?? "Tipo" }}</dt>
           <dd>
             {{ p.tipo_regularizacao }}
-            <span class="note">
-              {{
-                notificado
-                  ? "(comunicado à ANVISA; a categoria dispensa registro)"
-                  : "(registro concedido pela ANVISA após análise)"
-              }}
-            </span>
+            <span v-if="notaTipo(meta.tipos, p.tipo_regularizacao)" class="note">{{
+              notaTipo(meta.tipos, p.tipo_regularizacao)
+            }}</span>
           </dd>
           <template v-if="p.ds_situacao_assunto_doc">
             <dt>Situação da petição</dt>

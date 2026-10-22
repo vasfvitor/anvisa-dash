@@ -20,6 +20,21 @@ export const SITUACAO = {
 
 export const situacaoDe = (ativo: boolean) => SITUACAO[ativo ? "ativo" : "inativo"];
 
-/** O que quer dizer cada tipo de regularização, para o hover da faceta e dos dados técnicos. */
-export const TIPOS =
-  "Registrado: a ANVISA analisou o produto antes de liberar. Notificado: a empresa comunicou a ANVISA e pode vender sem análise prévia.";
+/** O hover da faceta e do selo de tipo: "Registrado: a ANVISA analisou… Notificado: …" (meta.tipos). */
+export const dicaTipos = (tipos: Record<string, string>): string =>
+  Object.entries(tipos)
+    .map(([valor, oracao]) => `${valor}: ${oracao}.`)
+    .join(" ");
+
+const chave = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
+
+/**
+ * A nota de "Dados técnicos" para um valor, "(oração)"; vazia quando o meta não o explica. A ANVISA escreve o
+ * mesmo valor de vários jeitos (GENÉRICO, Generico), então a comparação ignora caixa e acento.
+ */
+export function notaTipo(tipos: Record<string, string>, valor: string | null | undefined): string {
+  if (!valor) return "";
+  const k = chave(valor);
+  const achado = Object.entries(tipos).find(([v]) => chave(v) === k);
+  return achado ? `(${achado[1]})` : "";
+}

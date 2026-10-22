@@ -40,6 +40,10 @@ export const meta: Corredor = {
     "cloro",
   ],
   grupo: "Validade",
+  tipos: {
+    Registrado: "a ANVISA analisou o produto antes de liberar",
+    Notificado: "a empresa comunicou o produto à ANVISA e pode vender sem análise prévia",
+  },
   item: ["produto de limpeza", "produtos de limpeza"],
   dica: "Todo produto de limpeza vendido no Brasil precisa estar na ANVISA.",
   tipoProduto: 3,

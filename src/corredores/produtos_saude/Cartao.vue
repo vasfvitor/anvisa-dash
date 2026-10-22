@@ -2,8 +2,9 @@
 import { computed } from "vue";
 import type { ProdutoSaude } from "./fonte";
 import { fmtProcesso } from "../../lib/format";
-import { situacaoDe } from "../../lib/situacao";
+import { dicaTipos, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
+import { meta } from "./meta";
 import { validade } from "../../lib/validade";
 import { cliqueInterno, montarUrl } from "../../components/composables/useUrlState";
 import Destaque from "../../components/Destaque.vue";
@@ -35,9 +36,7 @@ function abrir(ev: MouseEvent): void {
       <p v-if="p.nome_tecnico" class="cartao-empresa"><Destaque :texto="legivel(p.nome_tecnico)" :termo="termo" /></p>
       <p class="cartao-empresa"><Destaque :texto="legivel(p.empresa, 'nome')" :termo="termo" /></p>
       <div class="alergia compacta">
-        <span class="selo" title="Cadastrado: risco I ou II, sem prazo. Registrado: risco III ou IV, com validade.">{{
-          p.tipo_regularizacao
-        }}</span>
+        <span class="selo" :title="dicaTipos(meta.tipos)">{{ p.tipo_regularizacao }}</span>
         <span v-if="p.grupo" class="selo" title="Classe de risco, de I (menor) a IV (maior)"
           ><Icone nome="pulso" />{{ p.grupo }}</span
         >

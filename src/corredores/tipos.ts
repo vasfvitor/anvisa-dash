@@ -32,6 +32,13 @@ export interface Corredor {
   atalhos?: string[];
   /** terceira faceta (além de situação e tipo): categoria nos alimentos, validade nos saneantes */
   grupo: string;
+  /** rótulo da segunda faceta e do selo do cartão quando não é "Tipo" ("Categoria" nos remédios) */
+  rotuloTipo?: string;
+  /**
+   * o que cada valor da segunda faceta quer dizer, numa oração sem ponto final: hover da faceta e do selo,
+   * nota em "Dados técnicos" (lib/situacao.ts: dicaTipos, notaTipo)
+   */
+  tipos: Record<string, string>;
   /** como chamar um item da lista: [singular, plural] */
   item: [string, string];
   /** dica quando a busca não acha nada */

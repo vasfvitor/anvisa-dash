@@ -39,6 +39,13 @@ export const meta: Corredor = {
     "fralda",
   ],
   grupo: "Validade",
+  tipos: {
+    Registrado: "a ANVISA analisou o produto antes de liberar",
+    Notificado: "a empresa comunicou o produto à ANVISA e pode vender sem análise prévia",
+    "Isento de registro": "produto de risco baixo, comunicado à ANVISA sem análise prévia",
+    Descartável:
+      "produto de higiene descartável (fralda, absorvente, cotonete), comunicado à ANVISA sem análise prévia",
+  },
   item: ["cosmético", "cosméticos"],
   dica: "Todo cosmético, perfume e produto de higiene vendido no Brasil precisa estar na ANVISA.",
   tipoProduto: 2,

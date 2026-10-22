@@ -3,7 +3,7 @@ import { computed, ref, shallowRef, watch } from "vue";
 import { fonte, type Saneante } from "./fonte";
 import { fmtCnpj, fmtData, fmtProcesso, url } from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
-import { situacaoDe } from "../../lib/situacao";
+import { notaTipo, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 import { validade } from "../../lib/validade";
 import { useCopia } from "../../components/composables/useCopia";
@@ -148,16 +148,12 @@ watch(titulo, (t) => t && emit("titulo", t));
           <dd>
             {{ sit.tecnico }} <span class="note">({{ sit.dica }})</span>
           </dd>
-          <dt>Tipo</dt>
+          <dt>{{ meta.rotuloTipo ?? "Tipo" }}</dt>
           <dd>
             {{ p.tipo_regularizacao }}
-            <span class="note">
-              {{
-                notificado
-                  ? "(comunicado à ANVISA, sem análise prévia de registro)"
-                  : "(registro concedido pela ANVISA após análise)"
-              }}
-            </span>
+            <span v-if="notaTipo(meta.tipos, p.tipo_regularizacao)" class="note">{{
+              notaTipo(meta.tipos, p.tipo_regularizacao)
+            }}</span>
           </dd>
           <template v-if="p.dt_vencimento">
             <dt>Vencimento</dt>

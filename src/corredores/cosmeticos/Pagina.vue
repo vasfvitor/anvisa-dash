@@ -3,7 +3,7 @@ import { computed, ref, shallowRef, watch } from "vue";
 import { fonte, type Cosmetico } from "./fonte";
 import { fmtCnpj, fmtData, fmtProcesso, url } from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
-import { situacaoDe } from "../../lib/situacao";
+import { notaTipo, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 import { validade } from "../../lib/validade";
 import { useCopia } from "../../components/composables/useCopia";
@@ -39,12 +39,6 @@ const sit = computed(() => situacaoDe(ativo.value));
 const registrado = computed(() => p.value?.tipo_regularizacao === "Registrado");
 const val = computed(() => (p.value ? validade(p.value.grupo, p.value.dt_vencimento, ativo.value) : null));
 const titulo = computed(() => (p.value ? legivel(p.value.no_produto, "nome") : ""));
-
-const NOTA_TIPO: Record<string, string> = {
-  Registrado: "(registro concedido pela ANVISA após análise)",
-  Notificado: "(comunicado à ANVISA, sem análise prévia de registro)",
-  "Isento de registro": "(comunicado à ANVISA, sem análise prévia de registro)",
-};
 
 // a consulta da ANVISA separa os registrados dos regularizados (notificados e isentos). Abre com o processo
 // já preenchido; a página de detalhe de cada um não foi conferida (a consulta estava fora do ar em 2026-10-09)
@@ -149,10 +143,12 @@ watch(titulo, (t) => t && emit("titulo", t));
           <dd>
             {{ sit.tecnico }} <span class="note">({{ sit.dica }})</span>
           </dd>
-          <dt>Tipo</dt>
+          <dt>{{ meta.rotuloTipo ?? "Tipo" }}</dt>
           <dd>
             {{ p.tipo_regularizacao }}
-            <span v-if="NOTA_TIPO[p.tipo_regularizacao]" class="note">{{ NOTA_TIPO[p.tipo_regularizacao] }}</span>
+            <span v-if="notaTipo(meta.tipos, p.tipo_regularizacao)" class="note">{{
+              notaTipo(meta.tipos, p.tipo_regularizacao)
+            }}</span>
           </dd>
           <template v-if="p.dt_vencimento">
             <dt>Vencimento</dt>

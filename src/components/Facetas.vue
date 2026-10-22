@@ -2,10 +2,15 @@
 import { computed, ref } from "vue";
 import { fmtInt } from "../lib/format";
 import type { Facetas, Filtros, Situacao } from "../lib/fonte";
-import { SITUACAO, TIPOS } from "../lib/situacao";
+import { dicaTipos, SITUACAO } from "../lib/situacao";
 import { legivel } from "../lib/texto";
 
-const props = defineProps<{ contagens: Facetas; rotuloGrupo: string }>();
+const props = defineProps<{
+  contagens: Facetas;
+  rotuloGrupo: string;
+  rotuloTipo?: string;
+  tipos: Record<string, string>;
+}>();
 const filtros = defineModel<Filtros>({ required: true });
 const todosGrupos = ref(false);
 
@@ -52,8 +57,8 @@ function alternar(campo: "grupo" | "tipo", valor: string): void {
         {{ s.rotulo }} <span class="chip-n">{{ fmtInt(s.n) }}</span>
       </button>
     </div>
-    <div v-if="contagens.tipo.length" class="faceta" role="group" aria-label="Tipo de regularização">
-      <span class="faceta-nome" :title="TIPOS">Tipo</span>
+    <div v-if="contagens.tipo.length" class="faceta" role="group" :aria-label="rotuloTipo ?? 'Tipo'">
+      <span class="faceta-nome" :title="dicaTipos(tipos)">{{ rotuloTipo ?? "Tipo" }}</span>
       <button
         v-for="t in contagens.tipo"
         :key="t.valor"

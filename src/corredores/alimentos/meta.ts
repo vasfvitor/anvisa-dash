@@ -23,6 +23,11 @@ export const meta: Corredor = {
     { valor: "25351.453332/2024-10", texto: "25351.453332/2024-10", dica: "processo" },
   ],
   grupo: "Categoria",
+  tipos: {
+    Registrado: "a ANVISA analisou o produto antes de liberar",
+    Notificado:
+      "a empresa comunicou o produto à ANVISA e responde pelo que declarou; a categoria dispensa análise prévia",
+  },
   item: ["produto", "produtos"],
   dica: "Arroz, pão e outros alimentos comuns não passam pela ANVISA.",
   tipoProduto: 6,

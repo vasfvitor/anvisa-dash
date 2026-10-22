@@ -2,8 +2,9 @@
 import { computed } from "vue";
 import type { Medicamento } from "./fonte";
 import { fmtProcesso, fmtRegistroMedicamento } from "../../lib/format";
-import { situacaoDe } from "../../lib/situacao";
+import { dicaTipos, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
+import { meta } from "./meta";
 import { cliqueInterno, montarUrl } from "../../components/composables/useUrlState";
 import Destaque from "../../components/Destaque.vue";
 import Icone from "../../components/Icone.vue";
@@ -34,7 +35,7 @@ function abrir(ev: MouseEvent): void {
       </p>
       <p class="cartao-empresa"><Destaque :texto="legivel(p.empresa, 'nome')" :termo="termo" /></p>
       <div class="alergia compacta">
-        <span class="selo" title="Categoria regulatória do medicamento">{{ legivel(p.tipo_regularizacao) }}</span>
+        <span class="selo" :title="dicaTipos(meta.tipos)">{{ legivel(p.tipo_regularizacao) }}</span>
         <span v-if="p.classe_terapeutica" class="selo" title="Classe terapêutica"
           ><Icone nome="comprimido" />{{ legivel(p.classe_terapeutica) }}</span
         >

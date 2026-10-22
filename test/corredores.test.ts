@@ -18,6 +18,17 @@ describe("corredores", () => {
       expect(corredorPorId(c.id)).toBe(c);
     }
   });
+  it("cada corredor explica os seus tipos numa oração curta, sem ponto final", () => {
+    for (const c of CORREDORES) {
+      const valores = Object.entries(c.tipos);
+      expect(valores.length, c.id).toBeGreaterThan(0);
+      for (const [valor, oracao] of valores) {
+        expect(valor, c.id).toMatch(/^\S/);
+        expect(oracao.length, `${c.id}: ${valor}`).toBeLessThan(120);
+        expect(oracao, `${c.id}: ${valor}`).not.toMatch(/\.$/);
+      }
+    }
+  });
   it("números e slugs únicos", () => {
     expect(new Set(CORREDORES.map((c) => c.numero)).size).toBe(CORREDORES.length);
     expect(new Set(CORREDORES.map((c) => c.slug)).size).toBe(CORREDORES.length);

@@ -243,6 +243,8 @@ const titulo = computed(() => {
       :model-value="filtros"
       :contagens="b.contagens"
       :rotulo-grupo="corredor.grupo"
+      :rotulo-tipo="corredor.rotuloTipo"
+      :tipos="corredor.tipos"
       @update:model-value="filtrar"
     />
     <p v-if="b.erro" class="estado erro" role="alert">Erro na busca: {{ b.erro }}</p>

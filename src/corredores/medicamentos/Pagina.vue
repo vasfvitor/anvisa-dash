@@ -3,7 +3,7 @@ import { computed, ref, shallowRef, watch } from "vue";
 import { fonte, precos, type Medicamento, type Preco } from "./fonte";
 import { fmtCnpj, fmtData, fmtMesAno, fmtProcesso, fmtReais, fmtRegistroMedicamento, url } from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
-import { situacaoDe } from "../../lib/situacao";
+import { notaTipo, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 import { useCopia } from "../../components/composables/useCopia";
 import Copiar from "../../components/Copiar.vue";
@@ -189,8 +189,13 @@ watch(titulo, (t) => t && emit("titulo", t));
             <dt>Classe terapêutica</dt>
             <dd>{{ legivel(p.classe_terapeutica) }}</dd>
           </template>
-          <dt>Categoria</dt>
-          <dd>{{ legivel(p.tipo_regularizacao) }}</dd>
+          <dt>{{ meta.rotuloTipo ?? "Tipo" }}</dt>
+          <dd>
+            {{ legivel(p.tipo_regularizacao) }}
+            <span v-if="notaTipo(meta.tipos, p.tipo_regularizacao)" class="note">{{
+              notaTipo(meta.tipos, p.tipo_regularizacao)
+            }}</span>
+          </dd>
           <dt>Situação</dt>
           <dd>
             {{ sit.tecnico }} <span class="note">({{ sit.dica }})</span>

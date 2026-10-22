@@ -26,6 +26,10 @@ export const meta: Corredor = {
     { valor: "10163770014", texto: "10163770014", dica: "registro" },
   ],
   grupo: "Classe de risco",
+  tipos: {
+    Cadastrado: "risco I ou II; entra sem análise prévia e não tem data de vencimento",
+    Registrado: "risco III ou IV; analisado pela ANVISA, com data de vencimento",
+  },
   item: ["dispositivo médico", "dispositivos médicos"],
   dica: "Luvas, seringas, testes rápidos, implantes e aparelhos de medir pressão são dispositivos médicos.",
   tipoProduto: 8,
