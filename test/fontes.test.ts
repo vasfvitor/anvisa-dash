@@ -121,9 +121,9 @@ describe("saneantes", () => {
     expect(sql).toMatch(/LIMIT 30 OFFSET 30$/);
   });
 
-  it("hífen e apóstrofo não atrapalham: o composto entra junto e separado", () => {
+  it("hífen e apóstrofo não atrapalham: o composto busca pelas partes", () => {
     expect(comValores(predicadoSaneantes(texto("L'Oréal anti-queda")))).toBe(
-      "(contains(busca, ' ' || 'loreal') AND contains(busca, ' ' || 'anti') AND contains(busca, ' ' || 'queda') AND contains(busca, ' ' || 'antiqueda'))",
+      "(contains(busca, ' ' || 'loreal') AND contains(busca, ' ' || 'anti') AND contains(busca, ' ' || 'queda'))",
     );
     // só palavras vazias ou de uma letra: nada casa
     expect(comValores(predicadoSaneantes(texto("a de")))).toBe("false");
@@ -248,7 +248,9 @@ describe("você quis dizer", () => {
     const sqls = chamadas.map(comValores);
     expect(sqls[0]).toContain("CREATE OR REPLACE TABLE san_palavras AS");
     expect(sqls[1]).toBe("SELECT 1 AS x FROM san_palavras WHERE starts_with(palavra, 'agua') LIMIT 1");
-    expect(sqls[2]).toContain("WHERE abs(length(palavra) - 4) <= 1 AND damerau_levenshtein(palavra, 'agua') <= 1");
+    expect(sqls[2]).toContain(
+      "WHERE left(palavra, 1) = 'a' AND abs(length(palavra) - 4) <= 1 AND damerau_levenshtein(palavra, 'agua') <= 1",
+    );
     expect(sqls[2]).toMatch(/ORDER BY damerau_levenshtein\(palavra, 'agua'\), n DESC, palavra LIMIT 1$/);
     expect(sqls).toHaveLength(3); // "agua" sem parecida já decide
   });

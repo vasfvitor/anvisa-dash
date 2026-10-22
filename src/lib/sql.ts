@@ -126,9 +126,9 @@ export function sqlPalavrasDistintas(nome: string, origem: string, coluna = "bus
 
 /**
  * "Você quis dizer": cada palavra da busca que não começa palavra alguma de `tabela` (palavra, n) é trocada
- * pela mais próxima por distância de edição (1 para até 4 letras, 2 acima; a mais frequente no empate). O
- * texto corrigido, ou null quando nada falta ou alguma palavra não tem parecida. Medido em 2026-10-22: 25 a
- * 70 ms sobre 20 a 39 mil palavras no DuckDB do Node.
+ * pela mais próxima por distância de edição (1 para até 5 letras, 2 acima; mesma letra inicial, porque o erro
+ * raramente é a primeira; a mais frequente no empate). O texto corrigido, ou null quando nada falta ou alguma
+ * palavra não tem parecida. Medido em 2026-10-22: 25 a 70 ms sobre 20 a 39 mil palavras no DuckDB do Node.
  */
 export async function corrigirEm(tabela: string, texto: string, minimo: number): Promise<string | null> {
   const palavras = palavrasDaBusca(texto, minimo);
@@ -140,13 +140,13 @@ export async function corrigirEm(tabela: string, texto: string, minimo: number):
       saida.push(p);
       continue;
     }
-    const max = p.length <= 4 ? 1 : 2;
+    const max = p.length <= 5 ? 1 : 2;
     const [c] = await consultar<{ palavra: string }>(
       [],
       `SELECT palavra FROM ${tabela}
-       WHERE abs(length(palavra) - ?) <= ? AND damerau_levenshtein(palavra, ?) <= ?
+       WHERE left(palavra, 1) = ? AND abs(length(palavra) - ?) <= ? AND damerau_levenshtein(palavra, ?) <= ?
        ORDER BY damerau_levenshtein(palavra, ?), n DESC, palavra LIMIT 1`,
-      [p.length, max, p, max, p],
+      [p[0]!, p.length, max, p, max, p],
     );
     if (!c) return null;
     saida.push(c.palavra);

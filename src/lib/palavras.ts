@@ -25,9 +25,14 @@ export function palavras(texto: string | null | undefined): string[] {
   return [...new Set([...n.split(SEPARADOR), ...compostos].filter((p) => p.length >= 2 && !VAZIA.has(p)))];
 }
 
-/** As palavras de uma busca que dá para procurar (as curtas casariam com metade da tabela). */
+/**
+ * As palavras de uma busca que dá para procurar: as curtas casariam com metade da tabela, e o composto com
+ * hífen entra só pelas partes ("anti-queda" procura anti e queda), porque os nomes o escrevem com hífen ou
+ * com espaço; quem digita "antiqueda" acha os nomes com hífen pelo composto que os dados guardam.
+ */
 export function palavrasDaBusca(texto: string, minimo: number): string[] {
-  return palavras(texto).filter((p) => p.length >= minimo);
+  const n = normalizarPalavras(texto);
+  return [...new Set(n.split(SEPARADOR).filter((p) => p.length >= minimo && !VAZIA.has(p)))];
 }
 
 // O mesmo no SQL do DuckDB, para conferir as outras palavras de uma busca sem trazer os nomes para o JS
