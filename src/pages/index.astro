@@ -1,24 +1,16 @@
 ---
-// A página inicial: os três corredores lado a lado, cada um com as próprias cores (os tokens de
+// A página inicial: os cinco corredores, um por faixa em tela larga (prateleiras: nome à esquerda, o que há
+// no meio, busca à direita) e empilhados no celular, cada um com as próprias cores (os tokens de
 // [data-corredor] valem em qualquer elemento), os totais do build e uma busca que é um formulário GET de
 // verdade: funciona sem JavaScript e abre o corredor com ?q=. Sem a ilha: a busca roda na página do corredor.
 import Base from "../layouts/Base.astro";
 import Icone from "../components/Icone.astro";
-import { CORREDORES, rotaDo, type IdCorredor } from "../corredores";
+import { CORREDORES, rotaDo } from "../corredores";
 import { totaisDoBuild } from "../lib/estatico/dados";
 import { fmtInt, url } from "../lib/format";
 import { DESCRICAO, NOME } from "../lib/marca";
 
 const totais = await totaisDoBuild();
-// o que tem em cada corredor, em vez do lead (igual nos três); medido em 2026-10-10: nos alimentos, 9.233 dos
-// cerca de 10.300 liberados são suplementos, depois alimentos infantis e dietas enterais
-const CONTEUDO: Record<IdCorredor, string> = {
-  alimentos: "Suplementos, alimentos infantis e dietas enterais.",
-  saneantes: "Água sanitária, detergente, desinfetante, inseticida.",
-  cosmeticos: "Shampoo, protetor solar, maquiagem, perfume, fralda.",
-  medicamentos: "Genéricos, similares, novos e biológicos, com o preço máximo da CMED.",
-  produtos_saude: "Termômetro, seringa, preservativo, teste rápido, implante.",
-};
 // o site em si (schema.org WebSite), só aqui
 const site = {
   "@context": "https://schema.org",
@@ -32,10 +24,6 @@ const site = {
 
 <Base title="Produtos liberados pela ANVISA" description={DESCRICAO} estruturados={[site]} inicio>
   <h1>Está liberado pela ANVISA?</h1>
-  <p class="lead">
-    Digite o nome, a marca, o CNPJ ou o número do processo que vem no rótulo. Os dados são os da própria ANVISA,
-    atualizados nos dias úteis.
-  </p>
 
   <div class="secoes">
     {CORREDORES.map((c) => {
@@ -49,12 +37,14 @@ const site = {
             <Icone nome={c.icone} />
             <a href={rotaDo(c)}>{c.nome}</a>
           </h2>
-          <p class="desc">{CONTEUDO[c.id]}</p>
-          {n && (
-            <p class="totais">
-              <strong>{fmtInt(n.ativos)}</strong> liberados · {fmtInt(n.empresas)} empresas
-            </p>
-          )}
+          <div class="texto">
+            <p class="desc">{c.lead}</p>
+            {n && (
+              <p class="totais">
+                <strong>{fmtInt(n.ativos)}</strong> liberados · {fmtInt(n.empresas)} empresas
+              </p>
+            )}
+          </div>
           <form class="busca" role="search" action={rotaDo(c)} method="get">
             <div class="busca-campo">
               <label for={`q-${c.id}`} class="sr-only">
@@ -68,7 +58,7 @@ const site = {
                 name="q"
                 autocomplete="off"
                 enterkeyhint="search"
-                placeholder="Nome ou CNPJ"
+                placeholder={c.placeholder}
               />
             </div>
             <button class="btn primary" type="submit" aria-label={`Buscar em ${c.nome}`}>
@@ -124,50 +114,20 @@ const site = {
     font-variation-settings: normal;
     font-weight: 600;
   }
+  /* título curto: os cartões são a página */
   h1 {
-    font-size: clamp(2rem, 5vw, 3rem);
-    line-height: 1.05;
-    letter-spacing: -0.03em;
-    margin: 1.2rem 0 0;
+    font-size: clamp(1.5rem, 3.2vw, 1.85rem);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin: 0.8rem 0 0;
   }
-  .lead {
-    color: var(--muted);
-  }
-  /* cinco cartões: 3 + 2 centrados em telas largas, 2 + 2 + 1 nas médias, uma coluna no celular. Doze
-     colunas porque a linha de baixo começa deslocada meia coluna; nth-child em vez de classes: com seis
-     corredores a regra vira 3 + 3 sozinha. (Antes, auto-fit deixava um buraco na segunda linha.) */
+  /* uma faixa por corredor, empilhadas; em tela larga cada faixa é uma linha de três colunas (abaixo) */
   .secoes {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 1rem;
-    margin: 2rem 0 2.5rem;
+    gap: 0.75rem;
+    margin: 1.1rem 0 2.5rem;
   }
-  .secao-inicial {
-    grid-column: span 12;
-  }
-  @media (min-width: 38rem) {
-    .secao-inicial {
-      grid-column: span 6;
-    }
-    .secao-inicial:nth-child(2n + 1):last-child {
-      grid-column: 4 / span 6;
-    }
-  }
-  @media (min-width: 56rem) {
-    .secao-inicial {
-      grid-column: span 4;
-    }
-    .secao-inicial:nth-child(2n + 1):last-child {
-      grid-column: auto / span 4;
-    }
-    .secao-inicial:nth-child(3n + 1):nth-last-child(2) {
-      grid-column: 3 / span 4;
-    }
-    .secao-inicial:nth-child(3n + 1):last-child {
-      grid-column: 5 / span 4;
-    }
-  }
-  /* cada seção com o papel, a tinta e o fundo do seu corredor */
+  /* cada faixa com o papel, a tinta e o fundo do seu corredor */
   .secao-inicial {
     display: flex;
     flex-direction: column;
@@ -186,7 +146,7 @@ const site = {
     align-items: center;
     gap: 0.45rem;
     margin: 0;
-    font-size: 1.35rem;
+    font-size: 1.25rem;
   }
   /* o número e o ícone não encolhem quando o nome quebra em duas linhas (Alimentos e suplementos) */
   .secao-inicial h2 > :not(a) {
@@ -210,12 +170,17 @@ const site = {
     font-size: 0.95rem;
     font-family: var(--fonte-mono);
   }
+  .texto {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
   .desc,
   .totais {
     margin: 0;
   }
-  .desc {
-    color: var(--muted);
+  .totais {
+    font-size: 0.95rem;
   }
   .totais strong {
     font-family: var(--fonte-titulo);
@@ -229,5 +194,35 @@ const site = {
   }
   .secao-inicial .note {
     margin: 0;
+  }
+  /* tela larga: a faixa vira uma linha (prateleira). Nome, ícone e número à esquerda numa coluna fixa, a mesma
+     em todas as faixas (cada faixa é uma grade própria), que cabe "Alimentos e suplementos" em uma linha (314 px
+     medidos em 2026-10-22); descrição e totais no meio; busca e exemplos à direita */
+  @media (min-width: 60rem) {
+    .secao-inicial {
+      display: grid;
+      grid-template-columns: 19.5rem 1fr minmax(18rem, 1.1fr);
+      grid-template-areas:
+        "titulo texto busca"
+        "titulo texto nota";
+      align-items: center;
+      column-gap: 1.25rem;
+      row-gap: 0.35rem;
+      padding: 0.9rem 1.1rem;
+    }
+    .secao-inicial h2 {
+      grid-area: titulo;
+      white-space: nowrap;
+    }
+    .texto {
+      grid-area: texto;
+    }
+    .secao-inicial .busca {
+      grid-area: busca;
+      margin: 0;
+    }
+    .secao-inicial .note {
+      grid-area: nota;
+    }
   }
 </style>
