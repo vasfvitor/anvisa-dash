@@ -125,11 +125,39 @@ const site = {
   .lead {
     color: var(--muted);
   }
+  /* cinco cartões: 3 + 2 centrados em telas largas, 2 + 2 + 1 nas médias, uma coluna no celular. Doze
+     colunas porque a linha de baixo começa deslocada meia coluna; nth-child em vez de classes: com seis
+     corredores a regra vira 3 + 3 sozinha. (Antes, auto-fit deixava um buraco na segunda linha.) */
   .secoes {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    grid-template-columns: repeat(12, 1fr);
     gap: 1rem;
     margin: 2rem 0 2.5rem;
+  }
+  .secao-inicial {
+    grid-column: span 12;
+  }
+  @media (min-width: 38rem) {
+    .secao-inicial {
+      grid-column: span 6;
+    }
+    .secao-inicial:nth-child(2n + 1):last-child {
+      grid-column: 4 / span 6;
+    }
+  }
+  @media (min-width: 56rem) {
+    .secao-inicial {
+      grid-column: span 4;
+    }
+    .secao-inicial:nth-child(2n + 1):last-child {
+      grid-column: auto / span 4;
+    }
+    .secao-inicial:nth-child(3n + 1):nth-last-child(2) {
+      grid-column: 3 / span 4;
+    }
+    .secao-inicial:nth-child(3n + 1):last-child {
+      grid-column: 5 / span 4;
+    }
   }
   /* cada seção com o papel, a tinta e o fundo do seu corredor */
   .secao-inicial {
