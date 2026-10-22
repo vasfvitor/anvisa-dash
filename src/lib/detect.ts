@@ -13,6 +13,8 @@ export interface Consulta {
   modo: Modo;
   /** só dígitos para cnpj/numero; texto aparado para o resto */
   valor: string;
+  /** texto que a pessoa quer como está, mesmo sem resultado: sem "você quis dizer" */
+  semCorrecao?: boolean;
 }
 
 export const MODO_ROTULO: Record<Modo, string> = {

@@ -1,5 +1,5 @@
 // useBusca contra uma fonte de mentira em que o teste decide quando e com o quê cada busca responde.
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { effectScope, shallowRef } from "vue";
 import { useBusca } from "../src/components/composables/useBusca";
 import type { Consulta } from "../src/lib/detect";
@@ -17,10 +17,11 @@ interface Pedido {
   falhar: (e: Error) => void;
 }
 
-function fonteFalsa() {
+function fonteFalsa(corrigir?: (texto: string) => Promise<string | null>) {
   const pedidos: Pedido[] = [];
   let facetas = 0;
   const fonte: Fonte<Linha> = {
+    ...(corrigir && { corrigir }),
     preparar: () => Promise.resolve(),
     buscar: (q, filtros, pagina) =>
       new Promise((responder, falhar) => {
@@ -50,8 +51,8 @@ afterEach(() => {
   escopo = effectScope();
 });
 
-function montar() {
-  const falsa = fonteFalsa();
+function montar(corrigir?: (texto: string) => Promise<string | null>) {
+  const falsa = fonteFalsa(corrigir);
   const b = escopo.run(() => useBusca(shallowRef<Fonte>(falsa.fonte)))!;
   return { ...falsa, b };
 }
@@ -60,6 +61,33 @@ const texto = (valor: string): Consulta => ({ modo: "texto", valor });
 const filtros = { ...FILTROS_PADRAO };
 
 describe("useBusca", () => {
+  it("sem resultado, a busca corrigida entra no lugar e diz de onde veio; insistir não corrige", async () => {
+    const { b, pedidos } = montar((t) => Promise.resolve(t === "sanitarea" ? "sanitaria" : null));
+    const p1 = b.buscar(texto("sanitarea"), filtros);
+    pedidos[0]!.responder([]);
+    await vi.waitFor(() => expect(pedidos).toHaveLength(2));
+    expect(pedidos[1]!.q).toEqual(texto("sanitaria"));
+    pedidos[1]!.responder(linhas(3, 3));
+    await p1;
+    expect(b.corrigida.value).toEqual({ de: "sanitarea", para: "sanitaria" });
+    expect(b.buscada.value).toEqual(texto("sanitaria"));
+    expect(b.total.value).toBe(3);
+    expect(b.carregando.value).toBe(false);
+    // a pessoa insiste no texto dela: nada de corrigir, e a faixa some
+    const p2 = b.buscar({ ...texto("sanitarea"), semCorrecao: true }, filtros, true);
+    pedidos[2]!.responder([]);
+    await p2;
+    expect(pedidos).toHaveLength(3);
+    expect(b.corrigida.value).toBeNull();
+    expect(b.total.value).toBe(0);
+    // sem correção possível, a lista vazia fica como está
+    const p3 = b.buscar(texto("xyzw"), filtros);
+    pedidos[3]!.responder([]);
+    await p3;
+    expect(pedidos).toHaveLength(4);
+    expect(b.corrigida.value).toBeNull();
+  });
+
   it("resposta atrasada de uma busca antiga é descartada", async () => {
     const { b, pedidos } = montar();
     const primeira = b.buscar(texto("whey"), filtros);

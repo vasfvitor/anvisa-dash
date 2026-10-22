@@ -890,8 +890,12 @@ a.badge:hover {
   font-size: 1.35rem;
   margin: 1.4rem 0 0.9rem;
 }
-.encerrados {
+.encerrados,
+.corrigida {
   margin: -0.4rem 0 1.1rem;
+}
+.corrigida {
+  color: var(--muted);
 }
 .outros-corredores {
   margin: -0.4rem 0 1.1rem;

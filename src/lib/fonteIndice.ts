@@ -11,7 +11,7 @@ import type { Consulta } from "./detect";
 import { POR_PAGINA, type Facetas, type Filtros, type Fonte, type Item } from "./fonte";
 import { arquivosDa, lerIndice, linhasDa, rota, type Indice, type Linha, type Rota } from "./indice";
 import { palavrasDaBusca } from "./palavras";
-import { contarFacetas, onde, relevanciaPalavras, sugerirEm } from "./sql";
+import { contarFacetas, corrigirEm, derivar, onde, relevanciaPalavras, sugerirEm } from "./sql";
 
 export interface ConfigIndice<P extends Item> {
   /** a tabela do manifest, com a chave `busca` */
@@ -170,6 +170,23 @@ export function fonteIndice<P extends Item>(c: ConfigIndice<P>): Fonte<P> {
     return p ?? null;
   }
 
+  /** A lista de palavras publicada com o índice (palavras.parquet), uma vez por build; false sem ela. */
+  async function palavras(): Promise<boolean> {
+    const b = await preparar();
+    if (b.ix.palavras_parquet === undefined) return false;
+    const bytes = b.ix.palavras_parquet;
+    const nome = `${c.derivada}_palavras`;
+    await derivar(
+      nome,
+      () => Promise.resolve(),
+      async () => {
+        const arquivo = await baixarArquivo(`${b.pasta}palavras.parquet`, bytes);
+        return `CREATE OR REPLACE TABLE ${nome} AS SELECT palavra, linhas AS n FROM read_parquet('${arquivo}')`;
+      },
+    );
+    return true;
+  }
+
   return {
     async preparar() {
       await preparar();
@@ -186,5 +203,8 @@ export function fonteIndice<P extends Item>(c: ConfigIndice<P>): Fonte<P> {
     idDe: (p) => String(p[c.id.coluna as keyof P]),
     cnpjDe: c.cnpjDe,
     ...(c.registroDe && { registroDe: c.registroDe }),
+    async corrigir(texto) {
+      return (await palavras()) ? corrigirEm(`${c.derivada}_palavras`, texto, c.palavraMinima) : null;
+    },
   };
 }

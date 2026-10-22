@@ -18,6 +18,8 @@ export function useBusca(fonte: Ref<Fonte>) {
   const erro = ref("");
   /** consulta que gerou a lista atual */
   const buscada = shallowRef<Consulta | null>(null);
+  /** "você quis dizer": a lista é da busca `para`, não do que a pessoa digitou (`de`) */
+  const corrigida = shallowRef<{ de: string; para: string } | null>(null);
   /** filtros que geraram a lista atual: "mostrar mais" continua com eles */
   let filtrosDaLista: Filtros | null = null;
   let pagina = 0;
@@ -38,7 +40,12 @@ export function useBusca(fonte: Ref<Fonte>) {
     );
   }
 
-  async function pedir(q: Consulta, filtros: Filtros, p: number): Promise<void> {
+  async function pedir(
+    q: Consulta,
+    filtros: Filtros,
+    p: number,
+    correcao: { de: string; para: string } | null = null,
+  ): Promise<void> {
     const minhaVez = vez.nova();
     const f = fonte.value;
     carregando.value = true;
@@ -46,7 +53,14 @@ export function useBusca(fonte: Ref<Fonte>) {
     try {
       const [linhas, cont] = await Promise.all([f.buscar(q, filtros, p), p ? contagens.value : f.facetas(q, filtros)]);
       if (!minhaVez()) return;
+      // nada achado: a busca corrigida entra no lugar, se a fonte souber corrigir e a pessoa não insistiu
+      if (!p && !linhas.length && !correcao && q.modo === "texto" && !q.semCorrecao && f.corrigir) {
+        const para = await f.corrigir(q.valor).catch(() => null);
+        if (!minhaVez()) return;
+        if (para) return await pedir({ modo: "texto", valor: para }, filtros, 0, { de: q.valor, para });
+      }
       pagina = p;
+      if (!p) corrigida.value = correcao;
       produtos.value = p ? [...produtos.value, ...linhas] : linhas;
       if (linhas.length) total.value = linhas[0]!.total;
       else if (!p) total.value = 0;
@@ -71,6 +85,7 @@ export function useBusca(fonte: Ref<Fonte>) {
     total.value = 0;
     contagens.value = SEM_FACETAS;
     buscada.value = null;
+    corrigida.value = null;
     filtrosDaLista = null;
     carregando.value = false;
     erro.value = "";
@@ -92,5 +107,5 @@ export function useBusca(fonte: Ref<Fonte>) {
 
   const temMais = computed(() => produtos.value.length < total.value && produtos.value.length >= POR_PAGINA);
 
-  return { produtos, total, contagens, extras, carregando, erro, buscada, temMais, buscar, mais, limpar };
+  return { produtos, total, contagens, extras, carregando, erro, buscada, corrigida, temMais, buscar, mais, limpar };
 }

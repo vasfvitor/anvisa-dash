@@ -4,17 +4,19 @@
 // `tipo_regularizacao`, `grupo`, `ordem_data`), e responde busca, facetas, sugestões e produto por id com o
 // SQL compartilhado de sql.ts. O que muda de corredor para corredor é a configuração abaixo; a regra de casar
 // texto (cada palavra, em qualquer ordem, por começo de palavra) é uma só.
-import { carregar, consultar } from "./db";
+import { carregar, consultar, iniciar } from "./db";
 import type { Consulta } from "./detect";
-import { POR_PAGINA, type Facetas, type Filtros, type Fonte, type Item } from "./fonte";
+import { PALAVRA_MINIMA, POR_PAGINA, type Facetas, type Filtros, type Fonte, type Item } from "./fonte";
 import {
   contarFacetas,
+  corrigirEm,
   derivar,
   gruposAtivos,
   onde,
   palavrasDe,
   predicadoPalavras,
   relevanciaPalavras,
+  sqlPalavrasDistintas,
   sugerirEm,
   type Trecho,
 } from "./sql";
@@ -25,8 +27,11 @@ export interface ConfigTabela<P extends Item> {
   tabela: string;
   /** o nome da tabela derivada no DuckDB (`<derivada>_sugestoes` é a das sugestões) */
   derivada: string;
-  /** CREATE OR REPLACE TABLE <derivada> AS … (o mesmo SQL que o build usa nas páginas de empresa) */
-  sql: string;
+  /**
+   * CREATE OR REPLACE TABLE <derivada> AS … (o mesmo SQL que o build usa nas páginas de empresa); como função,
+   * recebe os nomes das colunas que o manifest publica para a tabela (uma coluna nova entra quando existe)
+   */
+  sql: string | ((colunas: string[]) => string);
   /** a lista do SELECT que o cartão e a página leem */
   colunas: string;
   /** o id na URL (?p=): a coluna, o formato válido e se a coluna é numérica */
@@ -64,8 +69,17 @@ export function predicadoDe<P extends Item>(c: ConfigTabela<P>, q: Consulta): Tr
 }
 
 export function fonteTabela<P extends Item>(c: ConfigTabela<P>): Fonte<P> {
-  const tabela = (): Promise<void> => derivar(c.derivada, () => carregar(c.tabela), c.sql);
+  const sql = c.sql;
+  const tabela = (): Promise<void> =>
+    derivar(
+      c.derivada,
+      () => carregar(c.tabela),
+      async () =>
+        typeof sql === "string" ? sql : sql((await iniciar()).tables[c.tabela]?.columns.map((x) => x.name) ?? []),
+    );
   const sugestoes = (): Promise<void> => derivar(`${c.derivada}_sugestoes`, tabela, c.sugestoes);
+  const palavras = (): Promise<void> =>
+    derivar(`${c.derivada}_palavras`, tabela, sqlPalavrasDistintas(`${c.derivada}_palavras`, c.derivada));
 
   async function buscar(q: Consulta, f: Filtros, pagina = 0): Promise<P[]> {
     await tabela();
@@ -110,5 +124,10 @@ export function fonteTabela<P extends Item>(c: ConfigTabela<P>): Fonte<P> {
     idDe: (p) => String(p[c.id.coluna as keyof P]),
     cnpjDe: c.cnpjDe,
     ...(c.registroDe && { registroDe: c.registroDe }),
+    // a lista de palavras do corredor é montada no primeiro zero resultado
+    async corrigir(texto) {
+      await palavras();
+      return corrigirEm(`${c.derivada}_palavras`, texto, PALAVRA_MINIMA);
+    },
   };
 }

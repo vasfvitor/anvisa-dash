@@ -70,4 +70,9 @@ export interface Fonte<P extends Item = Item> {
   registroDe?(p: P): string | null;
   /** informação que chega depois da lista (o resumo de alergênicos nos alimentos) */
   complementar?(ids: string[]): Promise<Map<string, unknown>>;
+  /**
+   * "você quis dizer": o texto com cada palavra que não acha nada trocada pela mais parecida que existe no
+   * corredor; null quando não há o que corrigir, ou alguma palavra não tem parecida
+   */
+  corrigir?(texto: string): Promise<string | null>;
 }

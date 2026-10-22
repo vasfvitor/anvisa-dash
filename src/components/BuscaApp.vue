@@ -2,7 +2,7 @@
 // A ilha da busca: só liga as peças. Estado e URL em useEstado, troca de corredor e voltar/avançar em
 // useNavegacao, resultados em useBusca, motor e download em useCorredorPronto.
 import { computed, nextTick, onMounted, reactive, shallowRef, watch, watchEffect } from "vue";
-import { MODO_ROTULO } from "../lib/detect";
+import { MODO_ROTULO, type Consulta } from "../lib/detect";
 import { CORREDORES, rotaDo } from "../corredores";
 import { FONTES } from "../corredores/fontes";
 import { fmtBytes, fmtCnpj, fmtInt, plural } from "../lib/format";
@@ -55,6 +55,15 @@ function limpar(): void {
   b.limpar();
   m.limpar();
   m.limparMarcas();
+}
+
+// "você quis dizer" recusado: a busca pelo texto como a pessoa digitou, sem corrigir de novo
+function insistir(): void {
+  const c = b.corrigida;
+  if (!c) return;
+  const q: Consulta = { modo: "texto", valor: c.de, semCorrecao: true };
+  void b.buscar(q, filtros.value, true);
+  void m.buscar(corredor.value.tipoProduto, q);
 }
 
 // cada página da lista (inclusive "mostrar mais") pergunta pelas empresas que ainda não conhece
@@ -244,6 +253,10 @@ const titulo = computed(() => {
           >Nenhum {{ corredor.item[0] }} {{ encerrados ? "liberado" : "encontrado" }}</template
         >
       </h2>
+      <p v-if="b.corrigida" class="corrigida" role="status">
+        Nada para “{{ b.corrigida.de }}”. Mostrando “{{ b.corrigida.para }}”.
+        <button type="button" class="link" @click="insistir">Buscar “{{ b.corrigida.de }}” mesmo assim</button>
+      </p>
       <p v-if="encerrados" class="encerrados">
         {{ plural(encerrados, "encerrado", "encerrados") }} com esta busca.
         <a

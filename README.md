@@ -58,7 +58,10 @@ limpeza); o termo técnico fica no hover e nos dados técnicos. Cada corredor é
    só em todo corredor (`src/lib/sql.ts`): cada palavra digitada, em qualquer ordem, pelo começo de uma
    palavra do nome, das marcas, do princípio ativo ou nome técnico, ou da empresa, pela regra de
    `src/lib/palavras.ts` (sem acento, hífen nem apóstrofo); relevância em quatro níveis (nome começa pela
-   primeira palavra e tem todas, nome tem todas, a secundária tem todas, o resto);
+   primeira palavra e tem todas, nome tem todas, a secundária tem todas, o resto). Sem resultado, a fonte
+   corrige a palavra que não acha nada pela mais parecida do corredor (`corrigir`: distância de edição sobre a
+   lista de palavras distintas, `<derivada>_palavras`; nos cosméticos o `palavras.parquet` do índice) e a
+   ilha mostra a busca corrigida com aviso e o link para insistir;
 3. `Cartao.vue` e `Pagina.vue`: o cartão da lista e a página de detalhe, que entram em `telas.ts`;
    `Texto.astro`: o texto próprio do corredor abaixo da busca (o que a consulta cobre e como ler o que ela
    mostra, para quem chega pelo buscador), que entra em `TEXTOS` na página `[...corredor].astro` e, como a

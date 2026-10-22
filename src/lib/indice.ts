@@ -26,6 +26,8 @@ export interface Indice {
   /** bytes de numeros/<DDD>.parquet, pelos 3 últimos dígitos */
   numeros: Record<string, number>;
   empresas_parquet: number;
+  /** bytes de palavras.parquet (palavra, linhas), desde 2026-10-22; índices anteriores não têm */
+  palavras_parquet?: number;
 }
 
 export interface Arquivo {
