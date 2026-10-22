@@ -8,7 +8,7 @@ import { ativo as estaAtivo, indeferido as foiIndeferido, marcaPrincipal } from 
 import { buscarApresentacoes, fonte, type Apresentacao, type Produto } from "./fonte";
 import { notaTipo, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
-import { useCopia } from "../../components/composables/useCopia";
+import PaginaProduto from "../../components/PaginaProduto.vue";
 import Copiar from "../../components/Copiar.vue";
 import AvisoMedidas from "../../components/AvisoMedidas.vue";
 import Icone from "../../components/Icone.vue";
@@ -26,7 +26,6 @@ const aps = shallowRef<Apresentacao[] | null>(null);
 const carregando = ref(true);
 const erro = ref("");
 const todasMarcas = ref(false);
-const { copiado: compartilhado, compartilhar } = useCopia();
 // o BuscaApp monta esta página de novo a cada produto (:key), então ela carrega uma vez só
 async function carregar(): Promise<void> {
   try {
@@ -143,26 +142,15 @@ const linkAnvisa = computed(() =>
 </script>
 
 <template>
-  <div class="produto-pagina">
-    <nav class="produto-nav">
-      <button type="button" class="btn" @click="emit('voltar')"><Icone nome="volta" /> Voltar</button>
-      <span v-if="p" class="produto-acoes">
-        <button type="button" class="btn" @click="compartilhar">
-          <Icone :nome="compartilhado ? 'certo' : 'compartilhar'" />
-          {{ compartilhado ? "Link copiado" : "Compartilhar" }}
-        </button>
-        <a class="btn" :href="linkAnvisa" target="_blank" rel="noopener"><Icone nome="externo" /> Ver na ANVISA</a>
-      </span>
-    </nav>
-
-    <p v-if="carregando" class="estado" role="status">Carregando produto…</p>
-    <p v-else-if="erro" class="estado erro" role="alert">Não foi possível carregar o produto: {{ erro }}</p>
-    <div v-else-if="!p" class="estado">
-      <p>Produto não encontrado nos dados atuais.</p>
-      <button type="button" class="btn" @click="emit('voltar')">Voltar à busca</button>
-    </div>
-
-    <article v-else>
+  <PaginaProduto
+    :carregando="carregando"
+    :erro="erro"
+    :achou="!!p"
+    :link-anvisa="linkAnvisa"
+    :item="meta.item[0]"
+    @voltar="emit('voltar')"
+  >
+    <article v-if="p">
       <header class="produto-cabecalho" :class="{ inativo: !ativo }">
         <div class="produto-status">
           <span class="situacao grande" :class="ativo ? 'ok' : 'off'" :title="sit.dica">{{ sit.longo }}</span>
@@ -381,5 +369,5 @@ const linkAnvisa = computed(() =>
         </dl>
       </section>
     </article>
-  </div>
+  </PaginaProduto>
 </template>

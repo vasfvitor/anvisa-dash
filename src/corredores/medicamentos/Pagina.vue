@@ -5,7 +5,7 @@ import { fmtCnpj, fmtData, fmtMesAno, fmtProcesso, fmtReais, fmtRegistroMedicame
 import { CNPJ } from "../../lib/estatico/empresas";
 import { notaTipo, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
-import { useCopia } from "../../components/composables/useCopia";
+import PaginaProduto from "../../components/PaginaProduto.vue";
 import Copiar from "../../components/Copiar.vue";
 import AvisoMedidas from "../../components/AvisoMedidas.vue";
 import Icone from "../../components/Icone.vue";
@@ -19,7 +19,6 @@ const verEmpresa = (ev: MouseEvent, cnpj: string) => noApp(ev, () => emit("empre
 const p = shallowRef<Medicamento | null>(null);
 const carregando = ref(true);
 const erro = ref("");
-const { copiado: compartilhado, compartilhar } = useCopia();
 
 // os preços da CMED chegam depois do produto (outra tabela, 2 MB): a seção aparece quando há
 const lista = shallowRef<Preco[]>([]);
@@ -61,26 +60,15 @@ watch(titulo, (t) => t && emit("titulo", t));
 </script>
 
 <template>
-  <div class="produto-pagina">
-    <nav class="produto-nav">
-      <button type="button" class="btn" @click="emit('voltar')"><Icone nome="volta" /> Voltar</button>
-      <span v-if="p" class="produto-acoes">
-        <button type="button" class="btn" @click="compartilhar">
-          <Icone :nome="compartilhado ? 'certo' : 'compartilhar'" />
-          {{ compartilhado ? "Link copiado" : "Compartilhar" }}
-        </button>
-        <a class="btn" :href="linkAnvisa" target="_blank" rel="noopener"><Icone nome="externo" /> Ver na ANVISA</a>
-      </span>
-    </nav>
-
-    <p v-if="carregando" class="estado" role="status">Carregando remédio…</p>
-    <p v-else-if="erro" class="estado erro" role="alert">Não foi possível carregar o remédio: {{ erro }}</p>
-    <div v-else-if="!p" class="estado">
-      <p>Remédio não encontrado nos dados atuais.</p>
-      <button type="button" class="btn" @click="emit('voltar')">Voltar à busca</button>
-    </div>
-
-    <article v-else>
+  <PaginaProduto
+    :carregando="carregando"
+    :erro="erro"
+    :achou="!!p"
+    :link-anvisa="linkAnvisa"
+    :item="meta.item[0]"
+    @voltar="emit('voltar')"
+  >
+    <article v-if="p">
       <header class="produto-cabecalho" :class="{ inativo: !ativo }">
         <div class="produto-status">
           <span class="situacao grande" :class="ativo ? 'ok' : 'off'" :title="sit.dica">{{ sit.longo }}</span>
@@ -216,5 +204,5 @@ watch(titulo, (t) => t && emit("titulo", t));
         </p>
       </section>
     </article>
-  </div>
+  </PaginaProduto>
 </template>
