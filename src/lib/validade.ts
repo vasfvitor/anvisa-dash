@@ -17,8 +17,8 @@ const ANTIGA =
   "A data publicada já passou, mas a ANVISA ainda lista o produto como liberado. Confira na consulta oficial.";
 
 /**
- * `ativo` é a situação na ANVISA: um liberado com data passada não diz "venceu" ao lado de "Liberado" (os dois
- * juntos se contradizem); diz que a data já passou e explica no hover.
+ * `ativo` é a situação na ANVISA: um liberado com data passada diz as duas coisas no próprio selo ("Venceu em …,
+ * mas segue liberado"), porque "Venceu" sozinho ao lado de "Liberado" se contradiz e o hover não existe no celular.
  */
 export function validade(grupo: string, dt: string | null, ativo: boolean): Validade {
   const d = toDate(dt);
@@ -34,7 +34,7 @@ export function validade(grupo: string, dt: string | null, ativo: boolean): Vali
   if (grupo === "Vencida" && ativo) {
     return {
       classe: "neutro",
-      curto: `Data já passou: ${fmtData(dt)}`,
+      curto: `Venceu em ${fmtData(dt)}, mas segue liberado`,
       estranha,
       antiga: true,
       dica: ANTIGA,

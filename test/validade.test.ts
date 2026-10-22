@@ -19,7 +19,7 @@ describe("validade da liberação", () => {
   it("liberado com data passada: diz que a data já passou, sem dizer que venceu", () => {
     const v = validade("Vencida", "2009-08-03", true);
     expect(v.classe).toBe("neutro");
-    expect(v.curto).toBe("Data já passou: 03/08/2009");
+    expect(v.curto).toBe("Venceu em 03/08/2009, mas segue liberado");
     expect(v.antiga).toBe(true);
     expect(v.dica).toMatch(/ainda lista o produto como liberado/);
   });
