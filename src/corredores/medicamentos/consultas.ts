@@ -10,11 +10,14 @@ export const TABELA_CMED = "cmed";
 /**
  * med: a tabela principal com as colunas que o cartão e a página leem. `tipo_regularizacao` é a categoria
  * regulatória (Genérico, Similar, Novo…), `grupo` a classe terapêutica: as duas facetas além da situação. As
- * datas saem como texto AAAA-MM-DD (o tipo temporal do Arrow muda de unidade conforme a versão).
+ * datas saem como texto AAAA-MM-DD (o tipo temporal do Arrow muda de unidade conforme a versão). `eans` (os
+ * códigos de barras das apresentações na CMED, repo `anvisa` desde 2026-10-22) entra quando o manifest a
+ * publica (`colunas`); antes, lista vazia, e a busca por EAN só não acha.
  */
-export const SQL_MED = `CREATE OR REPLACE TABLE med AS
+export const sqlMed = (colunas: readonly string[]): string => `CREATE OR REPLACE TABLE med AS
     SELECT id, registro_produto, processo, nome, cnpj, empresa,
       categoria_regulatoria, classe_terapeutica, principio_ativo, processos, linhas,
+      ${colunas.includes("eans") ? "eans" : "CAST([] AS VARCHAR[]) AS eans"},
       CASE WHEN ativo THEN 'Ativo' ELSE 'Inativo' END AS situacao_registro,
       coalesce(categoria_regulatoria, 'Sem categoria') AS tipo_regularizacao,
       classe_terapeutica AS grupo,

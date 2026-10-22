@@ -209,6 +209,7 @@ describe("medicamentos", () => {
     expect(w).toContain("processo = '1862000180015'");
     expect(w).toContain("registro_produto = '1862000180015'");
     expect(w).toContain("registro_produto = substr('1862000180015', 1, 9)");
+    expect(w).toContain("list_contains(eans, '1862000180015')");
   });
 
   it("texto: nome, depois princípio ativo, cada palavra por começo", async () => {
@@ -237,6 +238,24 @@ describe("medicamentos", () => {
     const partes = ultima().split(" UNION ALL ");
     expect(partes).toHaveLength(3);
     expect(partes.filter((x) => x.includes("tipo_regularizacao = 'Genérico'"))).toHaveLength(2);
+  });
+});
+
+describe("você quis dizer", () => {
+  it("cada palavra sem começo de palavra no corredor procura a mais próxima; sem parecida, não corrige", async () => {
+    // o banco falso não acha nada: toda palavra falta e nenhuma tem parecida
+    expect(await saneantes.corrigir!("Água sanitarea")).toBeNull();
+    const sqls = chamadas.map(comValores);
+    expect(sqls[0]).toContain("CREATE OR REPLACE TABLE san_palavras AS");
+    expect(sqls[1]).toBe("SELECT 1 AS x FROM san_palavras WHERE starts_with(palavra, 'agua') LIMIT 1");
+    expect(sqls[2]).toContain("WHERE abs(length(palavra) - 4) <= 1 AND damerau_levenshtein(palavra, 'agua') <= 1");
+    expect(sqls[2]).toMatch(/ORDER BY damerau_levenshtein\(palavra, 'agua'\), n DESC, palavra LIMIT 1$/);
+    expect(sqls).toHaveLength(3); // "agua" sem parecida já decide
+  });
+
+  it("os cosméticos só corrigem com o palavras.parquet no índice", async () => {
+    expect(await cosmeticos.corrigir!("shampo")).toBeNull();
+    expect(chamadas.some((c) => c.sql.includes("cos_palavras"))).toBe(false);
   });
 });
 

@@ -3,7 +3,7 @@
 // 3.627 sem número de registro na origem (id começa com "sem-registro-"). Situação e vencimento são
 // independentes: há registros ativos com vencimento passado.
 import { carregar, consultar } from "../../lib/db";
-import { SQL_MED, SQL_PRECOS, TABELA, TABELA_CMED } from "./consultas";
+import { SQL_PRECOS, sqlMed, TABELA, TABELA_CMED } from "./consultas";
 import type { Consulta } from "../../lib/detect";
 import type { Fonte } from "../../lib/fonte";
 import { fonteTabela, predicadoDe, type ConfigTabela } from "../../lib/fonteTabela";
@@ -58,15 +58,16 @@ export const ID_MEDICAMENTO = /^(\d{1,11}|sem-registro-[0-9a-f]{12})$/;
 const config: ConfigTabela<Medicamento> = {
   tabela: TABELA,
   derivada: "med",
-  sql: SQL_MED,
+  sql: sqlMed,
   colunas: `id, registro_produto, processo, nome, cnpj, empresa, categoria_regulatoria, classe_terapeutica,
   principio_ativo, processos, linhas, situacao_registro, tipo_regularizacao, desde, dt_vencimento, grupo`,
   id: { coluna: "id", valida: ID_MEDICAMENTO },
   cnpj: (v) => ({ sql: "(cnpj = ? OR processo = ?)", params: [v, v] }),
-  // processo, registro de 9 dígitos, ou o número da caixa (13 dígitos: os 9 primeiros são o produto)
+  // processo, registro de 9 dígitos, o número da caixa (13 dígitos: os 9 primeiros são o produto) ou o código
+  // de barras (EAN) de uma apresentação na CMED
   numero: (v) => ({
-    sql: "(processo = ? OR registro_produto = ? OR registro_produto = substr(?, 1, 9))",
-    params: [v, v, v],
+    sql: "(processo = ? OR registro_produto = ? OR registro_produto = substr(?, 1, 9) OR list_contains(eans, ?))",
+    params: [v, v, v, v],
   }),
   // texto: nome, depois o princípio ativo, depois o resto (empresa)
   secundaria: "busca_principio",

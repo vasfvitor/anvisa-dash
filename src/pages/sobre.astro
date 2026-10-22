@@ -85,6 +85,11 @@ const medidas = tam(TABELA_MEDIDAS);
       Nos cosméticos cada palavra precisa de 3 letras (a palavra escolhe o pedaço a baixar) e a empresa se escolhe na
       sugestão, que busca pelo CNPJ.
     </li>
+    <li>Nos remédios, o código de barras da caixa (EAN) acha o produto pela lista da CMED.</li>
+    <li>
+      Sem resultado, a busca troca a palavra errada pela mais parecida que existe no corredor (“sanitarea” vira
+      “sanitária”) e avisa; dá para insistir no que você digitou.
+    </li>
     <li>Só aparecem os produtos liberados, a não ser que você mude o filtro de situação.</li>
   </ul>
 
