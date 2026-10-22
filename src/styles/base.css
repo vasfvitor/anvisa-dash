@@ -6,7 +6,8 @@
 html {
   font: 16.5px/1.55 var(--fonte-texto);
   -webkit-text-size-adjust: 100%;
-  /* âncoras (#tabela no dicionário) e foco param abaixo do cabeçalho fixo (67 px; 101 px no celular) */
+  /* âncoras (#tabela no dicionário) e foco param abaixo do cabeçalho fixo (67 px; 101 px com as placas na
+     segunda linha, até 60rem: celular.css) */
   scroll-padding-top: 5rem;
 }
 body {

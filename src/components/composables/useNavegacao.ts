@@ -22,6 +22,12 @@ function marcarPlacas(id: string): void {
     if (a.dataset.corredorLink === id) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   }
+  // nas telas médias e no celular as placas são uma faixa rolável: a atual entra à vista
+  const nav = document.querySelector(".corredores");
+  const atual = nav?.querySelector("[aria-current]");
+  if (nav && atual && nav.scrollWidth > nav.clientWidth) {
+    atual.scrollIntoView({ block: "nearest", inline: "center" });
+  }
 }
 
 /**

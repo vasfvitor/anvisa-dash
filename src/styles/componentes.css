@@ -113,7 +113,7 @@ header.site .nav-site a[aria-current="page"] {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.3rem 0.8rem 0.3rem 0.35rem;
+  padding: 0.3rem 0.35rem;
   border: 2px solid var(--fg);
   border-radius: 12px;
   background: var(--card);
@@ -173,6 +173,23 @@ header.site .nav-site a[aria-current="page"] {
 .placa .curto {
   display: none;
 }
+/* numa linha, as placas são compactas (número e ícone) e só a atual leva o nome: cinco com nome somam
+   1.062 px para os ~690 que sobram ao lado do logo e do menu (medido em 2026-10-22). As outras guardam o
+   nome para o leitor de tela (a receita de .sr-only) e o mostram na etiqueta do hover. Abaixo de 60rem as
+   placas descem para a segunda linha com o nome curto (celular.css). */
+@media (min-width: 60.01rem) {
+  .placa:not([aria-current]) .placa-nome {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .placa[aria-current="page"] {
+    padding-right: 0.8rem;
+  }
+}
 .placa:hover {
   background: var(--cor-suave);
   transform: translate(-2px, -2px) rotate(-1.5deg);
@@ -194,7 +211,7 @@ header.site .nav-site a[aria-current="page"] {
 .placa[aria-current="page"] .icone {
   color: #fff;
 }
-/* o nome técnico, como etiqueta de preço que aparece pendurada embaixo da placa */
+/* o nome e o termo técnico, como etiqueta de preço que aparece pendurada embaixo da placa */
 .placa-tec {
   position: absolute;
   top: calc(100% + 0.45rem);
@@ -211,6 +228,9 @@ header.site .nav-site a[aria-current="page"] {
   transition:
     opacity 0.15s,
     transform 0.25s var(--mola);
+}
+.placa-tec strong {
+  font-weight: 800;
 }
 .placa-tec em {
   font-style: normal;

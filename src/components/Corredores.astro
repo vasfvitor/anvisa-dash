@@ -26,11 +26,25 @@ const { atual } = Astro.props;
         <span class="longo">{c.nome}</span>
         <span class="curto">{c.curto}</span>
       </span>
-      {c.tecnico && (
-        <span class="placa-tec" aria-hidden="true">
-          na ANVISA: <em>{c.tecnico}</em>
-        </span>
-      )}
+      <span class="placa-tec" aria-hidden="true">
+        <strong>{c.nome}</strong>
+        {c.tecnico && (
+          <>
+            {" · na ANVISA: "}
+            <em>{c.tecnico}</em>
+          </>
+        )}
+      </span>
     </a>
   ))}
 </nav>
+<script is:inline>
+  // nas telas médias e no celular as placas são uma faixa rolável: a atual entra à vista antes da ilha subir
+  {
+    const nav = document.querySelector(".corredores");
+    const atual = nav && nav.querySelector("[aria-current]");
+    if (atual && nav.scrollWidth > nav.clientWidth) {
+      atual.scrollIntoView({ block: "nearest", inline: "center", behavior: "instant" });
+    }
+  }
+</script>

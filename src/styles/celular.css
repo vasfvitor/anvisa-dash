@@ -1,8 +1,8 @@
 /* Ajustes para telas estreitas. Antes dos corredores: as regras de [data-corredor] ganham por especificidade. */
-/* ---------------------------------------------------------------- celular */
-@media (max-width: 40rem) {
+/* ------------------------------------------------- telas médias: as placas descem para a segunda linha */
+@media (max-width: 60rem) {
   html {
-    font-size: 16px;
+    /* âncoras e foco param abaixo do cabeçalho de duas linhas (101 px) */
     scroll-padding-top: 7rem;
   }
   main {
@@ -13,18 +13,24 @@
     padding: 0.6rem 1rem 0.7rem;
     flex-wrap: wrap;
   }
-  header.site .nav-site {
-    gap: 0.75rem;
-  }
-  /* três placas cabem em 390 px sem o ícone e mais justas (medido em 2026-10-09: com ícone, 466 px de 358) */
+  /* as cinco placas com o nome curto e sem ícone somam 565 px (medido em 2026-10-22): cabem a partir de
+     ~600 px de tela; abaixo disso a faixa rola de lado, como as facetas, e a placa atual entra à vista
+     (Corredores.astro, useNavegacao.ts) */
   .corredores {
     order: 3;
     width: 100%;
     gap: 0.4rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -1rem;
+    padding: 0.1rem 1rem;
+  }
+  .corredores::-webkit-scrollbar {
+    display: none;
   }
   .placa {
-    flex: 1;
-    justify-content: center;
+    flex: none;
     gap: 0.25rem;
     padding: 0.3rem 0.45rem 0.3rem 0.25rem;
     font-size: 0.85rem;
@@ -44,6 +50,20 @@
   }
   .placa-tec {
     display: none;
+  }
+}
+
+/* ---------------------------------------------------------------- celular */
+@media (max-width: 40rem) {
+  html {
+    font-size: 16px;
+  }
+  header.site .nav-site {
+    gap: 0.75rem;
+  }
+  /* sem barra de rolagem, o esmaecido na borda direita é o que diz que há mais placas ao lado */
+  .corredores {
+    mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
   }
   .logo {
     font-size: 1.4rem;
@@ -115,18 +135,5 @@
   th,
   td {
     padding: 0.4rem 0.4rem;
-  }
-}
-
-/* celular estreito (360 e 320 px): só a placa atual leva o nome; as outras ficam com número e ícone */
-@media (max-width: 23rem) {
-  .placa:not([aria-current]) {
-    flex: 0 0 auto;
-  }
-  .placa:not([aria-current]) .placa-nome {
-    display: none;
-  }
-  .placa:not([aria-current]) .icone {
-    display: inline;
   }
 }
