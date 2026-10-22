@@ -15,6 +15,8 @@ export const SITUACAO = {
     faceta: "Encerrados",
     tecnico: "Inativo",
     dica: "Regularização inativa na ANVISA: cancelada, vencida ou encerrada pela empresa",
+    /** a primeira frase do aviso na página do produto; cada corredor diz depois onde procurar a versão nova */
+    aviso: "A ANVISA não lista mais este produto como liberado.",
   },
 } as const;
 

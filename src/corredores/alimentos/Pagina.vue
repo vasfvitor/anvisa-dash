@@ -6,7 +6,8 @@ import { fatiar, fmtCnpj, fmtData, fmtInt, fmtMesAno, fmtProcesso, marcas, plura
 import { CNPJ } from "../../lib/estatico/empresas";
 import { ativo as estaAtivo, indeferido as foiIndeferido, marcaPrincipal } from "./produto";
 import { buscarApresentacoes, fonte, type Apresentacao, type Produto } from "./fonte";
-import { notaTipo, situacaoDe } from "../../lib/situacao";
+// SITUACAO aqui é o campo da apresentação; a situação na ANVISA entra como ESTADO
+import { notaTipo, SITUACAO as ESTADO, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 import PaginaProduto from "../../components/PaginaProduto.vue";
 import Copiar from "../../components/Copiar.vue";
@@ -83,7 +84,7 @@ interface DefCampo {
 }
 const CAMPOS: DefCampo[] = [
   { campo: "ds_forma_fisica", rotulo: "Forma física", fmt: minusculo, curto: true, naFicha: true },
-  { campo: "validade", rotulo: "Validade", fmt: minusculo, curto: true, naFicha: true },
+  { campo: "validade", rotulo: "Prazo de validade", fmt: minusculo, curto: true, naFicha: true },
   { campo: "grupos_populacionais", rotulo: "Público indicado", fmt: lista, curto: true, naFicha: true },
   { campo: "vias_administracao", rotulo: "Via de uso", fmt: lista, curto: true, naFicha: true },
   { campo: "tipo_embalagens", rotulo: "Embalagem", fmt: nivel, curto: true, naFicha: true },
@@ -125,7 +126,7 @@ const datas = computed(() =>
   p.value
     ? (
         [
-          ["Regularização", p.value.dt_regularizacao],
+          ["Liberação", p.value.dt_regularizacao],
           ["Publicação", p.value.dt_publicacao],
           ["Início da análise", p.value.dt_inicio_analise],
           ["Situação atual desde", p.value.dt_situacao],
@@ -154,11 +155,13 @@ const linkAnvisa = computed(() =>
       <header class="produto-cabecalho" :class="{ inativo: !ativo }">
         <div class="produto-status">
           <span class="situacao grande" :class="ativo ? 'ok' : 'off'" :title="sit.dica">{{ sit.longo }}</span>
-          <span class="mono">
+          <span class="produto-tipo">
             {{ p.tipo_regularizacao
-            }}<template v-if="p.dt_regularizacao"> em {{ fmtData(p.dt_regularizacao) }}</template>
+            }}<template v-if="p.dt_regularizacao">
+              em <span class="numero">{{ fmtData(p.dt_regularizacao) }}</span></template
+            >
             <template v-if="!notificado && p.dt_vencimento_registro">
-              · válido até {{ fmtMesAno(p.dt_vencimento_registro) }}</template
+              · liberado até <span class="numero">{{ fmtMesAno(p.dt_vencimento_registro) }}</span></template
             >
           </span>
         </div>
@@ -207,7 +210,10 @@ const linkAnvisa = computed(() =>
       </div>
       <div v-else-if="!ativo" class="aviso" role="note">
         <Icone nome="alerta" />
-        <div><strong>Liberação encerrada.</strong> Se ainda está à venda, procure a versão nova pela marca.</div>
+        <div>
+          <strong>Liberação encerrada.</strong> {{ ESTADO.inativo.aviso }} Se ainda está à venda, procure a versão nova
+          pela marca.
+        </div>
       </div>
 
       <section v-if="resumo?.temDados || (resumo && ativo)" class="secao">
@@ -330,7 +336,10 @@ const linkAnvisa = computed(() =>
             <dt>{{ notificado ? "Nº da notificação" : "Nº do registro" }}</dt>
             <dd>
               {{ p.nu_registro_notificacao_produto }}
-              <Copiar :valor="p.nu_registro_notificacao_produto" rotulo="número da regularização" />
+              <Copiar
+                :valor="p.nu_registro_notificacao_produto"
+                :rotulo="notificado ? 'nº da notificação' : 'nº do registro'"
+              />
             </dd>
           </template>
           <dt>Empresa</dt>
@@ -361,7 +370,9 @@ const linkAnvisa = computed(() =>
             <dt>Vencimento</dt>
             <dd>
               {{ fmtMesAno(p.dt_vencimento_registro) }}
-              <span v-if="notificado" class="note">(data padrão de todas as notificações nos dados da ANVISA)</span>
+              <span class="note"
+                >(a ANVISA publica só mês e ano{{ notificado ? "; data padrão de todas as notificações" : "" }})</span
+              >
             </dd>
           </template>
           <dt>Código do produto</dt>

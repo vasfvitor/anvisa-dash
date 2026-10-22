@@ -1286,7 +1286,7 @@ a.badge:hover {
   align-items: center;
   font-size: 0.9rem;
 }
-.produto-status .mono {
+.produto-status .produto-tipo {
   color: var(--muted);
 }
 .produto-empresa {

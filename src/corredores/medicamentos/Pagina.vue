@@ -3,7 +3,7 @@ import { computed, ref, shallowRef, watch } from "vue";
 import { fonte, precos, type Medicamento, type Preco } from "./fonte";
 import { fmtCnpj, fmtData, fmtMesAno, fmtProcesso, fmtReais, fmtRegistroMedicamento, url } from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
-import { notaTipo, situacaoDe } from "../../lib/situacao";
+import { notaTipo, SITUACAO, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 import PaginaProduto from "../../components/PaginaProduto.vue";
 import Copiar from "../../components/Copiar.vue";
@@ -72,7 +72,7 @@ watch(titulo, (t) => t && emit("titulo", t));
       <header class="produto-cabecalho" :class="{ inativo: !ativo }">
         <div class="produto-status">
           <span class="situacao grande" :class="ativo ? 'ok' : 'off'" :title="sit.dica">{{ sit.longo }}</span>
-          <span class="mono">{{ legivel(p.tipo_regularizacao) }} · medicamento</span>
+          <span class="produto-tipo">{{ legivel(p.tipo_regularizacao) }} · {{ meta.item[0] }}</span>
         </div>
         <h1>{{ titulo }}</h1>
         <p v-if="p.principio_ativo" class="lead">{{ p.principio_ativo }}</p>
@@ -96,15 +96,15 @@ watch(titulo, (t) => t && emit("titulo", t));
       <div v-if="!ativo" class="aviso" role="note">
         <Icone nome="alerta" />
         <div>
-          <strong>Registro inativo.</strong> A ANVISA não lista mais este registro como ativo: cancelado, vencido ou
-          encerrado pela empresa. Se ainda está à venda, procure o registro novo pelo nome ou pelo princípio ativo.
+          <strong>Liberação encerrada.</strong> {{ SITUACAO.inativo.aviso }} Se ainda está à venda, procure a versão
+          nova pelo nome ou pelo princípio ativo.
         </div>
       </div>
       <div v-else-if="vencido" class="aviso" role="note">
         <Icone nome="alerta" />
         <div>
           <strong>A data de vencimento já passou</strong> ({{ fmtMesAno(p.dt_vencimento) }}), mas a ANVISA ainda lista o
-          registro como ativo. Confira na consulta oficial.
+          remédio como liberado. Confira na consulta oficial.
         </div>
       </div>
 
@@ -140,8 +140,8 @@ watch(titulo, (t) => t && emit("titulo", t));
           </table>
         </div>
         <p class="note">
-          Preço liberado (regime "Liberado") não tem teto de PMC, só monitoramento. Apresentação de uso restrito a
-          hospitais não tem PMC.
+          Apresentação com preço livre (regime “Liberado” na lista da CMED) não tem teto de PMC, só monitoramento.
+          Apresentação de uso restrito a hospitais não tem PMC.
         </p>
       </section>
 
@@ -194,7 +194,7 @@ watch(titulo, (t) => t && emit("titulo", t));
           </template>
           <template v-if="p.dt_vencimento">
             <dt>Vencimento</dt>
-            <dd>{{ fmtMesAno(p.dt_vencimento) }} <span class="note">(a ANVISA publica mês e ano)</span></dd>
+            <dd>{{ fmtMesAno(p.dt_vencimento) }} <span class="note">(a ANVISA publica só mês e ano)</span></dd>
           </template>
         </dl>
         <p>

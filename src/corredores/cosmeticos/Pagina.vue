@@ -3,7 +3,7 @@ import { computed, ref, shallowRef, watch } from "vue";
 import { fonte, type Cosmetico } from "./fonte";
 import { fmtCnpj, fmtData, fmtProcesso, url } from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
-import { notaTipo, situacaoDe } from "../../lib/situacao";
+import { notaTipo, SITUACAO, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 import { validade } from "../../lib/validade";
 import PaginaProduto from "../../components/PaginaProduto.vue";
@@ -63,7 +63,7 @@ watch(titulo, (t) => t && emit("titulo", t));
       <header class="produto-cabecalho" :class="{ inativo: !ativo }">
         <div class="produto-status">
           <span class="situacao grande" :class="ativo ? 'ok' : 'off'" :title="sit.dica">{{ sit.longo }}</span>
-          <span class="mono">{{ p.tipo_regularizacao }} · cosmético</span>
+          <span class="produto-tipo">{{ p.tipo_regularizacao }} · {{ meta.item[0] }}</span>
         </div>
         <h1>{{ titulo }}</h1>
         <p class="produto-empresa">
@@ -93,7 +93,8 @@ watch(titulo, (t) => t && emit("titulo", t));
       <div v-if="!ativo" class="aviso" role="note">
         <Icone nome="alerta" />
         <div>
-          <strong>Liberação encerrada.</strong> Se ainda está à venda, procure a versão nova pelo nome ou pela empresa.
+          <strong>Liberação encerrada.</strong> {{ SITUACAO.inativo.aviso }} Se ainda está à venda, procure a versão
+          nova pelo nome ou pela empresa.
         </div>
       </div>
 
@@ -105,9 +106,7 @@ watch(titulo, (t) => t && emit("titulo", t));
           >
         </div>
         <p v-if="val.estranha" class="note">Data como publicada pela ANVISA.</p>
-        <p v-if="val.antiga" class="note">
-          A data já passou, mas a ANVISA ainda lista o produto como liberado. Confira na consulta oficial.
-        </p>
+        <p v-if="val.antiga" class="note">{{ val.dica }}</p>
       </section>
 
       <section class="secao tecnico">
@@ -126,7 +125,9 @@ watch(titulo, (t) => t && emit("titulo", t));
             <Copiar :valor="p.nu_cnpj_empresa" rotulo="CNPJ" />
           </dd>
           <dt>Categoria</dt>
-          <dd>Cosmético, perfume ou produto de higiene pessoal</dd>
+          <dd>
+            {{ meta.nome }} <span class="note">(na ANVISA: {{ meta.tecnico }})</span>
+          </dd>
           <dt>Situação</dt>
           <dd>
             {{ sit.tecnico }} <span class="note">({{ sit.dica }})</span>

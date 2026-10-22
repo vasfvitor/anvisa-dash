@@ -3,7 +3,7 @@ import { computed, ref, shallowRef, watch } from "vue";
 import { fonte, type ProdutoSaude } from "./fonte";
 import { fatiar, fmtCnpj, fmtData, fmtProcesso, url } from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
-import { notaTipo, situacaoDe } from "../../lib/situacao";
+import { notaTipo, SITUACAO, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 import { validade } from "../../lib/validade";
 import PaginaProduto from "../../components/PaginaProduto.vue";
@@ -60,7 +60,9 @@ watch(titulo, (t) => t && emit("titulo", t));
       <header class="produto-cabecalho" :class="{ inativo: !ativo }">
         <div class="produto-status">
           <span class="situacao grande" :class="ativo ? 'ok' : 'off'" :title="sit.dica">{{ sit.longo }}</span>
-          <span class="mono">{{ p.tipo_regularizacao }} · dispositivo médico{{ p.grupo ? ` · ${p.grupo}` : "" }}</span>
+          <span class="produto-tipo"
+            >{{ p.tipo_regularizacao }} · {{ meta.item[0] }}{{ p.grupo ? ` · ${p.grupo}` : "" }}</span
+          >
         </div>
         <h1>{{ titulo }}</h1>
         <p v-if="p.nome_tecnico" class="lead">{{ legivel(p.nome_tecnico) }}</p>
@@ -88,8 +90,8 @@ watch(titulo, (t) => t && emit("titulo", t));
       <div v-if="!ativo" class="aviso" role="note">
         <Icone nome="alerta" />
         <div>
-          <strong>Registro vencido.</strong> A validade já tinha passado quando a ANVISA publicou os dados. Se ainda
-          está à venda, procure o registro novo pelo nome ou pela empresa.
+          <strong>Liberação encerrada.</strong> {{ SITUACAO.inativo.aviso }} Se ainda está à venda, procure a versão
+          nova pelo nome ou pela empresa.
         </div>
       </div>
 
@@ -100,13 +102,11 @@ watch(titulo, (t) => t && emit("titulo", t));
             ><Icone nome="gota" />{{ val.curto }}</span
           >
         </div>
-        <p v-if="val.antiga" class="note">
-          A data já passou, mas a ANVISA ainda lista o registro como vigente. Confira na consulta oficial.
-        </p>
+        <p v-if="val.antiga" class="note">{{ val.dica }}</p>
       </section>
       <section v-else class="secao">
         <h2><Icone nome="gota" />Até quando vale</h2>
-        <p>Cadastro não tem prazo de validade: vale enquanto a ANVISA o mantiver vigente.</p>
+        <p>Cadastro não tem data de vencimento: vale enquanto a ANVISA o mantiver liberado.</p>
       </section>
 
       <section v-if="fabricantes.length" class="secao">
@@ -115,7 +115,7 @@ watch(titulo, (t) => t && emit("titulo", t));
           <li v-for="f in fabricantes" :key="f">{{ legivel(f, "nome") }}</li>
         </ul>
         <p class="note">
-          Quem responde pelo produto no Brasil é a empresa detentora do registro; o fabricante pode ser outro.
+          Quem responde pelo produto no Brasil é a empresa responsável pelo registro; o fabricante pode ser outro.
         </p>
       </section>
 
@@ -150,15 +150,14 @@ watch(titulo, (t) => t && emit("titulo", t));
           </dd>
           <dt>Situação</dt>
           <dd>
-            {{ sit.tecnico }}
-            <span class="note">({{ cadastro ? "cadastro vigente" : sit.dica }})</span>
+            {{ sit.tecnico }} <span class="note">({{ sit.dica }})</span>
           </dd>
           <template v-if="p.publicacao">
             <dt>Publicação</dt>
             <dd>{{ fmtData(p.publicacao) }}</dd>
           </template>
           <template v-if="p.dt_vencimento">
-            <dt>Validade</dt>
+            <dt>Vencimento</dt>
             <dd>{{ fmtData(p.dt_vencimento) }}</dd>
           </template>
         </dl>
