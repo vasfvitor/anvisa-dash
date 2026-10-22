@@ -87,6 +87,11 @@ code {
   font-size: 0.88rem;
   color: var(--muted);
 }
+/* nota em parágrafo é texto corrido (várias frases): tinta cheia; a nota em span (ao lado de um valor) segue cinza */
+p.note {
+  color: var(--fg);
+  font-size: 0.92rem;
+}
 /* um número (processo, registro, data) no meio de texto: mono, algarismos alinhados */
 .numero {
   font-family: var(--fonte-mono);

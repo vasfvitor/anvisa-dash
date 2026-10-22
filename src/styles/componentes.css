@@ -221,7 +221,7 @@ header.site .nav-site a[aria-current="page"] {
   border-radius: 6px;
   background: var(--fg);
   color: var(--bg);
-  font: 600 0.72rem/1.2 var(--fonte-mono);
+  font: 600 0.78rem/1.2 var(--fonte-mono);
   pointer-events: none;
   opacity: 0;
   transform: translate(-50%, -0.3rem) rotate(0deg);
@@ -230,7 +230,7 @@ header.site .nav-site a[aria-current="page"] {
     transform 0.25s var(--mola);
 }
 .placa-tec strong {
-  font-weight: 800;
+  font-weight: 700;
 }
 .placa-tec em {
   font-style: normal;
@@ -297,9 +297,9 @@ footer.site {
   border-bottom: 0;
 }
 .rotulo-rodape dt {
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   letter-spacing: 0.06em;
   padding-top: 0.1rem;
 }
@@ -398,8 +398,8 @@ td {
   vertical-align: top;
 }
 th {
-  font-weight: 800;
-  font-size: 0.72rem;
+  font-weight: 700;
+  font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   border-bottom: 3px solid var(--fg);
@@ -417,7 +417,7 @@ th {
   color: var(--chip-fg);
   border-radius: 2rem;
   padding: 0.1rem 0.6rem;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   text-decoration: none;
   font-family: var(--fonte-mono);
 }
@@ -477,7 +477,7 @@ a.badge:hover {
 .hero .lead {
   position: relative;
   z-index: 1;
-  color: var(--muted);
+  color: var(--fg);
   margin: 1rem 0 0;
   max-width: 36rem;
 }
@@ -733,11 +733,11 @@ a.badge:hover {
 .sugestao-nome small {
   display: block;
   font-weight: 400;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--muted);
 }
 .sugestao-n {
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   color: var(--muted);
   white-space: nowrap;
   font-family: var(--fonte-mono);
@@ -866,7 +866,7 @@ a.badge:hover {
 .chip-n {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
-  font-size: 0.78em;
+  font-size: 0.92em;
   font-family: var(--fonte-mono);
   font-weight: 500;
 }
@@ -885,8 +885,8 @@ a.badge:hover {
   align-items: center;
 }
 .faceta-nome {
-  font-size: 0.7rem;
-  font-weight: 800;
+  font-size: 0.78rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--muted);
@@ -904,8 +904,9 @@ a.badge:hover {
 .corrigida {
   margin: -0.4rem 0 1.1rem;
 }
+/* muda o sentido da lista: tinta cheia */
 .corrigida {
-  color: var(--muted);
+  color: var(--fg);
 }
 .outros-corredores {
   margin: -0.4rem 0 1.1rem;
@@ -1030,7 +1031,7 @@ a.badge:hover {
   margin: 0.75rem 0 0;
   padding-top: 0.6rem;
   border-top: 1px dashed var(--line);
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   color: var(--muted);
 }
 .cartao-rodape .seta {
@@ -1051,8 +1052,8 @@ a.badge:hover {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: 0.78rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   border-radius: 6px 2rem 2rem 6px;
@@ -1076,7 +1077,7 @@ a.badge:hover {
   color: var(--muted);
 }
 .situacao.grande {
-  font-size: 0.8rem;
+  font-size: 0.88rem;
   padding: 0.3rem 0.85rem 0.3rem 0.6rem;
 }
 .selos-validade {
@@ -1087,7 +1088,7 @@ a.badge:hover {
   align-items: center;
   gap: 0.35rem;
   margin: 0.55rem 0 0;
-  font-size: 0.82rem;
+  font-size: 0.86rem;
   color: var(--off);
   font-weight: 700;
 }
@@ -1103,7 +1104,7 @@ a.badge:hover {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 700;
   border-radius: 7px;
   padding: 0.14rem 0.5rem;
@@ -1148,7 +1149,7 @@ a.badge:hover {
 }
 /* a lista usa .ficha; aqui só o rótulo em negrito e na cor do risco */
 .alergia.completa dt {
-  font-weight: 800;
+  font-weight: 700;
   color: var(--fg);
 }
 .alergia.completa dt.perigo {
@@ -1212,7 +1213,7 @@ a.badge:hover {
 }
 .numeros dt {
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   position: relative;
 }
 .numeros div:nth-child(1) dd {
@@ -1331,6 +1332,12 @@ a.badge:hover {
   padding: 1.1rem 1.25rem 1.5rem;
   margin: 0 0 1.5rem;
 }
+/* largura de leitura dentro da seção: parágrafos, itens e valores da ficha */
+.secao > p,
+.secao li,
+.secao .ficha dd {
+  max-width: 70ch;
+}
 /* título de seção como cabeçalho de tabela nutricional: régua grossa embaixo */
 .secao h2 {
   display: flex;
@@ -1380,7 +1387,8 @@ a.badge:hover {
   border-bottom: 1px solid var(--line);
 }
 .ficha dt {
-  color: var(--muted);
+  color: var(--fg);
+  font-weight: 600;
 }
 .ficha dd {
   margin: 0;
