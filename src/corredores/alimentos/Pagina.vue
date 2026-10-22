@@ -2,7 +2,18 @@
 import { computed, ref, shallowRef, watch } from "vue";
 import { resumoDe } from "./alergia";
 import { consenso, empresas, vazio } from "./apresentacoes";
-import { fatiar, fmtCnpj, fmtData, fmtInt, fmtMesAno, fmtProcesso, marcas, plural, url } from "../../lib/format";
+import {
+  fatiar,
+  fmtCnpj,
+  fmtData,
+  fmtInt,
+  fmtMesAno,
+  fmtProcesso,
+  fmtRegistro,
+  marcas,
+  plural,
+  url,
+} from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
 import { ativo as estaAtivo, indeferido as foiIndeferido, marcaPrincipal } from "./produto";
 import { buscarApresentacoes, fonte, type Apresentacao, type Produto } from "./fonte";
@@ -335,7 +346,7 @@ const linkAnvisa = computed(() =>
           <template v-if="p.nu_registro_notificacao_produto">
             <dt>{{ notificado ? "Nº da notificação" : "Nº do registro" }}</dt>
             <dd>
-              {{ p.nu_registro_notificacao_produto }}
+              {{ fmtRegistro(p.nu_registro_notificacao_produto) }}
               <Copiar
                 :valor="p.nu_registro_notificacao_produto"
                 :rotulo="notificado ? 'nº da notificação' : 'nº do registro'"

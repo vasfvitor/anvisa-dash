@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { Cosmetico } from "./fonte";
-import { fmtProcesso } from "../../lib/format";
+import { fmtProcesso, fmtRegistro } from "../../lib/format";
 import { dicaTipos, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 import { meta } from "./meta";
@@ -48,7 +48,7 @@ function abrir(ev: MouseEvent): void {
           >Processo <span class="numero">{{ fmtProcesso(p.nu_processo) }}</span></span
         >
         <span v-if="p.nu_registro"
-          >Registro <span class="numero">{{ p.nu_registro }}</span></span
+          >Registro <span class="numero">{{ fmtRegistro(p.nu_registro) }}</span></span
         >
         <Icone nome="seta" class="seta" />
       </p>

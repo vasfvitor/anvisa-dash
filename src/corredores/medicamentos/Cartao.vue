@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { Medicamento } from "./fonte";
-import { fmtProcesso, fmtRegistroMedicamento } from "../../lib/format";
+import { fmtProcesso, fmtRegistro } from "../../lib/format";
 import { dicaTipos, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 import { meta } from "./meta";
@@ -44,7 +44,7 @@ function abrir(ev: MouseEvent): void {
       <EmpresaComMedidas v-if="medidas" :n="medidas" />
       <p class="cartao-rodape">
         <span v-if="p.registro_produto"
-          >Registro <span class="numero">{{ fmtRegistroMedicamento(p.registro_produto) }}</span></span
+          >Registro <span class="numero">{{ fmtRegistro(p.registro_produto) }}</span></span
         >
         <span v-else>Sem nº de registro na ANVISA</span>
         <span v-if="p.processo"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from "vue";
 import { fonte, precos, type Medicamento, type Preco } from "./fonte";
-import { fmtCnpj, fmtData, fmtMesAno, fmtProcesso, fmtReais, fmtRegistroMedicamento, url } from "../../lib/format";
+import { fmtCnpj, fmtData, fmtMesAno, fmtProcesso, fmtReais, fmtRegistro, url } from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
 import { notaTipo, SITUACAO, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
@@ -151,7 +151,7 @@ watch(titulo, (t) => t && emit("titulo", t));
           <template v-if="p.registro_produto">
             <dt>Nº do registro</dt>
             <dd>
-              {{ fmtRegistroMedicamento(p.registro_produto) }}
+              {{ fmtRegistro(p.registro_produto) }}
               <Copiar :valor="p.registro_produto" rotulo="nº do registro" />
               <span class="note">(os 9 primeiros dígitos do número da caixa)</span>
             </dd>

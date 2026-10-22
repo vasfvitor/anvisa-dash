@@ -8,7 +8,7 @@ import { MARCAS_NO_TITULO, tituloAlimento } from "../../corredores/alimentos/pro
 import { validade } from "../../lib/validade";
 import { empresasDoBuild } from "../../lib/estatico/dados";
 import { indexavel, letraDe, resumo, totalProdutos, type Empresa } from "../../lib/estatico/empresas";
-import { fmtCnpj, fmtData, fmtInt, fmtProcesso, marcas, plural, url } from "../../lib/format";
+import { fmtCnpj, fmtData, fmtInt, fmtProcesso, fmtRegistro, marcas, plural, url } from "../../lib/format";
 import { situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 
@@ -179,7 +179,7 @@ const organizacao = {
                       {v.curto}
                     </span>
                     <span class="linha numero">Processo {fmtProcesso(p.processo)}</span>
-                    {p.registro && <span class="linha numero">Registro {p.registro}</span>}
+                    {p.registro && <span class="linha numero">Registro {fmtRegistro(p.registro)}</span>}
                   </td>
                 </tr>
               );

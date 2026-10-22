@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmtCnpj, fmtData, fmtMesAno, fmtProcesso, marcas, plural, toDate } from "../src/lib/format";
+import { fmtCnpj, fmtData, fmtMesAno, fmtProcesso, fmtRegistro, marcas, plural, toDate } from "../src/lib/format";
 
 describe("documentos", () => {
   it("formata CNPJ e processo", () => {
@@ -7,6 +7,12 @@ describe("documentos", () => {
     expect(fmtProcesso("25351161029202655")).toBe("25351.161029/2026-55");
     expect(fmtCnpj("123")).toBe("123");
     expect(fmtCnpj(null)).toBe("");
+  });
+  it("formata o nº de registro como a embalagem; dispositivos (10 ou 11 dígitos) ficam crus", () => {
+    expect(fmtRegistro("186200018")).toBe("1.8620.0018");
+    expect(fmtRegistro("1862000180015")).toBe("1.8620.0018.001-5");
+    expect(fmtRegistro("80145901455")).toBe("80145901455");
+    expect(fmtRegistro(null)).toBe("");
   });
 });
 

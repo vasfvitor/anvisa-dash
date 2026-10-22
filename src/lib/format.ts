@@ -76,8 +76,11 @@ export function fmtReais(centavos: number | null | undefined): string {
   return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-/** O registro de medicamento como a caixa escreve: 9 dígitos viram 1.8620.0018, 13 viram 1.8620.0018.001-5. */
-export function fmtRegistroMedicamento(d: string | null | undefined): string {
+/**
+ * O nº de registro como a embalagem escreve: 9 dígitos (remédios, alimentos, limpeza, cosméticos) viram 1.8620.0018,
+ * 13 (a apresentação do remédio) viram 1.8620.0018.001-5; outros tamanhos (dispositivos, 10 ou 11) ficam como estão.
+ */
+export function fmtRegistro(d: string | null | undefined): string {
   if (!d) return "";
   if (d.length === 9) return `${d.slice(0, 1)}.${d.slice(1, 5)}.${d.slice(5, 9)}`;
   if (d.length === 13) return `${d.slice(0, 1)}.${d.slice(1, 5)}.${d.slice(5, 9)}.${d.slice(9, 12)}-${d.slice(12)}`;

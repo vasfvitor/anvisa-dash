@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from "vue";
 import { fonte, type Cosmetico } from "./fonte";
-import { fmtCnpj, fmtData, fmtProcesso, url } from "../../lib/format";
+import { fmtCnpj, fmtData, fmtProcesso, fmtRegistro, url } from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
 import { notaTipo, SITUACAO, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
@@ -118,7 +118,7 @@ watch(titulo, (t) => t && emit("titulo", t));
           <dd>{{ fmtProcesso(p.nu_processo) }} <Copiar :valor="p.nu_processo" rotulo="nº do processo" /></dd>
           <template v-if="p.nu_registro">
             <dt>Nº do registro</dt>
-            <dd>{{ p.nu_registro }} <Copiar :valor="p.nu_registro" rotulo="nº do registro" /></dd>
+            <dd>{{ fmtRegistro(p.nu_registro) }} <Copiar :valor="p.nu_registro" rotulo="nº do registro" /></dd>
           </template>
           <dt>Empresa</dt>
           <dd>
