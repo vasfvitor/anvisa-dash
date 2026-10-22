@@ -68,7 +68,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     {estruturados.map((d) => (
       <script type="application/ld+json" set:html={jsonLd(d)} />
     ))}
-    <meta name="theme-color" content={inicio ? "#e8e2d6" : "#f6f1e6"} />
+    <meta name="theme-color" content={inicio ? "#dfe2e6" : "#f6f1e6"} />
     <link rel="icon" href={url("/favicon.svg")} type="image/svg+xml" />
     <link rel="sitemap" href={url("/sitemap-index.xml")} />
     <script is:inline define:vars={{ slugs, base }}>

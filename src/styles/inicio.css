@@ -1,11 +1,11 @@
 /* A página inicial (Base com `inicio`): o fundo é o corredor padrão, alimentos, e o cartão 1 sumia nele.
-   Aqui a página ganha um papel mais escuro, quadriculado como uma prateleira, sem trocar os tokens: os
-   cinco cartões leem --bg e --padrao do próprio corredor, e o 1 herda os de :root. */
+   Aqui a página ganha um papel cinza, frio e quadriculado como uma prateleira, longe do creme de alimentos,
+   sem trocar os tokens: os cinco cartões leem --bg e --padrao do próprio corredor, e o 1 herda os de :root. */
 html[data-pagina="inicio"] {
-  --bg-inicio: #e8e2d6;
+  --bg-inicio: #dfe2e6;
   --padrao-inicio:
-    linear-gradient(rgb(29 27 22 / 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(29 27 22 / 0.07) 1px, transparent 1px);
+    linear-gradient(rgb(29 27 22 / 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(29 27 22 / 0.08) 1px, transparent 1px);
 }
 html[data-pagina="inicio"] body {
   background-color: var(--bg-inicio);
