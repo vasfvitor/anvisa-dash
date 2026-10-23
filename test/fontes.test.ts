@@ -9,7 +9,18 @@ interface Chamada {
   params: unknown[];
 }
 
-const { chamadas } = vi.hoisted(() => ({ chamadas: [] as Chamada[] }));
+const { chamadas, tabelas, respostas } = vi.hoisted(() => {
+  // as tabelas do manifest falso: os testes acrescentam e tiram
+  const tabelas: Record<string, unknown> = {
+    cosmeticos: { busca: { versao: 1, indice: "data/b/cosmeticos/indice.json", bytes: 1, sha256: "x" } },
+  };
+  return {
+    chamadas: [] as Chamada[],
+    tabelas,
+    // o que o banco falso devolve para uma consulta que contém o texto da chave; o resto devolve []
+    respostas: new Map<string, unknown[]>(),
+  };
+});
 
 // os cosméticos leem um índice e baixam pedaços: aqui um índice mínimo e nomes de arquivo previsíveis
 const INDICE = {
@@ -27,15 +38,12 @@ const INDICE = {
 vi.mock("../src/lib/db", () => ({
   carregar: () => Promise.resolve(),
   buildAtual: () => Promise.resolve("teste"),
-  iniciar: () =>
-    Promise.resolve({
-      tables: { cosmeticos: { busca: { versao: 1, indice: "data/b/cosmeticos/indice.json", bytes: 1, sha256: "x" } } },
-    }),
+  iniciar: () => Promise.resolve({ tables: tabelas }),
   baixarJson: () => Promise.resolve(INDICE),
   baixarArquivo: (caminho: string) => Promise.resolve(caminho.replaceAll("/", "_")),
   consultar: (_tabelas: string[], sql: string, params: unknown[] = []) => {
     chamadas.push({ sql, params });
-    return Promise.resolve([]);
+    return Promise.resolve([...respostas].find(([trecho]) => sql.includes(trecho))?.[1] ?? []);
   },
 }));
 
@@ -43,8 +51,12 @@ const { fonte: alimentos, predicado: predicadoAlimentos } = await import("../src
 const { fonte: saneantes, predicado: predicadoSaneantes } = await import("../src/corredores/saneantes/fonte");
 const { fonte: cosmeticos } = await import("../src/corredores/cosmeticos/fonte");
 const { fonte: medicamentos, predicado: predicadoMedicamentos } = await import("../src/corredores/medicamentos/fonte");
-const { fonte: produtosSaude, predicado: predicadoProdutosSaude } =
-  await import("../src/corredores/produtos_saude/fonte");
+const {
+  fabricantesComPagina,
+  fonte: produtosSaude,
+  predicado: predicadoProdutosSaude,
+} = await import("../src/corredores/produtos_saude/fonte");
+const { sqlPs } = await import("../src/corredores/produtos_saude/consultas");
 const { onde } = await import("../src/lib/sql");
 
 /** SQL com cada `?` trocado pelo valor (texto entre aspas), em uma linha. */
@@ -262,6 +274,59 @@ describe("você quis dizer", () => {
 });
 
 describe("produtos para saúde", () => {
+  // o primeiro a usar a tabela ps: a derivada é criada uma vez por build
+  it("sem as chaves dos fabricantes no manifest, as duas colunas saem vazias", async () => {
+    await produtosSaude.preparar();
+    const cria = chamadas.map(comValores).find((s) => s.startsWith("CREATE OR REPLACE TABLE ps AS"))!;
+    expect(cria).toContain("'' AS fabricantes_chaves, '' AS fabricantes_paises");
+    expect(cria).not.toContain("array_to_string(list_transform(fabricantes_chaves");
+  });
+
+  it("com elas, as listas viram texto com | sem perder posição", () => {
+    const sql = sqlPs(true).replace(/\s+/g, " ");
+    expect(sql).toContain(
+      "array_to_string(list_transform(fabricantes_chaves, lambda x: coalesce(x, '')), '|') AS fabricantes_chaves",
+    );
+    expect(sql).toContain(
+      "array_to_string(list_transform(fabricantes_paises, lambda x: coalesce(x, '')), '|') AS fabricantes_paises",
+    );
+  });
+
+  it("fabricantes com página: nada sem chave nem sem a tabela no manifest", async () => {
+    expect(await fabricantesComPagina([])).toEqual(new Map());
+    expect(await fabricantesComPagina(["acme", ""])).toEqual(new Map());
+    expect(chamadas).toHaveLength(0);
+  });
+
+  it("fabricantes com página: as linhas das chaves pela regra do build (duas detentoras fora a própria)", async () => {
+    tabelas.produtos_saude_fabricacao = { path: "x", rows: 1, bytes: 1, columns: [] };
+    const fab = (cnpj: string, chave: string, vinculo: string) => ({
+      cnpj,
+      empresa: "E",
+      chave,
+      fabricante: chave.toUpperCase(),
+      pais: "CHINA, REPÚBLICA POPULAR",
+      vinculo,
+      registros: 1,
+      registrosAtivos: 1,
+      linhas: 1,
+    });
+    respostas.set('"produtos_saude_fabricacao"', [
+      fab("11111111000111", "acme", "exterior"),
+      fab("22222222000122", "acme", "exterior"),
+      fab("11111111000111", "beta", "exterior"),
+      fab("33333333000133", "beta", "propria"),
+    ]);
+    try {
+      const m = await fabricantesComPagina(["acme", "beta", "acme"]);
+      expect(ultima()).toMatch(/FROM "produtos_saude_fabricacao" WHERE chave IN \('acme', 'beta'\)$/);
+      expect(m).toEqual(new Map([["acme-china-republica-popular", 2]]));
+    } finally {
+      delete tabelas.produtos_saude_fabricacao;
+      respostas.clear();
+    }
+  });
+
   it("número procura em processo e no registro, sem zeros à esquerda", () => {
     const w = comValores(predicadoProdutosSaude(numero("08003400137")));
     expect(w).toContain("processo = '08003400137'");

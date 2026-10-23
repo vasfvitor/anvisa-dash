@@ -1552,3 +1552,43 @@ a.badge:hover {
 .aviso-medidas .medidas-lista {
   margin: 0.6rem 0 0;
 }
+
+/* As tabelas das páginas de empresa e de fabricante: um produto (ou fábrica, ou empresa) por linha, os detalhes
+   em .linha dentro da célula */
+/* números nunca quebram no meio (a fonte mono vem de .numero em base.css) */
+table.produtos .numero {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+table.produtos .perigo {
+  color: var(--off);
+}
+table.produtos td:last-child {
+  width: 16rem;
+}
+/* vários certificados na mesma célula, e na lista dos sem fábrica: um bloco por certificado */
+table.produtos .certificado + .certificado,
+.certificados li + li {
+  margin-top: 0.55rem;
+}
+/* no celular cada produto vira um bloco: o nome em cima, a situação e os números embaixo */
+@media (max-width: 34rem) {
+  table.produtos thead {
+    display: none;
+  }
+  table.produtos tr,
+  table.produtos td {
+    display: block;
+  }
+  table.produtos td {
+    border-bottom: 0;
+    padding: 0.15rem 0;
+  }
+  table.produtos tr {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  table.produtos td:last-child {
+    width: auto;
+  }
+}

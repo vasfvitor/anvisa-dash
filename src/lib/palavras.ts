@@ -57,11 +57,22 @@ export function sqlPalavras(expr: string): string {
   return `' ' || array_to_string(${palavrasSql(expr)}, ' ') || ' '`;
 }
 
-/** Expressão SQL com a lista das palavras de `expr` (repetidas, se houver; a ordem não importa). */
-export function palavrasSql(expr: string): string {
+/** `expr` normalizada no SQL como normalizarPalavras: sem apóstrofos, os compatíveis trocados, lower(strip_accents). */
+export function normalizarSql(expr: string): string {
   let s = `regexp_replace(${expr}, '[''\\x{2019}\\x{2018}\\x{60}\\x{B4}]', '', 'g')`;
   for (const [cod, por] of COMPATIVEIS) s = `replace(${s}, chr(${cod}), '${por}')`;
-  s = `lower(strip_accents(${s}))`;
+  return `lower(strip_accents(${s}))`;
+}
+
+/**
+ * A chave de lib/chave.ts no SQL: só [a-z0-9] do texto normalizado. É a regra do `chave_sql` do repo `anvisa`
+ * (que apara antes; aqui o espaço sai com o resto); test/chave.test.ts confere contra o JS e os casos de lá.
+ */
+export const chaveSql = (expr: string): string => `regexp_replace(${normalizarSql(expr)}, '[^a-z0-9]', '', 'g')`;
+
+/** Expressão SQL com a lista das palavras de `expr` (repetidas, se houver; a ordem não importa). */
+export function palavrasSql(expr: string): string {
+  const s = normalizarSql(expr);
   const vazias = VAZIAS.map((p) => `'${p}'`).join(", ");
   return `list_filter(list_concat(regexp_split_to_array(${s}, '[^a-z0-9]+'),
       list_transform(regexp_extract_all(${s}, '[a-z0-9]+(?:-[a-z0-9]+)+'), lambda c: replace(c, '-', ''))),

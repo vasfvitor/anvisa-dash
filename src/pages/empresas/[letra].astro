@@ -30,6 +30,7 @@ const detalhe = (e: Empresa) => {
     fmtCnpj(e.cnpj),
     produtos > 0 && plural(produtos, "produto"),
     r.envasaPara > 0 && `envasa para ${plural(r.envasaPara, "empresa")}`,
+    r.certificadosVigentes > 0 && plural(r.certificadosVigentes, "certificado vigente", "certificados vigentes"),
     r.medidas > 0 && plural(r.medidas, "medida"),
   ]
     .filter(Boolean)
@@ -39,12 +40,12 @@ const detalhe = (e: Empresa) => {
 
 <Base
   title={`Empresas: ${rotulo}`}
-  description={`${plural(lista.length, "empresa")} com nome ${letra === "0-9" ? "começando por número ou símbolo" : `em ${rotulo}`} e produto, medida ou envase de alimentos na ANVISA, com o CNPJ e a quantidade de produtos de cada uma.`}
+  description={`${plural(lista.length, "empresa")} com nome ${letra === "0-9" ? "começando por número ou símbolo" : `em ${rotulo}`} e produto, medida, envase de alimentos ou certificado de boas práticas na ANVISA, com o CNPJ e a quantidade de produtos de cada uma.`}
 >
   <h1>Empresas: {rotulo}</h1>
   <p class="lead">
-    {fmtInt(lista.length)} {lista.length === 1 ? "empresa" : "empresas"} com produto, medida ou envase de alimentos na
-    ANVISA.
+    {fmtInt(lista.length)} {lista.length === 1 ? "empresa" : "empresas"} com produto, medida, envase de alimentos ou
+    certificado de boas práticas na ANVISA.
   </p>
   <LetrasEmpresas contagem={contagem} atual={letra} />
   <ul class="lista-empresas">

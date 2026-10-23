@@ -57,6 +57,12 @@ export const TABELAS: Record<string, InfoTabela> = {
       "notificação",
     ],
   },
+  certificados: {
+    titulo: "Certificados de boas práticas de fabricação e de distribuição (CBPF e CBPDA)",
+    descricao:
+      "Uma linha por certificado de boas práticas emitido pela ANVISA: a empresa que pediu, a fábrica inspecionada (CNPJ no Brasil ou código no exterior), a área, a validade e se está vigente; derivada das tabelas cbpf e cbpf_medicamentos.",
+    palavras: ["boas práticas de fabricação", "CBPF", "CBPDA", "certificado", "inspeção", "fabricante"],
+  },
   empresas: {
     titulo: "Empresas com produtos ou medidas na ANVISA, por CNPJ",
     descricao:

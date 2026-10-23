@@ -1,0 +1,35 @@
+---
+// Um certificado de boas práticas numa célula da página de empresa: vigente ou não, a área e o tipo, a validade
+// e como foi emitido, e as linhas certificadas (só os remédios as trazem). Os espaços entre as linhas não
+// aparecem na tela (cada uma é um bloco), mas separam as palavras para quem lê o HTML sem CSS.
+import { AREA_CERTIFICADO, type Certificado } from "../lib/estatico/empresas";
+import { fmtData } from "../lib/format";
+import { legivel } from "../lib/texto";
+
+interface Props {
+  c: Certificado;
+}
+const { c } = Astro.props;
+const estado = c.vigente ? "Vigente" : c.cancelado ? "Cancelado" : "Não vigente";
+const dica = c.vigente ? `${c.situacao}, dentro da validade na data dos dados` : c.situacao;
+const detalhe = [
+  c.validade ? `válido até ${fmtData(c.validade)}` : "sem data de validade",
+  c.emissao && legivel(c.emissao),
+]
+  .filter(Boolean)
+  .join(" · ");
+---
+
+<span class="linha">
+  <span class={`situacao ${c.vigente ? "ok" : "off"}`} title={dica}>
+    {estado}
+  </span>{" "}
+  <span class="muted" title={c.assunto}>{`${AREA_CERTIFICADO[c.area] ?? c.area} · ${c.tipo}`}</span>
+</span>{" "}
+<span class="linha muted">{detalhe}</span>
+{c.linhas.length > 0 && (
+  <>
+    {" "}
+    <span class="linha muted">{legivel(c.linhas.join("; "))}</span>
+  </>
+)}

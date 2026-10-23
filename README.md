@@ -5,7 +5,9 @@ cosméticos) por nº do processo,
 CNPJ, registro, nome, marca, empresa e categoria. Site estático (Astro + uma ilha Vue). A busca roda no navegador
 com DuckDB-WASM sobre os Parquet que o repo [`anvisa`](https://github.com/vasfvitor/anvisa-api)
 publica diariamente. Não há backend. No build, uma página estática por empresa (`/empresa/<cnpj>/`, com
-os produtos, quem envasa os alimentos dela e para quem ela envasa, e as medidas da ANVISA), a lista delas de A a Z (`/empresas/`) e o `/llms.txt` levam os dados a quem não roda JavaScript: buscadores e
+os produtos, quem envasa os alimentos dela e para quem ela envasa, quem fabrica os dispositivos médicos dela, os
+certificados de boas práticas de fabricação e as medidas da ANVISA), uma por fabricante de dispositivos médicos
+com duas empresas ou mais (`/fabricante/<chave>-<país>/`), a lista das empresas de A a Z (`/empresas/`) e o `/llms.txt` levam os dados a quem não roda JavaScript: buscadores e
 assistentes. A página de cada corredor ainda traz, no HTML, uma seção "Sem JavaScript" (`SemJs.astro`,
 `lib/semjs.ts`) com a consulta DuckDB ao Parquet do build para o produto de `?p=`, que o script da página
 esconde assim que roda: um LLM ou crawler que abrir um link de produto lê onde o dado está.
@@ -96,8 +98,19 @@ primeiros de cada CNPJ pelas regras de `sqlCos`, 7,6 MB em vez dos 24 MB da tabe
 totais em `empresas`. A seção Fabricação vem de `alimentos_fabricacao` (uma linha por empresa detentora e
 fabricante, derivada das envasadoras e fabricantes no exterior de cada apresentação): envasa para, envasado
 por (com link para a página da outra empresa) e fabricantes no exterior; a envasadora sem produto próprio
-também ganha página, e a página do alimento liga o nome da envasadora à página dela. Sem a tabela no manifest,
-as páginas saem sem a seção. `DADOS_LIVE=<pasta com os Parquet> pnpm test` confere, contra os dados reais, que
+também ganha página, e a página do alimento liga o nome da envasadora à página dela. Os fabricantes dos
+dispositivos médicos vêm de `produtos_saude_fabricacao` (uma linha por detentora, chave do nome do fabricante e
+país; a ANVISA não dá CNPJ nem código ao fabricante de dispositivo): a seção lista "Fabricado por", e cada
+fabricante com duas detentoras ou mais fora ele mesmo ganha página (`/fabricante/<chave>-<país>/`,
+`src/lib/estatico/fabricantes.ts`), que a página do dispositivo liga (a ilha baixa a tabela na primeira página de
+dispositivo e aplica a mesma regra). A chave é o nome sem acento, minúsculo, só com `[a-z0-9]`
+(`src/lib/chave.ts` e `chaveSql` em `src/lib/palavras.ts`), contrato com o repo `anvisa`: os casos de
+`test/fixtures/chaves.json` são a cópia dos de lá. Os certificados de boas práticas (`certificados`, CBPF e
+CBPDA de todas as áreas) viram a seção "Boas práticas de fabricação": as fábricas certificadas a pedido da
+empresa, quem pediu certificado para a fábrica dela e os certificados sem fábrica informada, 50 por lista,
+vigentes antes; quem só pediu certificado, e a fábrica brasileira certificada a pedido de outra empresa, também
+ganham página. Os certificados de remédios estão parados em 08/09/2025 (a ANVISA parou de atualizar a lista), e
+a página diz isso. Sem as tabelas no manifest, as páginas saem sem as seções e sem as rotas de fabricante. `DADOS_LIVE=<pasta com os Parquet> pnpm test` confere, contra os dados reais, que
 cada derivada bate com o SQL da ilha (`test/derivadas-live.test.ts`).
 
 A página é gerada por `src/pages/[...corredor].astro`. A troca de corredor não recarrega: a ilha
@@ -123,6 +136,8 @@ envia CORS.
 anvisa dados build --out /tmp/dados          # ~10 s; baixa ~57 MB da ANVISA
 pnpm dados:local /tmp/dados 8000             # scripts/dados-local.mjs
 PUBLIC_MANIFEST_URL=http://localhost:8000/manifest.json pnpm dev
+PUBLIC_MANIFEST_URL=http://localhost:8000/manifest.json pnpm build   # as páginas com esses dados
+DADOS_LIVE=/tmp/dados/data/<build_id> pnpm test                     # as derivadas contra os dados reais
 ```
 
 ## Publicação
@@ -133,8 +148,10 @@ republica quando o pipeline de dados publicou um build novo: o GitHub atrasa cro
 pipeline pula dias sem dados novos. A busca lê o manifest ao vivo; o rebuild atualiza as páginas de
 empresa e a lista de A a Z, o `llms.txt`, o dicionário, o "sobre" e o rodapé. O sitemap
 (`src/pages/sitemap-index.xml.ts` e `sitemap-0.xml.ts`) lista as páginas fixas e as listas de A a Z com o
-`lastmod` do build de dados e só as páginas de empresa com dois produtos ou mais, ou que envasam para duas
-empresas de fora do grupo (`indexavel` em `src/lib/estatico/empresas.ts`); as demais, só com medidas ou com um produto, saem com `noindex`, porque
+`lastmod` do build de dados e só as páginas de empresa com dois produtos ou mais, que envasam para duas
+empresas de fora do grupo ou com dois certificados de boas práticas vigentes (`indexavel` em
+`src/lib/estatico/empresas.ts`), e as páginas de fabricante (todas têm duas detentoras ou mais,
+`indexavelFabricante`); as demais, só com medidas ou com um produto, saem com `noindex`, porque
 milhares de páginas de um parágrafo fazem o Google deixar o site inteiro em "rastreada, mas não indexada".
 Em Settings → Pages, use a fonte
 "GitHub Actions" e o domínio próprio `contem.abelhaninja.de` (o mesmo de `site` em `astro.config.mjs`;

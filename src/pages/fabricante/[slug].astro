@@ -1,0 +1,98 @@
+---
+// Uma página por fabricante de dispositivos médicos com duas empresas detentoras ou mais (fora ele mesmo),
+// gerada no build de produtos_saude_fabricacao (lib/estatico/fabricantes.ts): as empresas que registram os
+// dispositivos dele no Brasil, com quantos cada uma tem. A ANVISA não dá CNPJ nem código ao fabricante de
+// dispositivo: o endereço é a chave do nome e o país (lib/chave.ts), o mesmo que a página do dispositivo monta.
+import Base from "../../layouts/Base.astro";
+import { fabricantesDoBuild } from "../../lib/estatico/dados";
+import { indexavelFabricante, type Fabricante } from "../../lib/estatico/fabricantes";
+import { fmtCnpj, plural, url } from "../../lib/format";
+import { legivel } from "../../lib/texto";
+
+export async function getStaticPaths() {
+  const fabricantes = await fabricantesDoBuild();
+  return [...fabricantes.values()].map((f) => ({ params: { slug: f.slug }, props: { f } }));
+}
+
+interface Props {
+  f: Fabricante;
+}
+const { f } = Astro.props;
+const nome = legivel(f.nome, "nome");
+const pais = f.pais ? legivel(f.pais, "nome") : "";
+const comPais = pais ? `${nome} (${pais})` : nome;
+const paraEmpresas = `fabrica dispositivos médicos para ${plural(f.empresas, "empresa")}`;
+const dispositivos = `${plural(f.registros, "dispositivo médico", "dispositivos médicos")} (${plural(f.registrosAtivos, "liberado")})`;
+const descricao = `${comPais} ${paraEmpresas} no Brasil: ${dispositivos} na ANVISA, com quantos cada empresa registra e o link para a página dela.`;
+
+const canonico = new URL(Astro.url.pathname, Astro.site).href;
+const organizacao = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": `${canonico}#fabricante`,
+  name: nome,
+  ...(pais && { address: { "@type": "PostalAddress", addressCountry: pais } }),
+};
+---
+
+<Base
+  title={`${comPais}: ${paraEmpresas}`}
+  description={descricao}
+  noindex={!indexavelFabricante(f)}
+  estruturados={[organizacao]}
+>
+  <h1>{nome}</h1>
+  <p class="lead">{[pais, paraEmpresas, dispositivos].filter(Boolean).join(" · ")}</p>
+  <p>
+    Quem responde por um dispositivo médico no Brasil é a empresa que o registra ou cadastra na ANVISA, muitas vezes um
+    importador. Estas são as empresas que registram dispositivos fabricados por {nome}; os dispositivos estão na página
+    de cada uma.
+  </p>
+  <section>
+    <h2>Empresas que registram dispositivos deste fabricante</h2>
+    <div class="table-wrap">
+      <table class="produtos">
+        <thead>
+          <tr>
+            <th>Empresa</th>
+            <th>Dispositivos</th>
+          </tr>
+        </thead>
+        <tbody>
+          {f.detentores.map((d) => (
+            <tr>
+              <td>
+                <span class="linha">
+                  <a href={url(`/empresa/${d.cnpj}/`)}>
+                    {d.nome ? legivel(d.nome, "nome") : `CNPJ ${fmtCnpj(d.cnpj)}`}
+                  </a>
+                  {d.propria && (
+                    <span class="muted" title="o fabricante registra os dispositivos em nome próprio">
+                      {" · o próprio fabricante"}
+                    </span>
+                  )}
+                </span>{" "}
+                <span class="linha numero">CNPJ {fmtCnpj(d.cnpj)}</span>
+              </td>
+              <td>
+                <span class="linha">{plural(d.registros, "dispositivo médico", "dispositivos médicos")}</span>{" "}
+                <span class="linha muted">{plural(d.registrosAtivos, "liberado")}</span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="note">
+      O nome do fabricante é o que as empresas escrevem nos registros: grafias diferentes do mesmo nome ficam juntas, e
+      o mesmo nome em outro país é outro fabricante. A ANVISA não publica CNPJ nem código do fabricante de dispositivos.
+    </p>
+  </section>
+</Base>
+
+<style>
+  /* prosa em largura de leitura (a tabela, table.produtos, está em componentes.css) */
+  p {
+    max-width: 44rem;
+  }
+</style>

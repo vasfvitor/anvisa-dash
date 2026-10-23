@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   agrupar,
+  AREA_CERTIFICADO,
+  certificadosDe,
+  dadosDeRemedios,
   indexavel,
   LETRAS,
   letraDe,
@@ -8,8 +11,11 @@ import {
   PRODUTOS_PARA_INDEXAR,
   resumo,
   totalProdutos,
+  type AreaCertificado,
   type Entrada,
+  type VinculoCertificado,
 } from "../src/lib/estatico/empresas";
+import type { VinculoDispositivo } from "../src/lib/estatico/fabricantes";
 
 const CNPJ_A = "11111111000111";
 const CNPJ_B = "22222222000122";
@@ -71,6 +77,61 @@ const fabricacao = (
   produtos,
   produtosAtivos: outros.ativos ?? produtos,
   apresentacoes: produtos,
+});
+
+const fabricacaoDispositivo = (
+  cnpj: string,
+  empresa: string,
+  chave: string,
+  fabricante: string,
+  pais: string | null,
+  vinculo: VinculoDispositivo,
+  registros = 1,
+  ativos = registros,
+) => ({ cnpj, empresa, chave, fabricante, pais, vinculo, registros, registrosAtivos: ativos, linhas: registros });
+
+let proximoId = 1;
+const certificado = (
+  cnpj: string,
+  empresa: string,
+  vinculo: VinculoCertificado,
+  outros: {
+    id?: number;
+    inspecionadaCnpj?: string | null;
+    codigo?: string | null;
+    inspecionada?: string | null;
+    pais?: string | null;
+    area?: AreaCertificado;
+    tipo?: "CBPF" | "CBPDA";
+    publicacao?: string | null;
+    validade?: string | null;
+    vigente?: boolean;
+    cancelado?: boolean;
+    linhas?: string;
+    dadosDe?: string;
+  } = {},
+) => ({
+  id: outros.id ?? proximoId++,
+  cnpj,
+  empresa,
+  inspecionadaCnpj:
+    outros.inspecionadaCnpj === undefined ? (vinculo === "propria" ? cnpj : null) : outros.inspecionadaCnpj,
+  inspecionadaCodigo: outros.codigo ?? null,
+  inspecionada: outros.inspecionada === undefined ? (vinculo === "desconhecida" ? null : empresa) : outros.inspecionada,
+  pais: outros.pais === undefined ? (vinculo === "desconhecida" ? null : "BRASIL") : outros.pais,
+  tipo: outros.tipo ?? "CBPF",
+  area: outros.area ?? "produtos_saude",
+  assunto: "CERTIFICAÇÃO DE BOAS PRÁTICAS",
+  emissao: null,
+  situacao: "Publicado deferimento",
+  publicacao: outros.publicacao ?? "2025-01-01",
+  validade: outros.validade === undefined ? "2027-01-01" : outros.validade,
+  vigente: outros.vigente ?? true,
+  cancelado: outros.cancelado ?? false,
+  vinculo,
+  processo: "25351000000000000",
+  linhas: outros.linhas ?? "",
+  dadosDe: outros.dadosDe ?? "2026-10-13",
 });
 
 const vazio: Entrada = { alimentos: [], saneantes: [], cosmeticos: [], cosmeticosTotais: [], medidas: [] };
@@ -180,6 +241,11 @@ describe("resumo", () => {
       envasaPara: 0,
       envasadoPor: 0,
       exterior: 0,
+      fabricadoPor: 0,
+      fabricasCertificadas: 0,
+      certificados: 0,
+      certificadosVigentes: 0,
+      certificadaPara: 0,
     });
   });
 
@@ -397,6 +463,223 @@ describe("fabricação", () => {
   it("entrada sem fabricação (build de dados sem a tabela) deixa as listas vazias", () => {
     const emp = agrupar({ ...vazio, alimentos: [alimento(1, "A", true)] }).get(CNPJ_A)!;
     expect(emp).toMatchObject({ envasaPara: [], envasadoPor: [], exterior: [] });
+  });
+});
+
+describe("fabricantes de dispositivos médicos", () => {
+  const CNPJ_C = "33333333000133";
+  const produtos = [saneante("10000000001", "SONDA", true), saneante("10000000002", "CATETER", false)];
+
+  it("Fabricado por: sem a própria, de mais a menos registros, com link só para quem tem página", () => {
+    const entrada: Entrada = {
+      ...vazio,
+      produtosSaude: produtos,
+      fabricacaoDispositivos: [
+        fabricacaoDispositivo(CNPJ_A, "EMPRESA A LTDA", "empresaaltda", "EMPRESA A LTDA", "BRASIL", "propria", 9),
+        fabricacaoDispositivo(CNPJ_A, "EMPRESA A LTDA", "acme", "ACME CO.", "CHINA", "exterior", 2, 1),
+        fabricacaoDispositivo(CNPJ_A, "EMPRESA A LTDA", "beta", "BETA SA", "BRASIL", "terceira", 5),
+      ],
+    };
+    const a = agrupar(entrada, new Set(["acme-china"])).get(CNPJ_A)!;
+    expect(a.fabricadoPor).toEqual([
+      {
+        chave: "beta",
+        nome: "BETA SA",
+        pais: "BRASIL",
+        vinculo: "terceira",
+        registros: 5,
+        registrosAtivos: 5,
+        slug: null,
+      },
+      {
+        chave: "acme",
+        nome: "ACME CO.",
+        pais: "CHINA",
+        vinculo: "exterior",
+        registros: 2,
+        registrosAtivos: 1,
+        slug: "acme-china",
+      },
+    ]);
+    expect(resumo(a)).toMatchObject({ fabricadoPor: 2 });
+    // sem o conjunto de páginas, nenhum link
+    expect(
+      agrupar(entrada)
+        .get(CNPJ_A)!
+        .fabricadoPor.map((f) => f.slug),
+    ).toEqual([null, null]);
+  });
+
+  it("o fabricante não cria empresa nem muda o nome da detentora", () => {
+    const m = agrupar({
+      ...vazio,
+      produtosSaude: produtos,
+      fabricacaoDispositivos: [
+        fabricacaoDispositivo(CNPJ_A, "OUTRO NOME", "acme", "ACME", "CHINA", "exterior"),
+        fabricacaoDispositivo(CNPJ_A, "OUTRO NOME", "acme2", "ACME 2", "CHINA", "exterior"),
+        fabricacaoDispositivo(CNPJ_C, "SEM PRODUTO", "acme", "ACME", "CHINA", "exterior"),
+      ],
+    });
+    expect([...m.keys()]).toEqual([CNPJ_A]);
+    expect(m.get(CNPJ_A)!.nome).toBe("EMPRESA A LTDA");
+  });
+});
+
+describe("certificados de boas práticas", () => {
+  const CNPJ_C = "33333333000133";
+  const FILIAL = "11111111000292";
+
+  it("uma fábrica por CNPJ, código ou nome e país; sem fábrica informada, à parte", () => {
+    const a = agrupar({
+      ...vazio,
+      alimentos: [alimento(1, "WHEY", true)],
+      certificados: [
+        certificado(CNPJ_A, "EMPRESA A LTDA", "propria", { id: 1 }),
+        certificado(CNPJ_A, "EMPRESA A LTDA", "propria", { id: 2, validade: "2028-01-01" }),
+        certificado(CNPJ_A, "EMPRESA A LTDA", "exterior", {
+          id: 3,
+          codigo: "C000001",
+          inspecionada: "ACME",
+          pais: "CHINA",
+        }),
+        certificado(CNPJ_A, "EMPRESA A LTDA", "exterior", {
+          id: 4,
+          codigo: "C000001",
+          inspecionada: "ACME INC",
+          pais: "CHINA",
+        }),
+        certificado(CNPJ_A, "EMPRESA A LTDA", "exterior", { id: 5, inspecionada: "SEM CODIGO", pais: "ÍNDIA" }),
+        certificado(CNPJ_A, "EMPRESA A LTDA", "desconhecida", { id: 6, vigente: false, validade: "2019-01-01" }),
+      ],
+    }).get(CNPJ_A)!;
+    expect(a.fabricasCertificadas.map((p) => [p.cnpj, p.codigo, p.nome, p.certificados.map((c) => c.id)])).toEqual([
+      // a própria tem a validade mais longa: vem primeiro, e dentro dela também
+      [CNPJ_A, null, "EMPRESA A LTDA", [2, 1]],
+      [null, "C000001", "ACME", [3, 4]],
+      [null, null, "SEM CODIGO", [5]],
+    ]);
+    expect(a.fabricasCertificadas[0]!.comPagina).toBe(false); // a própria: a página é esta
+    expect(a.certificadosSemFabrica.map((c) => c.id)).toEqual([6]);
+    expect(certificadosDe(a)).toHaveLength(6);
+    expect(resumo(a)).toMatchObject({ fabricasCertificadas: 3, certificados: 6, certificadosVigentes: 5 });
+    // ninguém mais ganhou página
+    expect(a.certificadaPara).toEqual([]);
+  });
+
+  it("a fábrica brasileira de outra empresa ganha página, com quem pediu o certificado para ela", () => {
+    const m = agrupar({
+      ...vazio,
+      alimentos: [alimento(1, "WHEY", true)],
+      certificados: [
+        certificado(CNPJ_A, "EMPRESA A LTDA", "terceira", { inspecionadaCnpj: CNPJ_C, inspecionada: "FABRICA C SA" }),
+        certificado(CNPJ_A, "EMPRESA A LTDA", "grupo", { inspecionadaCnpj: FILIAL, inspecionada: "EMPRESA A FILIAL" }),
+        certificado(CNPJ_B, "EMPRESA B LTDA", "terceira", {
+          inspecionadaCnpj: CNPJ_C,
+          inspecionada: "FÁBRICA C",
+          vigente: false,
+        }),
+      ],
+    });
+    const c = m.get(CNPJ_C)!;
+    expect(c.nome).toBe("FÁBRICA C"); // empate de grafias: a primeira em ordem alfabética
+    expect(totalProdutos(c)).toBe(0);
+    expect(c.certificadaPara.map((s) => [s.cnpj, s.nome, s.vinculo, s.certificados.length])).toEqual([
+      [CNPJ_A, "EMPRESA A LTDA", "terceira", 1], // vigente antes
+      [CNPJ_B, "EMPRESA B LTDA", "terceira", 1],
+    ]);
+    expect(m.get(FILIAL)!.certificadaPara.map((s) => s.vinculo)).toEqual(["grupo"]);
+    const a = m.get(CNPJ_A)!;
+    // empate na vigência e nas datas: o certificado de id menor primeiro
+    expect(a.fabricasCertificadas.map((p) => [p.cnpj, p.comPagina, p.vinculo])).toEqual([
+      [CNPJ_C, true, "terceira"],
+      [FILIAL, true, "grupo"],
+    ]);
+    // o solicitante sem produto também ganha página, com o nome escrito no certificado
+    expect(m.get(CNPJ_B)!.nome).toBe("EMPRESA B LTDA");
+    expect(resumo(c)).toMatchObject({ certificados: 0, certificadaPara: 2 });
+  });
+
+  it("com produto, o nome vem dos produtos; a fábrica aparece com o nome da página dela", () => {
+    const m = agrupar({
+      ...vazio,
+      alimentos: [alimento(1, "WHEY", true), alimento(2, "CREATINA", true, CNPJ_C, "FÁBRICA C S.A.")],
+      certificados: [
+        certificado(CNPJ_A, "NOME DO CERTIFICADO", "terceira", { inspecionadaCnpj: CNPJ_C, inspecionada: "FAB C" }),
+      ],
+    });
+    expect(m.get(CNPJ_A)!.nome).toBe("EMPRESA A LTDA");
+    expect(m.get(CNPJ_A)!.fabricasCertificadas[0]!.nome).toBe("FÁBRICA C S.A.");
+    expect(m.get(CNPJ_C)!.certificadaPara[0]!.nome).toBe("EMPRESA A LTDA");
+  });
+
+  it("vigentes antes, depois a validade mais longa (sem validade por último) e a publicação mais recente", () => {
+    const a = agrupar({
+      ...vazio,
+      certificados: [
+        certificado(CNPJ_A, "A", "desconhecida", { id: 1, vigente: false, validade: "2020-01-01" }),
+        certificado(CNPJ_A, "A", "desconhecida", { id: 2, vigente: true, validade: null }),
+        certificado(CNPJ_A, "A", "desconhecida", { id: 3, vigente: true, validade: "2027-01-01" }),
+        certificado(CNPJ_A, "A", "desconhecida", { id: 4, vigente: false, validade: null, publicacao: "2024-01-01" }),
+        certificado(CNPJ_A, "A", "desconhecida", { id: 5, vigente: false, validade: null, publicacao: "2025-01-01" }),
+      ],
+    }).get(CNPJ_A)!;
+    expect(a.certificadosSemFabrica.map((c) => c.id)).toEqual([3, 2, 1, 5, 4]);
+  });
+
+  it("a lista de linhas dos remédios vira lista, e a data dos remédios é a mais recente deles", () => {
+    const a = agrupar({
+      ...vazio,
+      certificados: [
+        certificado(CNPJ_A, "A", "propria", {
+          area: "medicamentos",
+          linhas: "Sólidos não estéreis: Comprimidos|Líquidos",
+          dadosDe: "2025-09-08",
+        }),
+        certificado(CNPJ_A, "A", "propria", { dadosDe: "2026-10-13" }),
+      ],
+    }).get(CNPJ_A)!;
+    const [remedio] = certificadosDe(a).filter((c) => c.area === "medicamentos");
+    expect(remedio!.linhas).toEqual(["Sólidos não estéreis: Comprimidos", "Líquidos"]);
+    expect(dadosDeRemedios(a)).toBe("2025-09-08");
+    const semRemedio = agrupar({ ...vazio, certificados: [certificado(CNPJ_A, "A", "propria")] }).get(CNPJ_A)!;
+    expect(dadosDeRemedios(semRemedio)).toBeNull();
+  });
+
+  it("dois certificados vigentes põem a página no índice; um vigente e um vencido, não", () => {
+    const m = agrupar({
+      ...vazio,
+      certificados: [
+        certificado(CNPJ_A, "A", "propria"),
+        certificado(CNPJ_A, "A", "exterior", { codigo: "C000002", inspecionada: "X", pais: "CHINA" }),
+        certificado(CNPJ_B, "B", "propria"),
+        certificado(CNPJ_B, "B", "propria", { vigente: false, cancelado: true }),
+      ],
+    });
+    expect(indexavel(m.get(CNPJ_A)!)).toBe(true);
+    expect(indexavel(m.get(CNPJ_B)!)).toBe(false);
+  });
+
+  it("toda área tem rótulo", () => {
+    const areas: AreaCertificado[] = [
+      "produtos_saude",
+      "insumos",
+      "medicamentos",
+      "cosmeticos",
+      "saneantes",
+      "alimentos",
+      "outros",
+    ];
+    for (const a of areas) expect(AREA_CERTIFICADO[a]).toMatch(/^[a-zà-ú ]+$/);
+  });
+
+  it("entrada sem as tabelas novas (build de dados anterior) deixa as listas vazias", () => {
+    const emp = agrupar({ ...vazio, alimentos: [alimento(1, "A", true)] }).get(CNPJ_A)!;
+    expect(emp).toMatchObject({
+      fabricadoPor: [],
+      fabricasCertificadas: [],
+      certificadaPara: [],
+      certificadosSemFabrica: [],
+    });
   });
 });
 

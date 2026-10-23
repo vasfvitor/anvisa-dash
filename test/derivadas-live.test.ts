@@ -1,6 +1,7 @@
-// As tabelas derivadas do repo `anvisa` (produtos, empresas, medidas, alimentos_fabricacao) contra o SQL da
-// ilha ou as tabelas cruas, sobre os dados reais. Só roda com DADOS_LIVE apontando para uma pasta com os
-// .parquet de TABELAS (baixados do manifest ao vivo); sem ela, fica de fora (não há rede no CI).
+// As tabelas derivadas do repo `anvisa` (produtos, empresas, medidas, alimentos_fabricacao, e, quando a pasta as
+// tem, produtos_saude_fabricacao e certificados) contra o SQL da ilha ou as tabelas cruas, sobre os dados reais.
+// Só roda com DADOS_LIVE apontando para uma pasta com os .parquet de TABELAS (baixados do manifest ao vivo); sem
+// ela, fica de fora (não há rede no CI). As de OPCIONAIS só entram quando a pasta as tem.
 // Primeira rodada em 2026-10-11 contra o build 20261012T000746Z; o que deve bater está no handoff
 // ~/SharedFiles/agent/dados-produto/PROMPT.md.
 import { existsSync } from "node:fs";
@@ -8,19 +9,24 @@ import { join } from "node:path";
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { SQL_PRODUTOS } from "../src/corredores/alimentos/consultas";
-import { sqlPalavras } from "../src/lib/palavras";
+import { chave } from "../src/lib/chave";
+import { chaveSql, sqlPalavras } from "../src/lib/palavras";
 import { TS } from "../src/lib/consultas";
 import { sqlCos } from "../src/corredores/cosmeticos/consultas";
 import { SQL_SAN } from "../src/corredores/saneantes/consultas";
 import { MEDIDAS_BUSCA, SQL_MEDIDAS, sqlNumeros } from "../src/lib/consultas";
+import { SQL_PS } from "../src/corredores/produtos_saude/consultas";
 import {
   sqlAlimentosDe,
+  sqlCertificadosDe,
   sqlCosmeticosDe,
   sqlCosmeticosTotaisDe,
+  sqlFabricacaoDispositivosDe,
   sqlNumerosCosmeticos,
   sqlSaneantesDe,
 } from "../src/lib/estatico/dados";
-import { COSMETICOS_POR_EMPRESA } from "../src/lib/estatico/empresas";
+import { agrupar, COSMETICOS_POR_EMPRESA, indexavel, totalProdutos, type Entrada } from "../src/lib/estatico/empresas";
+import { indexarFabricantes, type LinhaFabricacaoDispositivo } from "../src/lib/estatico/fabricantes";
 import type { Numeros } from "../src/lib/fonte";
 import { deJson, resumirAlergia, type Sinal } from "../src/corredores/alimentos/alergia";
 
@@ -38,6 +44,8 @@ const TABELAS = [
   "alimentos_por_produto",
   "alimentos_fabricacao",
 ];
+// as do build de dados de 2026-10-23: sem elas na pasta, os testes delas ficam de fora
+const OPCIONAIS = ["produtos_saude", "produtos_saude_por_produto", "produtos_saude_fabricacao", "certificados"];
 
 // a tabela produtos como a ilha a derivava de alimentos até 2026-10-12 (SQL_PRODUTOS antigo): a referência de
 // tudo o que a ilha lê hoje de alimentos_por_produto (busca e busca_nome no formato ' a b c ' de sqlPalavras,
@@ -92,6 +100,7 @@ const SQL_MEDIDAS_ANTIGO = `CREATE TABLE medidas_antigo AS
     FROM (SELECT *, trim(produto) AS prod FROM "produtos_irregulares") WHERE coalesce(prod, '') <> ''
     GROUP BY co_tipo_produto, co_seq_dossie_investig_med, prod`;
 const pronta = !!pasta && TABELAS.every((t) => existsSync(join(pasta, `${t}.parquet`)));
+const comOpcionais = pronta && OPCIONAIS.every((t) => existsSync(join(pasta, `${t}.parquet`)));
 
 describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_LIVE)", () => {
   let instancia: DuckDBInstance;
@@ -109,7 +118,7 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
   beforeAll(async () => {
     instancia = await DuckDBInstance.create(":memory:");
     con = await instancia.connect();
-    for (const t of TABELAS) {
+    for (const t of comOpcionais ? [...TABELAS, ...OPCIONAIS] : TABELAS) {
       const arquivo = join(pasta!, `${t}.parquet`).replaceAll("'", "''");
       // o Parquet "produtos" do manifest fica como `produtos_pub`: a ilha chama sua derivada de `produtos`
       const nome = t === "produtos" ? "produtos_pub" : t;
@@ -377,5 +386,123 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
     );
     console.log("empresas × site:", r);
     expect(r.so_no_site).toBe(0);
+  });
+
+  // produtos_saude_fabricacao refeita da tabela crua: os pares (detentora, chave, país) com os registros, a
+  // chave igual em JS e no SQL do site, e a regra de quem tem página igual na ilha e no build
+  it.skipIf(!comOpcionais)("produtos_saude_fabricacao: pares, chaves e páginas de fabricante", async () => {
+    const psf = "produtos_saude_fabricacao";
+    const crua = `SELECT cnpj, chave, pais, count(DISTINCT registro)::INTEGER AS registros,
+        min(chave_empresa) = chave AND pais = 'BRASIL' AS propria
+      FROM (SELECT cnpj_detentor_registro_cadastro AS cnpj, ${chaveSql("nome_fabricante")} AS chave,
+          nome_pais_fabric AS pais, numero_registro_cadastro AS registro,
+          ${chaveSql("detentor_registro_cadastro")} AS chave_empresa
+        FROM produtos_saude WHERE nome_fabricante IS NOT NULL)
+      GROUP BY cnpj, chave, pais`;
+    const derivada = `SELECT cnpj, chave, pais, registros, vinculo = 'propria' AS propria FROM ${psf}`;
+    expect(await diferentes(crua, derivada)).toBe(0);
+    expect(await diferentes(derivada, crua)).toBe(0);
+    expect(await contar(`SELECT 1 FROM ${psf} WHERE (vinculo = 'exterior') <> (pais <> 'BRASIL')`)).toBe(0);
+    // a chave do site (JS e SQL) é a do repo `anvisa`
+    expect(await contar(`SELECT 1 FROM ${psf} WHERE ${chaveSql("fabricante")} <> chave`)).toBe(0);
+    const todas = await linhas<LinhaFabricacaoDispositivo>(sqlFabricacaoDispositivosDe());
+    expect(todas.filter((l) => chave(l.fabricante) !== l.chave).slice(0, 3)).toEqual([]);
+    // a regra de página (indexarFabricantes, a mesma na ilha) contra a contagem em SQL por chave e país
+    const paginas = indexarFabricantes(todas);
+    const { n } = await uma<{ n: number }>(
+      `SELECT count(*)::INTEGER AS n FROM (SELECT chave, pais FROM ${psf} GROUP BY ALL
+       HAVING count(DISTINCT cnpj) FILTER (WHERE vinculo <> 'propria') >= 2)`,
+    );
+    expect(paginas.size).toBe(n);
+    console.log("produtos_saude_fabricacao:", todas.length, "pares,", paginas.size, "fabricantes com página");
+  });
+
+  // as três listas de produtos_saude_por_produto alinhadas, e o texto da ilha (sqlPs) sem perder posição
+  it.skipIf(!comOpcionais)("produtos_saude_por_produto: fabricantes, chaves e países alinhados", async () => {
+    const ppp = "produtos_saude_por_produto";
+    expect(
+      await contar(
+        `SELECT 1 FROM ${ppp} WHERE fabricantes IS NULL OR len(fabricantes) <> len(fabricantes_chaves)
+         OR len(fabricantes) <> len(fabricantes_paises)`,
+      ),
+    ).toBe(0);
+    const comFabricante = await linhas<{ fabricantes: string[]; chaves: string[]; paises: (string | null)[] }>(
+      `SELECT fabricantes, fabricantes_chaves AS chaves, fabricantes_paises AS paises FROM ${ppp} WHERE len(fabricantes) > 0`,
+    );
+    const erros: string[] = [];
+    for (const l of comFabricante) {
+      l.fabricantes.forEach((texto, i) => {
+        const pais = l.paises[i];
+        const nome = pais && texto.endsWith(` (${pais})`) ? texto.slice(0, -pais.length - 3) : texto;
+        if (chave(nome) !== l.chaves[i]) erros.push(`${texto} → ${l.chaves[i]}`);
+      });
+    }
+    expect(erros.slice(0, 3)).toEqual([]);
+    await con.run(SQL_PS);
+    expect(
+      await contar(
+        `SELECT 1 FROM ps WHERE fabricantes <> '' AND (len(string_split(fabricantes, '|')) <> len(string_split(fabricantes_chaves, '|'))
+           OR len(string_split(fabricantes, '|')) <> len(string_split(fabricantes_paises, '|')))`,
+      ),
+    ).toBe(0);
+  });
+
+  // certificados: as regras que a página de empresa supõe, e o que ela monta com eles
+  it.skipIf(!comOpcionais)("certificados: vínculo, código, vigência, linhas e área coerentes", async () => {
+    const c = "certificados";
+    expect(await contar(`SELECT id FROM ${c} GROUP BY id HAVING count(*) > 1`)).toBe(0);
+    expect(await contar(`SELECT 1 FROM ${c} WHERE NOT regexp_full_match(cnpj, '[0-9]{14}')`)).toBe(0);
+    const vinculo = `CASE
+        WHEN inspecionada_cnpj = cnpj THEN 'propria'
+        WHEN left(inspecionada_cnpj, 8) = left(cnpj, 8) THEN 'grupo'
+        WHEN inspecionada_cnpj IS NOT NULL THEN 'terceira'
+        WHEN inspecionada_codigo IS NOT NULL THEN 'exterior'
+        ELSE 'desconhecida' END`;
+    expect(await contar(`SELECT 1 FROM ${c} WHERE vinculo IS DISTINCT FROM ${vinculo}`)).toBe(0);
+    expect(
+      await contar(`SELECT 1 FROM ${c} WHERE inspecionada_cnpj IS NOT NULL AND inspecionada_codigo IS NOT NULL`),
+    ).toBe(0);
+    expect(await contar(`SELECT 1 FROM ${c} WHERE NOT regexp_full_match(inspecionada_codigo, '[ABC][0-9]{6}')`)).toBe(
+      0,
+    );
+    expect(
+      await contar(`SELECT 1 FROM ${c} WHERE vigente AND (cancelado OR validade IS NULL OR validade < dados_de)`),
+    ).toBe(0);
+    expect(await contar(`SELECT 1 FROM ${c} WHERE vigente IS NULL OR cancelado IS NULL`)).toBe(0);
+    expect(await contar(`SELECT 1 FROM ${c} WHERE area <> 'medicamentos' AND len(linhas) > 0`)).toBe(0);
+    expect(
+      await contar(`SELECT 1 FROM ${c} WHERE list_bool_or(list_transform(linhas, lambda x: contains(x, '|')))`),
+    ).toBe(0);
+    expect(
+      await contar(
+        `SELECT 1 FROM ${c} WHERE area NOT IN ('produtos_saude', 'insumos', 'medicamentos', 'cosmeticos', 'saneantes', 'alimentos', 'outros')`,
+      ),
+    ).toBe(0);
+
+    // o que o build monta: quem só tem certificado ganha página, e cada certificado aparece numa só lista
+    const certificados = await linhas<NonNullable<Entrada["certificados"]>[number]>(sqlCertificadosDe());
+    const empresas = agrupar({
+      alimentos: await linhas<Entrada["alimentos"][number]>(novoAlimentos),
+      saneantes: await linhas<Entrada["saneantes"][number]>(novoSaneantes),
+      cosmeticos: [],
+      cosmeticosTotais: [],
+      medidas: [],
+      certificados,
+    });
+    let pedidos = 0;
+    let soCertificado = 0;
+    let indexaveis = 0;
+    for (const e of empresas.values()) {
+      pedidos +=
+        e.fabricasCertificadas.reduce((n, p) => n + p.certificados.length, 0) + e.certificadosSemFabrica.length;
+      if (totalProdutos(e) === 0 && e.envasaPara.length === 0) {
+        soCertificado++;
+        if (indexavel(e)) indexaveis++;
+      }
+    }
+    expect(pedidos).toBe(certificados.length);
+    console.log(
+      `certificados: ${certificados.length}; empresas sem alimento nem produto de limpeza: ${soCertificado} (${indexaveis} indexáveis)`,
+    );
   });
 });

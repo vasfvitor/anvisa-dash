@@ -15,4 +15,10 @@ export const TABELAS: Record<string, InfoTabela> = {
       "Uma linha por registro ou cadastro de produto para saúde na ANVISA, com nome técnico, classe de risco, empresa, a lista de fabricantes com o país, publicação e validade; derivada da tabela produtos_saude.",
     palavras: ["dispositivos médicos", "produtos para saúde", "registro", "fabricantes", "classe de risco"],
   },
+  produtos_saude_fabricacao: {
+    titulo: "Quem fabrica os dispositivos médicos de cada empresa",
+    descricao:
+      "Uma linha por empresa detentora, fabricante (chave do nome e grafia mais frequente) e país dos seus dispositivos médicos na ANVISA, com o vínculo entre elas e quantos registros e cadastros a detentora tem com cada fabricante; derivada de produtos_saude.",
+    palavras: ["dispositivos médicos", "fabricante", "importador", "produtos para saúde", "terceirização"],
+  },
 };

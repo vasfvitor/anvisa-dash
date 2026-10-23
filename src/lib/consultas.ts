@@ -4,6 +4,12 @@ import { sqlPalavras } from "./palavras";
 // datas saem como texto sem fuso: o tipo temporal do Arrow muda de unidade conforme a versão
 export const TS = (expr: string, nome: string) => `strftime(${expr}, '%Y-%m-%dT%H:%M:%S') AS ${nome}`;
 
+/**
+ * Os certificados de boas práticas de fabricação e de distribuição (CBPF e CBPDA) de todas as áreas, um por linha,
+ * derivados no repo `anvisa` de cbpf e cbpf_medicamentos; só o build das páginas de empresa lê.
+ */
+export const TABELA_CERTIFICADOS = "certificados";
+
 /** A tabela de medidas de fiscalização do manifest: derivada de produtos_irregulares no repo `anvisa`. */
 export const TABELA_MEDIDAS = "medidas";
 /** A view sobre ela que a busca lê (SQL_MEDIDAS). */
