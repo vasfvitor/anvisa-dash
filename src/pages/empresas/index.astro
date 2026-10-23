@@ -16,6 +16,6 @@ const contagem = [...porLetra(empresas.values())].map(([l, lista]) => [l, lista.
   description={`As ${fmtInt(empresas.size)} empresas com alimentos, suplementos, produtos de limpeza, cosméticos ou medidas na ANVISA, em ordem alfabética.`}
 >
   <h1>Empresas</h1>
-  <p class="lead">{fmtInt(empresas.size)} empresas com produto ou medida na ANVISA.</p>
+  <p class="lead">{fmtInt(empresas.size)} empresas com produto, medida ou envase de alimentos na ANVISA.</p>
   <LetrasEmpresas contagem={contagem} />
 </Base>

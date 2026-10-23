@@ -11,6 +11,11 @@ import { sqlPalavras } from "../../lib/palavras";
 export const TABELA = "alimentos_por_produto";
 export const TABELA_CRUA = "alimentos";
 export const TABELA_DETALHE = "alimentos_resultado";
+/**
+ * Quem envasa ou fabrica os alimentos de cada empresa (uma linha por empresa detentora e fabricante), derivada no
+ * repo `anvisa` de alimentos e alimentos_resultado; só o build das páginas de empresa e o link da envasadora leem.
+ */
+export const TABELA_FABRICACAO = "alimentos_fabricacao";
 
 /**
  * produtos: a tabela principal com os nomes de coluna que o cartão e a página leem (os da origem da ANVISA,

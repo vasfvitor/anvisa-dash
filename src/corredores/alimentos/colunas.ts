@@ -15,6 +15,12 @@ export const TABELAS: Record<string, InfoTabela> = {
       "Detalhe de cada apresentação: validade, forma física, embalagens, ingredientes, intolerâncias e alergênicos.",
     palavras: ["alergênicos", "ingredientes", "embalagens", "validade"],
   },
+  alimentos_fabricacao: {
+    titulo: "Quem fabrica os alimentos de cada empresa: envasadoras e fabricantes no exterior",
+    descricao:
+      "Uma linha por empresa detentora e fabricante dos seus alimentos e suplementos: a envasadora brasileira (CNPJ, cidade) ou o fabricante no exterior (código ANVISA), o vínculo entre elas e quantos produtos cada uma faz.",
+    palavras: ["envasadora", "fabricante", "terceirização", "marca própria", "alimentos"],
+  },
   // CICLO_ANALISE_PETICOES_ALIMENTO e …_ANDAMENTO_ALIMENTO; só o primeiro tem data_primeira_finalizacao
   peticoes_alimento: {
     titulo: "Ciclo de análise das petições de alimentos na ANVISA",

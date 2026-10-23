@@ -41,6 +41,8 @@ export interface Empresa {
   local: string;
   /** CNPJ formatado, ou o código da ANVISA para fabricante estrangeiro */
   codigo: string;
+  /** os 14 dígitos do CNPJ, para o link da página da empresa; "" no fabricante estrangeiro */
+  cnpj: string;
 }
 
 /**
@@ -62,7 +64,7 @@ export function empresas(s: string | null | undefined): Empresa[] {
     }
     const codigo = fmtCnpj(cod); // CNPJ formatado; código estrangeiro passa como veio
     const chave = `${nome}|${local}|${codigo}`;
-    if (!vistas.has(chave)) vistas.set(chave, { nome, local, codigo });
+    if (!vistas.has(chave)) vistas.set(chave, { nome, local, codigo, cnpj: /^\d{14}$/.test(cod) ? cod : "" });
   }
   return [...vistas.values()];
 }

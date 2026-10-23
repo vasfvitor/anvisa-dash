@@ -17,6 +17,8 @@ import {
 import { CNPJ } from "../../lib/estatico/empresas";
 import { ativo as estaAtivo, indeferido as foiIndeferido, marcaPrincipal } from "./produto";
 import { buscarApresentacoes, fonte, type Apresentacao, type Produto } from "./fonte";
+import { TABELA_FABRICACAO } from "./consultas";
+import { iniciar } from "../../lib/db";
 // SITUACAO aqui é o campo da apresentação; a situação na ANVISA entra como ESTADO
 import { notaTipo, SITUACAO as ESTADO, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
@@ -38,6 +40,16 @@ const aps = shallowRef<Apresentacao[] | null>(null);
 const carregando = ref(true);
 const erro = ref("");
 const todasMarcas = ref(false);
+// com alimentos_fabricacao no build de dados, toda envasadora tem página de empresa (mesmo sem produto
+// próprio): o nome dela vira link; sem a tabela, ou se o manifest não abrir, fica texto
+const comPaginaDaEnvasadora = ref(false);
+iniciar()
+  .then((m) => {
+    comPaginaDaEnvasadora.value = TABELA_FABRICACAO in m.tables;
+  })
+  .catch(() => {
+    comPaginaDaEnvasadora.value = false;
+  });
 // o BuscaApp monta esta página de novo a cada produto (:key), então ela carrega uma vez só
 async function carregar(): Promise<void> {
   try {
@@ -328,8 +340,11 @@ const linkAnvisa = computed(() =>
             <dd>
               <ul class="empresas">
                 <li v-for="e in f.lista" :key="e.nome + e.codigo">
-                  {{ legivel(e.nome, "nome")
-                  }}<span v-if="e.local" class="muted"> · {{ legivel(e.local, "nome") }}</span>
+                  <a v-if="f.comCodigo && e.cnpj && comPaginaDaEnvasadora" :href="url(`/empresa/${e.cnpj}/`)">{{
+                    legivel(e.nome, "nome")
+                  }}</a
+                  ><template v-else>{{ legivel(e.nome, "nome") }}</template
+                  ><span v-if="e.local" class="muted"> · {{ legivel(e.local, "nome") }}</span>
                   <span v-if="f.comCodigo && e.codigo" class="muted"> · {{ e.codigo }}</span>
                 </li>
               </ul>

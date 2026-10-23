@@ -51,6 +51,48 @@ export interface LinhaMedida {
   data: string;
 }
 
+/**
+ * O vínculo entre a empresa detentora e quem fabrica: o mesmo CNPJ (`propria`), outra filial da mesma raiz de
+ * 8 dígitos (`grupo`), outra empresa brasileira (`terceira`) ou um fabricante no exterior (`exterior`).
+ */
+export type Vinculo = "propria" | "grupo" | "terceira" | "exterior";
+
+/** Uma linha de alimentos_fabricacao: uma empresa detentora (cnpj, empresa) e um fabricante dos alimentos dela. */
+export interface LinhaFabricacao {
+  /** a envasadora brasileira; null no fabricante no exterior */
+  fabricanteCnpj: string | null;
+  /** o código da ANVISA do fabricante no exterior; null na envasadora brasileira ou quando a ANVISA não informa */
+  fabricanteCodigo: string | null;
+  /** o nome como a ANVISA escreve na apresentação */
+  fabricante: string;
+  cidade: string | null;
+  pais: string | null;
+  vinculo: Vinculo;
+  /** produtos distintos da detentora com esse fabricante */
+  produtos: number;
+  produtosAtivos: number;
+  apresentacoes: number;
+}
+
+/** A outra ponta de um envase entre duas empresas brasileiras, na página de uma delas. */
+export interface Envase {
+  cnpj: string;
+  nome: string;
+  cidade: string | null;
+  pais: string | null;
+  vinculo: "grupo" | "terceira";
+  /** os alimentos e suplementos da detentora que a envasadora faz */
+  produtos: number;
+  produtosAtivos: number;
+}
+
+/** Um fabricante no exterior dos alimentos da empresa: sem página, o mesmo nome e país pode ter vários códigos. */
+export interface FabricanteExterior {
+  nome: string;
+  pais: string | null;
+  codigos: string[];
+}
+
 /** Cada linha como sai da consulta: com o CNPJ e o nome da empresa que a agrupa. */
 interface DaEmpresa {
   cnpj: string;
@@ -68,6 +110,8 @@ export interface Entrada {
   /** produtos para saúde: `tipo` Registrado ou Cadastrado, `vencimento` só nos registros */
   produtosSaude?: (LinhaValidade & DaEmpresa)[];
   medidas: (LinhaMedida & DaEmpresa)[];
+  /** alimentos_fabricacao: ausente ou vazia quando o build de dados ainda não tem a tabela */
+  fabricacao?: (LinhaFabricacao & DaEmpresa)[];
 }
 
 export interface Empresa {
@@ -81,22 +125,31 @@ export interface Empresa {
   medicamentos: LinhaValidade[];
   produtosSaude: LinhaValidade[];
   medidas: LinhaMedida[];
+  /** as empresas para as quais esta envasa alimentos (outra filial do grupo ou terceira) */
+  envasaPara: Envase[];
+  /** as envasadoras brasileiras dos alimentos desta empresa, fora ela mesma */
+  envasadoPor: Envase[];
+  /** os fabricantes no exterior dos alimentos desta empresa */
+  exterior: FabricanteExterior[];
 }
 
 const porNome = (a: { ativo: boolean; nome: string }, b: { ativo: boolean; nome: string }) =>
   Number(b.ativo) - Number(a.ativo) || a.nome.localeCompare(b.nome, "pt-BR");
 
 /**
- * Uma empresa por CNPJ com produto ou com medida da ANVISA (quem só tem medida também é procurado: "essa
- * marca é confiável?"). O nome é o mais frequente nos produtos, ou nas medidas quando não há produto: a
- * razão social varia na grafia entre processos. Liberados primeiro, depois por nome; medidas da mais recente
- * para a mais antiga.
+ * Uma empresa por CNPJ com produto, com medida da ANVISA (quem só tem medida também é procurado: "essa marca é
+ * confiável?") ou com envase de alimentos para outra empresa (a envasadora sem produto próprio também é
+ * procurada: "quem fabrica esta marca?"). O nome é o mais frequente nos produtos, depois nas medidas, depois
+ * no nome da envasadora escrito nas apresentações: a razão social varia na grafia entre processos. Liberados
+ * primeiro, depois por nome; medidas da mais recente para a mais antiga; envases dos que mais produtos fazem
+ * para os que menos.
  */
 export function agrupar(e: Entrada): Map<string, Empresa> {
   const empresas = new Map<string, Empresa>();
-  const nomes = new Map<string, { produtos: Map<string, number>; medidas: Map<string, number> }>();
+  type Origem = "produtos" | "medidas" | "fabricacao";
+  const nomes = new Map<string, Record<Origem, Map<string, number>>>();
 
-  const da = (cnpj: string, nome: string, origem: "produtos" | "medidas"): Empresa | undefined => {
+  const da = (cnpj: string, nome: string, origem: Origem): Empresa | undefined => {
     if (!CNPJ.test(cnpj)) return undefined;
     let emp = empresas.get(cnpj);
     if (!emp) {
@@ -110,9 +163,12 @@ export function agrupar(e: Entrada): Map<string, Empresa> {
         medicamentos: [],
         produtosSaude: [],
         medidas: [],
+        envasaPara: [],
+        envasadoPor: [],
+        exterior: [],
       };
       empresas.set(cnpj, emp);
-      nomes.set(cnpj, { produtos: new Map(), medidas: new Map() });
+      nomes.set(cnpj, { produtos: new Map(), medidas: new Map(), fabricacao: new Map() });
     }
     if (nome) {
       const conta = nomes.get(cnpj)![origem];
@@ -143,18 +199,55 @@ export function agrupar(e: Entrada): Map<string, Empresa> {
     });
   }
 
+  // a fabricação depois de produtos e medidas: o nome da envasadora escrito na apresentação é a última opção
+  for (const f of e.fabricacao ?? []) {
+    if (f.vinculo === "propria") continue; // a empresa envasa o que é dela: nada a ligar
+    if (f.vinculo === "exterior") {
+      const dono = da(f.cnpj, f.empresa, "fabricacao");
+      if (!dono) continue;
+      // o mesmo fabricante aparece sob mais de um código: uma linha por nome e país, sem somar produtos
+      const igual = dono.exterior.find((x) => x.nome === f.fabricante && x.pais === f.pais);
+      if (!igual)
+        dono.exterior.push({
+          nome: f.fabricante,
+          pais: f.pais,
+          codigos: f.fabricanteCodigo ? [f.fabricanteCodigo] : [],
+        });
+      else if (f.fabricanteCodigo && !igual.codigos.includes(f.fabricanteCodigo))
+        igual.codigos.push(f.fabricanteCodigo);
+      continue;
+    }
+    if (!f.fabricanteCnpj) continue;
+    const dono = da(f.cnpj, f.empresa, "fabricacao");
+    const quem = da(f.fabricanteCnpj, f.fabricante, "fabricacao");
+    if (!dono || !quem) continue;
+    const comum = { vinculo: f.vinculo, produtos: f.produtos, produtosAtivos: f.produtosAtivos };
+    dono.envasadoPor.push({ cnpj: quem.cnpj, nome: f.fabricante, cidade: f.cidade, pais: f.pais, ...comum });
+    // a cidade da detentora não vem na linha: só a da envasadora
+    quem.envasaPara.push({ cnpj: dono.cnpj, nome: f.empresa, cidade: null, pais: null, ...comum });
+  }
+
   for (const emp of empresas.values()) {
-    const { produtos, medidas } = nomes.get(emp.cnpj)!;
-    emp.nome = maisFrequente(produtos.size ? produtos : medidas);
+    const { produtos, medidas, fabricacao } = nomes.get(emp.cnpj)!;
+    emp.nome = maisFrequente(produtos.size ? produtos : medidas.size ? medidas : fabricacao);
     emp.alimentos.sort(porNome);
     emp.saneantes.sort(porNome);
     emp.cosmeticos.sort(porNome);
     emp.medicamentos.sort(porNome);
     emp.produtosSaude.sort(porNome);
     emp.medidas.sort((a, b) => b.data.localeCompare(a.data) || a.produto.localeCompare(b.produto, "pt-BR"));
+    emp.exterior.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR") || (a.pais ?? "").localeCompare(b.pais ?? ""));
+  }
+  // os dois lados com o nome que a página da outra empresa usa, agora que todos os nomes estão escolhidos
+  for (const emp of empresas.values()) {
+    for (const x of [...emp.envasaPara, ...emp.envasadoPor]) x.nome = empresas.get(x.cnpj)?.nome || x.nome;
+    emp.envasaPara.sort(porProdutos);
+    emp.envasadoPor.sort(porProdutos);
   }
   return empresas;
 }
+
+const porProdutos = (a: Envase, b: Envase) => b.produtos - a.produtos || a.nome.localeCompare(b.nome, "pt-BR");
 
 /** O mais frequente; no empate, o primeiro em ordem alfabética (estável entre builds). Sem nenhum, "". */
 function maisFrequente(conta: Map<string, number>): string {
@@ -181,6 +274,9 @@ export function resumo(emp: Empresa) {
     produtosSaude: emp.produtosSaude.length,
     produtosSaudeAtivos: ativos(emp.produtosSaude),
     medidas: emp.medidas.length,
+    envasaPara: emp.envasaPara.length,
+    envasadoPor: emp.envasadoPor.length,
+    exterior: emp.exterior.length,
   };
 }
 
@@ -197,10 +293,15 @@ export const PRODUTOS_PARA_INDEXAR = 2;
  * Se a página da empresa entra no índice dos buscadores (e no sitemap). Com um produto só, ou só com medidas,
  * a página é um parágrafo de modelo e uma linha de tabela: 4.363 das 16.466 páginas no build de 2026-10-13. O
  * Google julga o site inteiro pela média das páginas que rastreia, e milhares dessas o levam a deixar de fora
- * até as boas ("rastreada, mas não indexada"). As páginas finas continuam no ar e nas listas de A a Z.
+ * até as boas ("rastreada, mas não indexada"). As páginas finas continuam no ar e nas listas de A a Z. A
+ * envasadora sem produto próprio que envasa para duas empresas ou mais (fora o próprio grupo) entra: a página
+ * dela lista os clientes, e é o que se procura quando se quer saber quem fabrica uma marca.
  */
 export function indexavel(emp: Empresa): boolean {
-  return totalProdutos(emp) >= PRODUTOS_PARA_INDEXAR;
+  return (
+    totalProdutos(emp) >= PRODUTOS_PARA_INDEXAR ||
+    emp.envasaPara.filter((x) => x.vinculo === "terceira").length >= PRODUTOS_PARA_INDEXAR
+  );
 }
 
 /** As letras da lista de empresas (/empresas/<letra>/), na ordem; "0-9" junta quem começa com dígito ou símbolo. */

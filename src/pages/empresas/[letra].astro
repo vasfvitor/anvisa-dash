@@ -3,7 +3,7 @@
 import Base from "../../layouts/Base.astro";
 import LetrasEmpresas from "../../components/LetrasEmpresas.astro";
 import { empresasDoBuild } from "../../lib/estatico/dados";
-import { porLetra, resumo, type Empresa } from "../../lib/estatico/empresas";
+import { porLetra, resumo, totalProdutos, type Empresa } from "../../lib/estatico/empresas";
 import { fmtCnpj, fmtInt, plural, url } from "../../lib/format";
 import { legivel } from "../../lib/texto";
 
@@ -25,8 +25,13 @@ const rotulo = letra === "0-9" ? "0–9" : letra!.toUpperCase();
 
 const detalhe = (e: Empresa) => {
   const r = resumo(e);
-  const produtos = r.alimentos + r.saneantes + r.cosmeticos;
-  return [fmtCnpj(e.cnpj), produtos > 0 && plural(produtos, "produto"), r.medidas > 0 && plural(r.medidas, "medida")]
+  const produtos = totalProdutos(e);
+  return [
+    fmtCnpj(e.cnpj),
+    produtos > 0 && plural(produtos, "produto"),
+    r.envasaPara > 0 && `envasa para ${plural(r.envasaPara, "empresa")}`,
+    r.medidas > 0 && plural(r.medidas, "medida"),
+  ]
     .filter(Boolean)
     .join(" · ");
 };
@@ -34,11 +39,12 @@ const detalhe = (e: Empresa) => {
 
 <Base
   title={`Empresas: ${rotulo}`}
-  description={`${plural(lista.length, "empresa")} com nome ${letra === "0-9" ? "começando por número ou símbolo" : `em ${rotulo}`} e produto ou medida na ANVISA, com o CNPJ e a quantidade de produtos de cada uma.`}
+  description={`${plural(lista.length, "empresa")} com nome ${letra === "0-9" ? "começando por número ou símbolo" : `em ${rotulo}`} e produto, medida ou envase de alimentos na ANVISA, com o CNPJ e a quantidade de produtos de cada uma.`}
 >
   <h1>Empresas: {rotulo}</h1>
   <p class="lead">
-    {fmtInt(lista.length)} {lista.length === 1 ? "empresa" : "empresas"} com produto ou medida na ANVISA.
+    {fmtInt(lista.length)} {lista.length === 1 ? "empresa" : "empresas"} com produto, medida ou envase de alimentos na
+    ANVISA.
   </p>
   <LetrasEmpresas contagem={contagem} atual={letra} />
   <ul class="lista-empresas">

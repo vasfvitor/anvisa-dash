@@ -20,8 +20,13 @@ describe("empresas", () => {
     const s =
       "VIDA FORTE LTDA - ARAÇOIABA DA SERRA - BRASIL ; 07455576000192 | VIDA FORTE LTDA - ARAÇOIABA DA SERRA - BRASIL ; 07455576000192 | DUTCH AMERICAN FOODS, INC. - ESTADOS UNIDOS DA AMÉRICA ; D000190";
     expect(empresas(s)).toEqual([
-      { nome: "VIDA FORTE LTDA", local: "ARAÇOIABA DA SERRA, BRASIL", codigo: "07.455.576/0001-92" },
-      { nome: "DUTCH AMERICAN FOODS, INC.", local: "ESTADOS UNIDOS DA AMÉRICA", codigo: "D000190" },
+      {
+        nome: "VIDA FORTE LTDA",
+        local: "ARAÇOIABA DA SERRA, BRASIL",
+        codigo: "07.455.576/0001-92",
+        cnpj: "07455576000192",
+      },
+      { nome: "DUTCH AMERICAN FOODS, INC.", local: "ESTADOS UNIDOS DA AMÉRICA", codigo: "D000190", cnpj: "" },
     ]);
   });
 });

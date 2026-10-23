@@ -1,7 +1,8 @@
 ---
-// Uma página por empresa com produto ou medida na ANVISA, gerada no build: os produtos de cada corredor com
-// situação e números, e as medidas de fiscalização. HTML puro, sem a ilha: buscadores e ferramentas de
-// leitura de página (inclusive as dos assistentes) leem sem rodar JavaScript.
+// Uma página por empresa com produto, medida ou envase de alimentos na ANVISA, gerada no build: os produtos de
+// cada corredor com situação e números, quem envasa ou fabrica os alimentos da empresa e para quem ela envasa
+// (a envasadora sem produto próprio também tem página), e as medidas de fiscalização. HTML puro, sem a ilha:
+// buscadores e ferramentas de leitura de página (inclusive as dos assistentes) leem sem rodar JavaScript.
 import Base from "../../layouts/Base.astro";
 import { CORREDORES, corredorPorId, rotaDo, type Corredor } from "../../corredores";
 import { MARCAS_NO_TITULO, tituloAlimento } from "../../corredores/alimentos/produto";
@@ -52,8 +53,13 @@ const comValidade = [
   { c: remedios, linhas: e.medicamentos, total: r.medicamentos },
   { c: dispositivos, linhas: e.produtosSaude, total: r.produtosSaude },
 ].filter((s) => s.linhas.length > 0);
+// as duas pontas do envase entre empresas brasileiras; os fabricantes no exterior vão numa lista sem link
+const fabricacao = [
+  { titulo: "Envasa para", lista: e.envasaPara },
+  { titulo: "Envasado por", lista: e.envasadoPor },
+].filter((f) => f.lista.length > 0);
 
-const partes = [
+const produtos = [
   r.alimentos &&
     `${plural(r.alimentos, "alimento ou suplemento", "alimentos e suplementos")} (${plural(r.alimentosAtivos, "liberado")})`,
   r.saneantes &&
@@ -63,14 +69,20 @@ const partes = [
   r.produtosSaude &&
     `${plural(r.produtosSaude, "dispositivo médico", "dispositivos médicos")} (${plural(r.produtosSaudeAtivos, "liberado")})`,
 ].filter(Boolean);
+const partes = [...produtos, r.envasaPara && `envasa para ${plural(r.envasaPara, "empresa")}`].filter(Boolean);
 const medidas = `${plural(r.medidas, "medida")} da ANVISA`;
 // a lista dos corredores, gerada: um sexto corredor não fica de fora das duas frases de "sem produto"
 const osCorredores = CORREDORES.map((c) => `os ${c.nome.toLocaleLowerCase("pt-BR")}`);
 const entreCorredores = `${osCorredores.slice(0, -1).join(", ")} e ${osCorredores.at(-1)}`;
 const semProdutoFrase = (de: string) => `Nenhum produto ${de} entre ${entreCorredores} na lista da ANVISA.`;
-const descricao = semProdutos
-  ? `${medidas} contra ${nome} (CNPJ ${fmtCnpj(e.cnpj)}). ${semProdutoFrase("da empresa")}`
-  : `${partes.join(", ").replace(/, ([^,]*)$/, " e $1")} de ${nome} (CNPJ ${fmtCnpj(e.cnpj)}) na ANVISA, com situação e números de processo.`;
+// a envasadora sem produto próprio: os produtos que ela faz estão em nome das clientes
+const soEnvasa = semProdutos && r.envasaPara > 0;
+const envasaFrase = `envasa alimentos e suplementos para ${plural(r.envasaPara, "empresa")}`;
+const descricao = soEnvasa
+  ? `${nome} (CNPJ ${fmtCnpj(e.cnpj)}) ${envasaFrase} na ANVISA.${r.medidas ? ` ${medidas} contra a empresa.` : ""} ${semProdutoFrase("em nome da empresa")}`
+  : semProdutos
+    ? `${medidas} contra ${nome} (CNPJ ${fmtCnpj(e.cnpj)}). ${semProdutoFrase("da empresa")}`
+    : `${produtos.join(", ").replace(/, ([^,]*)$/, " e $1")} de ${nome} (CNPJ ${fmtCnpj(e.cnpj)}) na ANVISA, com situação e números de processo.${r.envasaPara ? ` Também ${envasaFrase}.` : ""}`;
 const resumoLinha = [`CNPJ ${fmtCnpj(e.cnpj)}`, ...partes, r.medidas > 0 && medidas].filter(Boolean).join(" · ");
 
 const letra = letraDe(e.nome);
@@ -86,14 +98,14 @@ const organizacao = {
 ---
 
 <Base
-  title={`${nome}: ${semProdutos ? "medidas da ANVISA" : "produtos na ANVISA"}`}
+  title={`${nome}: ${soEnvasa ? "envasa alimentos para outras empresas" : semProdutos ? "medidas da ANVISA" : "produtos na ANVISA"}`}
   description={descricao}
   noindex={!indexavel(e)}
   estruturados={[organizacao]}
 >
   <h1>{nome}</h1>
   <p class="lead">{resumoLinha}</p>
-  {semProdutos && <p>{semProdutoFrase("desta empresa")}</p>}
+  {semProdutos && <p>{semProdutoFrase(soEnvasa ? "em nome desta empresa" : "desta empresa")}</p>}
   <p>
     <a href={busca}>Buscar esta empresa no contém.</a> ·{" "}
     <a href={url(`/empresas/${letra}/`)}>Outras empresas em {letra === "0-9" ? "0–9" : letra.toUpperCase()}</a>
@@ -189,6 +201,78 @@ const organizacao = {
       </div>
     </section>
   ))}
+
+  {fabricacao.length + e.exterior.length > 0 && (
+    <section>
+      <h2>Fabricação</h2>
+      <p>
+        Quem envasa ou fabrica os alimentos e suplementos desta empresa, e para quem ela envasa, segundo as
+        apresentações regularizadas na ANVISA.
+      </p>
+      {fabricacao.map(({ titulo, lista }) => (
+        <>
+          <h3>{titulo}</h3>
+          <div class="table-wrap">
+            <table class="produtos">
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th>Produtos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lista.map((x) => (
+                  <tr>
+                    <td>
+                      <span class="linha">
+                        <a href={url(`/empresa/${x.cnpj}/`)}>
+                          {x.nome ? legivel(x.nome, "nome") : `CNPJ ${fmtCnpj(x.cnpj)}`}
+                        </a>
+                        {x.vinculo === "grupo" && (
+                          <span class="muted" title="outra filial da mesma raiz de CNPJ">
+                            {" · mesmo grupo"}
+                          </span>
+                        )}
+                      </span>
+                      {(x.cidade || x.pais) && (
+                        <span class="linha muted">
+                          {legivel([x.cidade, x.pais].filter(Boolean).join(", "), "nome")}
+                        </span>
+                      )}
+                      <span class="linha numero">CNPJ {fmtCnpj(x.cnpj)}</span>
+                    </td>
+                    <td>
+                      <span class="linha">
+                        {plural(x.produtos, "alimento ou suplemento", "alimentos e suplementos")}
+                      </span>
+                      <span class="linha muted">{plural(x.produtosAtivos, "liberado")}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ))}
+      {e.exterior.length > 0 && (
+        <>
+          <h3>Fabricantes no exterior</h3>
+          <ul class="empresas">
+            {e.exterior.map((f) => (
+              <li>
+                {legivel(f.nome, "nome")}
+                {f.pais && <span class="muted">{` · ${legivel(f.pais, "nome")}`}</span>}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <p class="note">
+        Envasar para outra empresa é fabricar o produto que ela registra com a marca dela. Só os alimentos e suplementos
+        informam quem envasa.
+      </p>
+    </section>
+  )}
 
   {e.medidas.length > 0 && (
     <section>

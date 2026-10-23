@@ -2,9 +2,10 @@
 // /empresa/<cnpj>/. Tudo vem de tabelas que o repo `anvisa` deriva a cada build com a mesma definição que
 // a ilha: alimentos e saneantes de `produtos`, as medidas de `medidas`, os cosméticos de
 // `cosmeticos_por_empresa` (os primeiros de cada CNPJ, pelas regras de sqlCos; 7,6 MB em vez dos 24 MB da
-// tabela inteira) com os totais por empresa e do corredor em `empresas`. test/derivadas-live.test.ts
-// confere cada uma contra o SQL da ilha. Uma vez por processo (build ou dev); qualquer falha derruba o
-// build e o site no ar continua o anterior.
+// tabela inteira) com os totais por empresa e do corredor em `empresas`, e quem envasa ou fabrica os
+// alimentos de cada empresa de `alimentos_fabricacao` (a envasadora sem produto próprio também ganha página).
+// test/derivadas-live.test.ts confere cada uma contra o SQL da ilha. Uma vez por processo (build ou dev);
+// qualquer falha derruba o build e o site no ar continua o anterior.
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -16,6 +17,7 @@ import { fatiar } from "../format";
 import { MEDIDAS_BUSCA, SQL_MEDIDAS, sqlGrupoValidade, sqlNumeros, TABELA_MEDIDAS } from "../consultas";
 import type { Numeros } from "../fonte";
 import { manifestDoBuild, tabelaUrl, type Manifest } from "../manifest";
+import { TABELA_FABRICACAO } from "../../corredores/alimentos/consultas";
 import { agrupar, COSMETICOS_POR_EMPRESA, type Empresa, type Entrada } from "./empresas";
 
 /** A tabela derivada do manifest: uma linha por alimento ou saneante, nas mesmas colunas (`area` diz qual). */
@@ -63,6 +65,12 @@ export const sqlNumerosCosmeticos = (de = `"${TABELA_EMPRESAS}"`) =>
   `SELECT sum(cosmeticos)::INTEGER AS produtos, sum(cosmeticos_ativos)::INTEGER AS ativos,
     (count(*) FILTER (WHERE cosmeticos > 0))::INTEGER AS empresas FROM ${de}`;
 
+/** Quem envasa ou fabrica os alimentos de cada empresa, uma linha por empresa e fabricante, de `de`. */
+export const sqlFabricacaoDe = (de = `"${TABELA_FABRICACAO}"`) =>
+  `SELECT cnpj, empresa, fabricante_cnpj AS fabricanteCnpj, fabricante_codigo AS fabricanteCodigo, fabricante,
+    cidade, pais, vinculo, produtos, produtos_ativos AS produtosAtivos, apresentacoes
+  FROM ${de}`;
+
 interface DoBuild {
   empresas: Map<string, Empresa>;
   /** totais de cada corredor (os cosméticos só aqui: a ilha não baixa a tabela inteira) */
@@ -72,7 +80,7 @@ interface DoBuild {
 let doBuild: Promise<DoBuild> | undefined;
 const umaVez = () => (doBuild ??= carregar());
 
-/** As empresas com produto, por CNPJ. */
+/** As empresas com produto, medida ou envase, por CNPJ. */
 export async function empresasDoBuild(): Promise<Map<string, Empresa>> {
   return (await umaVez()).empresas;
 }
@@ -91,9 +99,11 @@ async function carregar(): Promise<DoBuild> {
     // tabela que o manifest ainda não tem fica sem seção, sem derrubar o build
     const medidas = TABELA_MEDIDAS in manifest.tables;
     const cosmeticos = TABELA_COSMETICOS_EMPRESA in manifest.tables && TABELA_EMPRESAS in manifest.tables;
+    const fabricacao = TABELA_FABRICACAO in manifest.tables;
     const opcionais = [
       ...(medidas ? [TABELA_MEDIDAS] : []),
       ...(cosmeticos ? [TABELA_COSMETICOS_EMPRESA, TABELA_EMPRESAS] : []),
+      ...(fabricacao ? [TABELA_FABRICACAO] : []),
     ];
     const nomes = [TABELA_PRODUTOS, ...opcionais];
     // os downloads em paralelo; as views uma a uma, na mesma conexão
@@ -120,7 +130,7 @@ async function carregar(): Promise<DoBuild> {
     for (const [id, sql] of consultas) {
       totais[id] = (await con.runAndReadAll(sql)).getRowObjectsJson()[0] as unknown as Numeros;
     }
-    return { empresas: agrupar(await ler(con, medidas, cosmeticos)), totais };
+    return { empresas: agrupar(await ler(con, medidas, cosmeticos, fabricacao)), totais };
   } finally {
     con.closeSync();
     db.closeSync();
@@ -147,7 +157,12 @@ const CORREDOR_DO_TIPO = new Map<number, IdCorredor>(
   CORREDORES.flatMap((c) => (c.tipoProduto ? [[c.tipoProduto, c.id] as const] : [])),
 );
 
-async function ler(con: DuckDBConnection, medidas: boolean, cosmeticos: boolean): Promise<Entrada> {
+async function ler(
+  con: DuckDBConnection,
+  medidas: boolean,
+  cosmeticos: boolean,
+  fabricacao: boolean,
+): Promise<Entrada> {
   const linhas = async <T>(sql: string) => (await con.runAndReadAll(sql)).getRowObjectsJson() as T[];
 
   const alimentos = await linhas<Entrada["alimentos"][number]>(sqlAlimentosDe());
@@ -159,7 +174,17 @@ async function ler(con: DuckDBConnection, medidas: boolean, cosmeticos: boolean)
   // lista os primeiros, liberados antes, e leva os totais para o resumo
   const cos = cosmeticos ? await linhas<Entrada["cosmeticos"][number]>(sqlCosmeticosDe()) : [];
   const cosmeticosTotais = cosmeticos ? await linhas<Entrada["cosmeticosTotais"][number]>(sqlCosmeticosTotaisDe()) : [];
-  const base = { alimentos, saneantes, cosmeticos: cos, cosmeticosTotais, medicamentos, produtosSaude };
+  // sem a tabela no manifest, nenhuma página ganha a seção Fabricação nem a envasadora sem produto
+  const fab = fabricacao ? await linhas<NonNullable<Entrada["fabricacao"]>[number]>(sqlFabricacaoDe()) : [];
+  const base = {
+    alimentos,
+    saneantes,
+    cosmeticos: cos,
+    cosmeticosTotais,
+    medicamentos,
+    produtosSaude,
+    fabricacao: fab,
+  };
   if (!medidas) return { ...base, medidas: [] };
 
   const tipos = [...CORREDOR_DO_TIPO.keys()].join(", ");

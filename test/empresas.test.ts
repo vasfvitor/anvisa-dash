@@ -51,6 +51,28 @@ const medida = (produto: string, data: string, cnpj = CNPJ_A, empresa = "EMPRESA
   empresa,
 });
 
+const fabricacao = (
+  cnpj: string,
+  empresa: string,
+  vinculo: "propria" | "grupo" | "terceira" | "exterior",
+  fabricante: string,
+  fabricanteCnpj: string | null,
+  produtos = 1,
+  outros: { codigo?: string | null; cidade?: string | null; pais?: string | null; ativos?: number } = {},
+) => ({
+  cnpj,
+  empresa,
+  fabricanteCnpj,
+  fabricanteCodigo: outros.codigo ?? null,
+  fabricante,
+  cidade: outros.cidade === undefined ? (vinculo === "exterior" ? null : "SÃO PAULO") : outros.cidade,
+  pais: outros.pais === undefined ? (vinculo === "exterior" ? "CHILE" : "BRASIL") : outros.pais,
+  vinculo,
+  produtos,
+  produtosAtivos: outros.ativos ?? produtos,
+  apresentacoes: produtos,
+});
+
 const vazio: Entrada = { alimentos: [], saneantes: [], cosmeticos: [], cosmeticosTotais: [], medidas: [] };
 
 describe("agrupar", () => {
@@ -155,6 +177,9 @@ describe("resumo", () => {
       produtosSaude: 0,
       produtosSaudeAtivos: 0,
       medidas: 0,
+      envasaPara: 0,
+      envasadoPor: 0,
+      exterior: 0,
     });
   });
 
@@ -223,6 +248,155 @@ describe("indexavel", () => {
     });
     expect(indexavel(m.get(CNPJ_A)!)).toBe(true);
     expect(indexavel(m.get(CNPJ_B)!)).toBe(true);
+  });
+});
+
+describe("fabricação", () => {
+  const CNPJ_C = "33333333000133";
+  const CNPJ_D = "44444444000144";
+
+  it("envase por terceira liga os dois lados e dá página à envasadora sem produto, com o nome da apresentação", () => {
+    const m = agrupar({
+      ...vazio,
+      alimentos: [alimento(1, "WHEY", true)],
+      fabricacao: [fabricacao(CNPJ_A, "EMPRESA A LTDA", "terceira", "ENVASA BEM LTDA", CNPJ_C, 3, { ativos: 2 })],
+    });
+    const a = m.get(CNPJ_A)!;
+    const c = m.get(CNPJ_C)!;
+    expect(c.nome).toBe("ENVASA BEM LTDA");
+    expect(totalProdutos(c)).toBe(0);
+    expect(a.envasadoPor).toEqual([
+      {
+        cnpj: CNPJ_C,
+        nome: "ENVASA BEM LTDA",
+        cidade: "SÃO PAULO",
+        pais: "BRASIL",
+        vinculo: "terceira",
+        produtos: 3,
+        produtosAtivos: 2,
+      },
+    ]);
+    expect(c.envasaPara).toEqual([
+      {
+        cnpj: CNPJ_A,
+        nome: "EMPRESA A LTDA",
+        cidade: null,
+        pais: null,
+        vinculo: "terceira",
+        produtos: 3,
+        produtosAtivos: 2,
+      },
+    ]);
+    expect(a.envasaPara).toEqual([]);
+    expect(c.envasadoPor).toEqual([]);
+  });
+
+  it("a empresa que envasa o que é dela não cria nada", () => {
+    const m = agrupar({
+      ...vazio,
+      alimentos: [alimento(1, "WHEY", true)],
+      fabricacao: [fabricacao(CNPJ_A, "EMPRESA A LTDA", "propria", "EMPRESA A LTDA", CNPJ_A)],
+    });
+    expect([...m.keys()]).toEqual([CNPJ_A]);
+    expect(m.get(CNPJ_A)!).toMatchObject({ envasaPara: [], envasadoPor: [], exterior: [] });
+  });
+
+  it("outra filial do grupo fica marcada como grupo dos dois lados", () => {
+    const filial = "11111111000292";
+    const m = agrupar({
+      ...vazio,
+      alimentos: [alimento(1, "WHEY", true)],
+      fabricacao: [fabricacao(CNPJ_A, "EMPRESA A LTDA", "grupo", "EMPRESA A LTDA", filial)],
+    });
+    expect(m.get(CNPJ_A)!.envasadoPor.map((x) => [x.cnpj, x.vinculo])).toEqual([[filial, "grupo"]]);
+    expect(m.get(filial)!.envasaPara.map((x) => [x.cnpj, x.vinculo])).toEqual([[CNPJ_A, "grupo"]]);
+  });
+
+  it("fabricante no exterior: um por nome e país, com os códigos juntos, sem somar produtos e sem página", () => {
+    const m = agrupar({
+      ...vazio,
+      alimentos: [alimento(1, "WHEY", true)],
+      fabricacao: [
+        fabricacao(CNPJ_A, "EMPRESA A LTDA", "exterior", "NESTLÉ MÉXICO", null, 4, {
+          codigo: "D000001",
+          pais: "MÉXICO",
+        }),
+        fabricacao(CNPJ_A, "EMPRESA A LTDA", "exterior", "NESTLÉ MÉXICO", null, 2, {
+          codigo: "D000002",
+          pais: "MÉXICO",
+        }),
+        fabricacao(CNPJ_A, "EMPRESA A LTDA", "exterior", "NESTLÉ MÉXICO", null, 1, {
+          codigo: "D000003",
+          pais: "CHILE",
+        }),
+        fabricacao(CNPJ_A, "EMPRESA A LTDA", "exterior", "ALFA FOODS", null, 1, { pais: null }),
+      ],
+    });
+    expect([...m.keys()]).toEqual([CNPJ_A]);
+    expect(m.get(CNPJ_A)!.exterior).toEqual([
+      { nome: "ALFA FOODS", pais: null, codigos: [] },
+      { nome: "NESTLÉ MÉXICO", pais: "CHILE", codigos: ["D000003"] },
+      { nome: "NESTLÉ MÉXICO", pais: "MÉXICO", codigos: ["D000001", "D000002"] },
+    ]);
+  });
+
+  it("os dois lados mostram o nome que a empresa tem nos produtos, e a lista vai de mais a menos produtos", () => {
+    const m = agrupar({
+      ...vazio,
+      alimentos: [
+        alimento(1, "WHEY", true),
+        alimento(2, "CREATINA", true, CNPJ_B, "EMPRESA B LTDA"),
+        alimento(3, "PROTEÍNA", true, CNPJ_C, "ENVASADORA C S.A."),
+      ],
+      fabricacao: [
+        fabricacao(CNPJ_A, "EMPRESA A", "terceira", "ENVASADORA C SA - EPP", CNPJ_C, 1),
+        fabricacao(CNPJ_B, "EMPRESA B", "terceira", "ENVASADORA C", CNPJ_C, 5),
+      ],
+    });
+    const c = m.get(CNPJ_C)!;
+    expect(c.nome).toBe("ENVASADORA C S.A.");
+    expect(c.envasaPara.map((x) => [x.nome, x.produtos])).toEqual([
+      ["EMPRESA B LTDA", 5],
+      ["EMPRESA A LTDA", 1],
+    ]);
+    expect(m.get(CNPJ_A)!.envasadoPor.map((x) => x.nome)).toEqual(["ENVASADORA C S.A."]);
+  });
+
+  it("a envasadora sem produto entra no índice com duas clientes de fora do grupo, não com uma", () => {
+    const filial = "33333333000214";
+    const m = agrupar({
+      ...vazio,
+      alimentos: [alimento(1, "WHEY", true), alimento(2, "CREATINA", true, CNPJ_B, "EMPRESA B LTDA")],
+      fabricacao: [
+        fabricacao(CNPJ_A, "EMPRESA A LTDA", "terceira", "ENVASA BEM LTDA", CNPJ_C),
+        fabricacao(CNPJ_B, "EMPRESA B LTDA", "terceira", "ENVASA BEM LTDA", CNPJ_C),
+        fabricacao(CNPJ_A, "EMPRESA A LTDA", "terceira", "SÓ UMA LTDA", CNPJ_D),
+        fabricacao("33333333000300", "OUTRA FILIAL", "grupo", "SÓ UMA LTDA", filial),
+        fabricacao(CNPJ_B, "EMPRESA B LTDA", "terceira", "SÓ UMA LTDA", filial),
+      ],
+    });
+    expect(indexavel(m.get(CNPJ_C)!)).toBe(true);
+    expect(indexavel(m.get(CNPJ_D)!)).toBe(false);
+    // uma cliente do grupo e uma de fora: a do grupo não conta
+    expect(indexavel(m.get(filial)!)).toBe(false);
+  });
+
+  it("o resumo conta os envases e os fabricantes no exterior", () => {
+    const m = agrupar({
+      ...vazio,
+      alimentos: [alimento(1, "WHEY", true)],
+      fabricacao: [
+        fabricacao(CNPJ_A, "EMPRESA A LTDA", "terceira", "ENVASA BEM LTDA", CNPJ_C),
+        fabricacao(CNPJ_A, "EMPRESA A LTDA", "exterior", "ALFA FOODS", null, 1, { codigo: "A000001" }),
+      ],
+    });
+    expect(resumo(m.get(CNPJ_A)!)).toMatchObject({ envasaPara: 0, envasadoPor: 1, exterior: 1 });
+    expect(resumo(m.get(CNPJ_C)!)).toMatchObject({ alimentos: 0, envasaPara: 1, envasadoPor: 0, exterior: 0 });
+  });
+
+  it("entrada sem fabricação (build de dados sem a tabela) deixa as listas vazias", () => {
+    const emp = agrupar({ ...vazio, alimentos: [alimento(1, "A", true)] }).get(CNPJ_A)!;
+    expect(emp).toMatchObject({ envasaPara: [], envasadoPor: [], exterior: [] });
   });
 });
 

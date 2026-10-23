@@ -4,8 +4,8 @@ Consulta de produtos regularizados na ANVISA (alimentos e suplementos; produtos 
 cosméticos) por nº do processo,
 CNPJ, registro, nome, marca, empresa e categoria. Site estático (Astro + uma ilha Vue). A busca roda no navegador
 com DuckDB-WASM sobre os Parquet que o repo [`anvisa`](https://github.com/vasfvitor/anvisa-api)
-publica diariamente. Não há backend. No build, uma página estática por empresa (`/empresa/<cnpj>/`), a
-lista delas de A a Z (`/empresas/`) e o `/llms.txt` levam os dados a quem não roda JavaScript: buscadores e
+publica diariamente. Não há backend. No build, uma página estática por empresa (`/empresa/<cnpj>/`, com
+os produtos, quem envasa os alimentos dela e para quem ela envasa, e as medidas da ANVISA), a lista delas de A a Z (`/empresas/`) e o `/llms.txt` levam os dados a quem não roda JavaScript: buscadores e
 assistentes. A página de cada corredor ainda traz, no HTML, uma seção "Sem JavaScript" (`SemJs.astro`,
 `lib/semjs.ts`) com a consulta DuckDB ao Parquet do build para o produto de `?p=`, que o script da página
 esconde assim que roda: um LLM ou crawler que abrir um link de produto lê onde o dado está.
@@ -93,7 +93,11 @@ o DuckDB do Node (`src/lib/estatico/dados.ts`): alimentos e saneantes da tabela 
 tabela `medidas` (uma linha por dossiê e produto, também derivada lá; a ilha a lê pela view
 `medidas_busca` de `src/lib/consultas.ts`), e os cosméticos de `cosmeticos_por_empresa` (os 100
 primeiros de cada CNPJ pelas regras de `sqlCos`, 7,6 MB em vez dos 24 MB da tabela inteira) com os
-totais em `empresas`. `DADOS_LIVE=<pasta com os Parquet> pnpm test` confere, contra os dados reais, que
+totais em `empresas`. A seção Fabricação vem de `alimentos_fabricacao` (uma linha por empresa detentora e
+fabricante, derivada das envasadoras e fabricantes no exterior de cada apresentação): envasa para, envasado
+por (com link para a página da outra empresa) e fabricantes no exterior; a envasadora sem produto próprio
+também ganha página, e a página do alimento liga o nome da envasadora à página dela. Sem a tabela no manifest,
+as páginas saem sem a seção. `DADOS_LIVE=<pasta com os Parquet> pnpm test` confere, contra os dados reais, que
 cada derivada bate com o SQL da ilha (`test/derivadas-live.test.ts`).
 
 A página é gerada por `src/pages/[...corredor].astro`. A troca de corredor não recarrega: a ilha
@@ -129,8 +133,8 @@ republica quando o pipeline de dados publicou um build novo: o GitHub atrasa cro
 pipeline pula dias sem dados novos. A busca lê o manifest ao vivo; o rebuild atualiza as páginas de
 empresa e a lista de A a Z, o `llms.txt`, o dicionário, o "sobre" e o rodapé. O sitemap
 (`src/pages/sitemap-index.xml.ts` e `sitemap-0.xml.ts`) lista as páginas fixas e as listas de A a Z com o
-`lastmod` do build de dados e só as páginas de empresa com dois produtos ou mais (`indexavel` em
-`src/lib/estatico/empresas.ts`); as demais, só com medidas ou com um produto, saem com `noindex`, porque
+`lastmod` do build de dados e só as páginas de empresa com dois produtos ou mais, ou que envasam para duas
+empresas de fora do grupo (`indexavel` em `src/lib/estatico/empresas.ts`); as demais, só com medidas ou com um produto, saem com `noindex`, porque
 milhares de páginas de um parágrafo fazem o Google deixar o site inteiro em "rastreada, mas não indexada".
 Em Settings → Pages, use a fonte
 "GitHub Actions" e o domínio próprio `contem.abelhaninja.de` (o mesmo de `site` em `astro.config.mjs`;

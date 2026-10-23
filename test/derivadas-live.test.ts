@@ -1,7 +1,6 @@
-// As tabelas derivadas do repo `anvisa` (produtos, empresas, medidas) contra o SQL da ilha, sobre os dados
-// reais. Só roda com DADOS_LIVE apontando para uma pasta com alimentos, saneantes, cosmeticos,
-// produtos_irregulares, produtos, empresas e medidas em .parquet (baixados do manifest ao vivo); sem ela,
-// fica de fora (não há rede no CI).
+// As tabelas derivadas do repo `anvisa` (produtos, empresas, medidas, alimentos_fabricacao) contra o SQL da
+// ilha ou as tabelas cruas, sobre os dados reais. Só roda com DADOS_LIVE apontando para uma pasta com os
+// .parquet de TABELAS (baixados do manifest ao vivo); sem ela, fica de fora (não há rede no CI).
 // Primeira rodada em 2026-10-11 contra o build 20261012T000746Z; o que deve bater está no handoff
 // ~/SharedFiles/agent/dados-produto/PROMPT.md.
 import { existsSync } from "node:fs";
@@ -36,6 +35,7 @@ const TABELAS = [
   "medidas",
   "cosmeticos_por_empresa",
   "alimentos_por_produto",
+  "alimentos_fabricacao",
 ];
 
 // a tabela produtos como a ilha a derivava de alimentos até 2026-10-12 (SQL_PRODUTOS antigo): a referência de
@@ -323,6 +323,40 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
     );
     expect(r.faltando).toBe(0);
     console.log("medidas com mais de um registro citado:", r.com_mais);
+  });
+
+  // alimentos_fabricacao refeita das tabelas cruas: os pares (detentora, envasadora) das apresentações com produto,
+  // a detentora como em alimentos_por_produto (o menor CNPJ do produto)
+  it("alimentos_fabricacao tem os pares de envasadora das tabelas cruas, e empresas conta os dois lados", async () => {
+    const pares = `WITH produto AS (SELECT co_seq_produto, min(nu_cnpj_empresa) AS cnpj FROM alimentos GROUP BY ALL),
+        ap AS (SELECT DISTINCT co_seq_apresentacao_produto, co_seq_produto FROM alimentos),
+        itens AS (
+          SELECT co_seq_apresentacao_produto,
+            regexp_extract(trim(x), ';\\s*([0-9]{14})$', 1) AS fabricante_cnpj
+          FROM (SELECT co_seq_apresentacao_produto, unnest(string_split(empresas_envasadoras, '|')) AS x
+            FROM alimentos_resultado)
+        )
+      SELECT DISTINCT p.cnpj, i.fabricante_cnpj
+      FROM itens i JOIN ap USING (co_seq_apresentacao_produto) JOIN produto p USING (co_seq_produto)
+      WHERE i.fabricante_cnpj <> ''`;
+    const derivados = "SELECT cnpj, fabricante_cnpj FROM alimentos_fabricacao WHERE fabricante_cnpj IS NOT NULL";
+    expect(await contar(derivados)).toBe(await contar(pares));
+    expect(await diferentes(pares, derivados)).toBe(0);
+    expect(await diferentes(derivados, pares)).toBe(0);
+    // toda envasadora de outra empresa tem linha em empresas (e página no site)
+    expect(
+      await contar(
+        `SELECT 1 FROM alimentos_fabricacao WHERE vinculo <> 'propria' AND fabricante_cnpj IS NOT NULL
+         AND fabricante_cnpj NOT IN (SELECT cnpj FROM empresas)`,
+      ),
+    ).toBe(0);
+    const r = await uma<{ para: number; por: number; linhas: number }>(
+      `SELECT (SELECT sum(envasa_para) FROM empresas)::INTEGER AS para,
+         (SELECT sum(envasado_por) FROM empresas)::INTEGER AS por,
+         (SELECT count(*) FROM alimentos_fabricacao WHERE vinculo IN ('grupo', 'terceira'))::INTEGER AS linhas`,
+    );
+    expect(r.para).toBe(r.linhas);
+    expect(r.por).toBe(r.linhas);
   });
 
   // onde empresas e o site divergem por definição, para quem for avaliar trocar a agregação do build
