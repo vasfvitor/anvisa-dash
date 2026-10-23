@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { DuckDBInstance, type DuckDBConnection } from "@duckdb/node-api";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { SQL_PRODUTOS } from "../src/corredores/alimentos/consultas";
+import { sqlPalavras } from "../src/lib/palavras";
 import { TS } from "../src/lib/consultas";
 import { sqlCos } from "../src/corredores/cosmeticos/consultas";
 import { SQL_SAN } from "../src/corredores/saneantes/consultas";
@@ -39,7 +40,8 @@ const TABELAS = [
 ];
 
 // a tabela produtos como a ilha a derivava de alimentos até 2026-10-12 (SQL_PRODUTOS antigo): a referência de
-// tudo o que a ilha lê hoje de alimentos_por_produto
+// tudo o que a ilha lê hoje de alimentos_por_produto (busca e busca_nome no formato ' a b c ' de sqlPalavras,
+// como a ilha passou a escrever em 710284c)
 const SQL_PRODUTOS_ANTIGO = `CREATE TABLE produtos AS
     SELECT co_seq_produto,
       any_value(no_produto) AS no_produto,
@@ -62,8 +64,8 @@ const SQL_PRODUTOS_ANTIGO = `CREATE TABLE produtos AS
       count(*)::INTEGER AS n_apresentacoes,
       min(dt_regularizacao) AS ordem_data,
       list(nu_registro) FILTER (WHERE nu_registro IS NOT NULL) AS registros,
-      lower(strip_accents(concat_ws(' ', any_value(no_produto), any_value(marcas), any_value(no_razao_social_empresa)))) AS busca,
-      lower(strip_accents(any_value(no_produto))) AS busca_nome,
+      ${sqlPalavras("concat_ws(' ', any_value(no_produto), any_value(marcas), any_value(no_razao_social_empresa))")} AS busca,
+      ${sqlPalavras("any_value(no_produto)")} AS busca_nome,
       ';' || array_to_string(list_transform(string_split(coalesce(any_value(marcas), ''), ';'),
         x -> lower(strip_accents(trim(x)))), ';') || ';' AS busca_marcas
     FROM "alimentos"
