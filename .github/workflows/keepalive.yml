@@ -1,0 +1,30 @@
+name: keepalive
+
+# GitHub disables scheduled workflows in a public repository after 60 days with no activity, and
+# this repository never commits from CI: pages.yml would stop rebuilding the company pages from
+# new data without a sign. Once a month, re-enable every scheduled workflow here, this one
+# included, through the API. GitHub does not document that this resets the 60-day clock; if it
+# does not, the email GitHub sends is the fallback.
+
+on:
+  schedule:
+    - cron: "45 7 1 * *"   # the 1st of each month
+  workflow_dispatch:
+
+permissions:
+  actions: write   # PUT .../actions/workflows/{file}/enable
+
+jobs:
+  enable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-enable the scheduled workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          for wf in pages.yml keepalive.yml; do
+            gh api -X PUT "repos/$REPO/actions/workflows/$wf/enable"
+            echo "enabled $wf"
+          done
