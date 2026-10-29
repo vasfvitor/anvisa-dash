@@ -81,17 +81,18 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     <meta name="theme-color" content={inicio ? "#dfe2e6" : "#f6f1e6"} />
     <link rel="icon" href={url("/favicon.svg")} type="image/svg+xml" />
     <link rel="sitemap" href={url("/sitemap-index.xml")} />
+    {/* Os comentários deste script ficam aqui fora, porque um script inline vai como está para cada página.
+         Ele marca corredor e tela pela URL antes da primeira pintura (por isso inline): a página já abre com
+         as cores do corredor e, em link de busca ou produto, sem a abertura piscando. Com JavaScript a ilha
+         vai montar, então data-ilha="carregando" faz o texto abaixo dela esperar (senão a ilha, ao crescer, o
+         empurra: deslocamento de layout); sem JavaScript o atributo não existe e o texto aparece de cara. */}
     <script is:inline define:vars={{ slugs, base }}>
-      // marca corredor e tela pela URL antes da primeira pintura (por isso inline): a página já abre com
-      // as cores do corredor e, em link de busca ou produto, sem a abertura piscando
       const h = document.documentElement;
       const resto = location.pathname.startsWith(base) ? location.pathname.slice(base.length) : location.pathname;
       const seg = resto.split("/").filter(Boolean)[0] || "";
       h.dataset.corredor = (slugs.find(([s]) => s === seg) || slugs[0])[1];
       const q = new URLSearchParams(location.search);
       h.dataset.tela = q.has("p") ? "produto" : ["q", "marca", "cat"].some((k) => q.has(k)) ? "busca" : "inicio";
-      // com JavaScript a ilha vai montar: o texto abaixo dela espera (senão a ilha, ao crescer, o empurra:
-      // deslocamento de layout). Sem JavaScript o atributo não existe e o texto aparece de cara.
       h.dataset.ilha = "carregando";
     </script>
   </head>

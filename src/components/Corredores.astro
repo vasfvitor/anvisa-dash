@@ -38,8 +38,9 @@ const { atual } = Astro.props;
     </a>
   ))}
 </nav>
+{/* nas telas médias e no celular as placas são uma faixa rolável: a atual entra à vista antes da ilha subir
+     (o comentário fica fora do script inline, que vai como está para cada página) */}
 <script is:inline>
-  // nas telas médias e no celular as placas são uma faixa rolável: a atual entra à vista antes da ilha subir
   {
     const nav = document.querySelector(".corredores");
     const atual = nav && nav.querySelector("[aria-current]");
