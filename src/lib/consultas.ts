@@ -15,9 +15,15 @@ export const TABELA_MEDIDAS = "medidas";
 /** A view sobre ela que a busca lê (SQL_MEDIDAS). */
 export const MEDIDAS_BUSCA = "medidas_busca";
 
-/** O grupo da validade da liberação (Em dia, Vencida, Sem data) de uma coluna de data, com a data do dia. */
+// o dia de hoje em Brasília, AAAA-MM-DD (o formato do en-CA)
+const HOJE = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" });
+
+/**
+ * O grupo da validade da liberação (Em dia, Vencida, Sem data) de uma coluna de data, com a data do dia. A data vai
+ * como literal: o current_date do DuckDB fica na extensão icu, que a ilha não baixa (db.ts, carregarExtensoes).
+ */
 export const sqlGrupoValidade = (coluna: string) =>
-  `CASE WHEN ${coluna} IS NULL THEN 'Sem data' WHEN ${coluna} < current_date THEN 'Vencida' ELSE 'Em dia' END`;
+  `CASE WHEN ${coluna} IS NULL THEN 'Sem data' WHEN ${coluna} < DATE '${HOJE.format(new Date())}' THEN 'Vencida' ELSE 'Em dia' END`;
 
 /**
  * medidas_busca: a tabela `medidas` (uma linha por dossiê × produto, de todas as áreas) como a busca lê:
