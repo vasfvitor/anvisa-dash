@@ -8,7 +8,7 @@ const CHAVE = "contem:baixar-dados";
 
 /**
  * O motor como chega pela rede, com brotli: o .wasm e o worker do DuckDB-WASM (jsDelivr) e a extensão de
- * Parquet, que o DuckDB baixa de extensions.duckdb.org no primeiro read_parquet. Medido em 2026-10-29 na
+ * Parquet, de extensions.duckdb.org (carregada ao subir o motor: carregarExtensoes, em db.ts). Medido em 2026-10-29 na
  * versão MOTOR_VERSAO: eh 7.124.338 + 188.570 + 522.051 bytes; mvp 7.053.959 + 159.790 + 502.416. Um teste
  * compara a versão com a do package.json, para medir de novo quando ela mudar.
  */

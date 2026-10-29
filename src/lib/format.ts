@@ -93,6 +93,14 @@ export function fmtBytes(n: number): string {
   return `${(n / 1024 ** 2).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} MB`;
 }
 
+/** Tamanho redondo, para estimativas ("cerca de 11 MB"): KB inteiros até 999, MB inteiros daí para cima. */
+export function fmtBytesRedondo(n: number): string {
+  if (n < 1024) return fmtBytes(n);
+  const kb = Math.round(n / 1024);
+  // compara o KB já arredondado: 1.023,6 KB vira 1 MB, não "1.024 KB"
+  return kb < 1000 ? `${fmtInt(kb)} KB` : `${fmtInt(Math.round(n / 1024 ** 2))} MB`;
+}
+
 /** Fatia um campo multivalorado, apara e descarta vazios (a ANVISA às vezes termina com o separador). */
 export function fatiar(s: string | null | undefined, sep: string): string[] {
   if (!s) return [];

@@ -7,7 +7,7 @@ import { CORREDORES, rotaDo } from "../corredores";
 import type { IdCorredor } from "../corredores/tipos";
 import type { Download } from "../lib/licenca";
 import { FONTES } from "../corredores/fontes";
-import { fmtBytes, fmtCnpj, fmtInt, plural } from "../lib/format";
+import { fmtBytes, fmtBytesRedondo, fmtCnpj, fmtInt, plural } from "../lib/format";
 import { tituloPagina } from "../lib/marca";
 import { PALAVRA_MINIMA } from "../lib/fonte";
 import { palavrasDaBusca } from "../lib/palavras";
@@ -109,11 +109,6 @@ async function aceitar(): Promise<void> {
   if (!produto.value) buscar(false);
 }
 const download = computed(() => props.downloads[corredor.value.id]);
-/** tamanho redondo para a pergunta: KB até 999, MB inteiros daí para cima (nunca "1.023 KB") */
-function cerca(n: number): string {
-  const kb = Math.round(n / 1024);
-  return kb < 1000 ? `${fmtInt(kb)} KB` : `${fmtInt(Math.max(1, Math.round(n / 1024 ** 2)))} MB`;
-}
 
 async function tentarDeNovo(): Promise<void> {
   await motor.subir();
@@ -207,11 +202,11 @@ const titulo = computed(() => {
   <div v-if="motor.status === 'licenca'" class="estado licenca" role="status">
     <p>
       A busca roda inteira no seu navegador: para buscar em {{ corredor.nome.toLocaleLowerCase("pt-BR") }}, ele baixa
-      cerca de <strong>{{ cerca(download.bytes) }}</strong
+      cerca de <strong>{{ fmtBytesRedondo(download.bytes) }}</strong
       >{{ download.porBusca ? ", e cada busca ou produto aberto baixa só o pedaço de que precisa" : "" }}.
       <!-- "até": a tabela extra depende do produto (os fabricantes, só nos dispositivos que os têm) -->
       <template v-if="download.produto"
-        >Abrir um produto pode baixar até {{ cerca(download.produto) }} a mais.</template
+        >Abrir um produto pode baixar até {{ fmtBytesRedondo(download.produto) }} a mais.</template
       >
       Nas próximas visitas, o navegador reaproveita o que já baixou enquanto os dados não mudam.
     </p>

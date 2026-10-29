@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { fmtCnpj, fmtData, fmtMesAno, fmtProcesso, fmtRegistro, marcas, plural, toDate } from "../src/lib/format";
+import {
+  fmtBytesRedondo,
+  fmtCnpj,
+  fmtData,
+  fmtMesAno,
+  fmtProcesso,
+  fmtRegistro,
+  marcas,
+  plural,
+  toDate,
+} from "../src/lib/format";
 
 describe("documentos", () => {
   it("formata CNPJ e processo", () => {
@@ -41,5 +51,14 @@ describe("campos multivalorados", () => {
   it("plural", () => {
     expect(plural(1, "produto")).toBe("1 produto");
     expect(plural(1200, "apresentação", "apresentações")).toBe("1.200 apresentações");
+  });
+});
+
+describe("tamanhos", () => {
+  it("redondo para estimativas: bytes, KB e MB inteiros, sem 1.024 KB", () => {
+    expect(fmtBytesRedondo(300)).toBe("300 B");
+    expect(fmtBytesRedondo(500_000)).toBe("488 KB");
+    expect(fmtBytesRedondo(1_048_400)).toBe("1 MB");
+    expect(fmtBytesRedondo(11_000_000)).toBe("10 MB");
   });
 });

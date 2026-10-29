@@ -56,7 +56,11 @@ interface Vigia {
   fim(): void;
 }
 
-function vigiar(oque: string, ms = PARADO_MS): Vigia {
+/**
+ * Por pedaço (o padrão), o prazo recomeça a cada `mexeu()`. `inteiro` é para o que não avisa progresso: o prazo
+ * vale para o download todo e precisa ser folgado, senão corta uma conexão lenta que ainda está baixando.
+ */
+function vigiar(oque: string, { ms = PARADO_MS, inteiro = false } = {}): Vigia {
   const ctrl = new AbortController();
   let rejeitar: (e: Error) => void = () => undefined;
   const parado = new Promise<never>((_, r) => (rejeitar = r));
@@ -66,7 +70,11 @@ function vigiar(oque: string, ms = PARADO_MS): Vigia {
   function mexeu(): void {
     clearTimeout(prazo);
     prazo = setTimeout(() => {
-      const e = new Error(`o download parou: nada chegou em ${ms / 1000} s (${oque})`);
+      const e = new Error(
+        inteiro
+          ? `o download não terminou em ${ms / 1000} s (${oque})`
+          : `o download parou: nada chegou em ${ms / 1000} s (${oque})`,
+      );
       ctrl.abort(e);
       rejeitar(e);
     }, ms);
@@ -85,37 +93,51 @@ async function abrir(): Promise<Banco> {
     new Blob([`importScripts(${JSON.stringify(bundle.mainWorker)});`], { type: "text/javascript" }),
   );
   const db = new duckdb.AsyncDuckDB(new duckdb.VoidLogger(), new Worker(workerUrl));
-  // o progresso do motor não serve de porcentagem (o total é o tamanho comprimido, os recebidos já vêm
-  // descomprimidos), mas cada aviso é sinal de que o download anda
-  const v = vigiar("o motor de busca");
   try {
     // manifest e motor em paralelo: os dois são a espera da primeira visita
-    const [manifest] = await Promise.race([
-      Promise.all([
-        fetchManifest(MANIFEST_URL, { signal: v.signal }),
-        db.instantiate(bundle.mainModule, undefined, v.mexeu),
-      ]),
-      v.parado,
-    ]);
-    v.fim();
+    const manifest = await subirMotor(db, bundle.mainModule);
     const conn = await db.connect();
-    // A extensão de Parquet também vem da rede (extensions.duckdb.org), e o DuckDB a baixaria no primeiro
-    // read_parquet, já com a tela em "Baixando os dados" e fora de qualquer vigia. Carregada aqui, entra na
-    // espera do motor. Sem aviso de progresso, o prazo vale para o download inteiro (0,5 MB): mais folgado.
-    const ext = vigiar("a extensão de Parquet", 60_000);
-    try {
-      await Promise.race([conn.query("LOAD parquet"), ext.parado]);
-    } finally {
-      ext.fim();
-    }
+    await carregarExtensoes(conn);
     return { db, conn, manifest };
   } catch (e) {
     await db.terminate();
     throw e;
   } finally {
-    v.fim();
     URL.revokeObjectURL(workerUrl);
   }
+}
+
+async function subirMotor(db: duckdb.AsyncDuckDB, modulo: string): Promise<Manifest> {
+  // o progresso do motor não serve de porcentagem (o total é o tamanho comprimido, os recebidos já vêm
+  // descomprimidos), mas cada aviso é sinal de que o download anda
+  const v = vigiar("o motor de busca");
+  try {
+    const [manifest] = await Promise.race([
+      Promise.all([fetchManifest(MANIFEST_URL, { signal: v.signal }), db.instantiate(modulo, undefined, v.mexeu)]),
+      v.parado,
+    ]);
+    return manifest;
+  } finally {
+    v.fim();
+  }
+}
+
+/**
+ * As extensões vêm da rede (extensions.duckdb.org), e o DuckDB baixaria cada uma sozinho na primeira consulta que
+ * a pedisse: a de Parquet já com a tela em "Baixando os dados", fora de qualquer vigia. Aqui a de Parquet entra na
+ * espera do motor, e o carregamento automático é desligado: uma consulta que peça outra extensão falha na hora,
+ * com erro, em vez de baixar escondida e travar se a conexão cair.
+ */
+async function carregarExtensoes(conn: duckdb.AsyncDuckDBConnection): Promise<void> {
+  // sem aviso de progresso: prazo para o download todo (0,5 MB), folgado até para ~3 KB/s
+  const ext = vigiar("a extensão de Parquet", { ms: 180_000, inteiro: true });
+  try {
+    await Promise.race([conn.query("LOAD parquet"), ext.parado]);
+  } finally {
+    ext.fim();
+  }
+  await conn.query("SET autoinstall_known_extensions = false");
+  await conn.query("SET autoload_known_extensions = false");
 }
 
 /** Sobe o motor uma vez; chamadas seguintes recebem a mesma promessa. Falhou, a próxima tenta de novo. */
