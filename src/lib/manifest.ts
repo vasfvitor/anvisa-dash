@@ -90,11 +90,14 @@ export function tabelaUrl(manifestUrl: string, m: Manifest, nome: string): strin
   return new URL(t.path, manifestUrl).href;
 }
 
-/** `fresh` fura o cache de 600 s do Pages (usado depois de um 404 em dados). */
-export async function fetchManifest(manifestUrl: string, { fresh = false } = {}): Promise<Manifest> {
+/** `fresh` fura o cache de 600 s do Pages (usado depois de um 404 em dados); `signal` cancela o pedido. */
+export async function fetchManifest(
+  manifestUrl: string,
+  { fresh = false, signal }: { fresh?: boolean; signal?: AbortSignal } = {},
+): Promise<Manifest> {
   const u = new URL(manifestUrl);
   if (fresh) u.searchParams.set("t", String(Date.now()));
-  const res = await fetch(u, { cache: fresh ? "no-store" : "default" });
+  const res = await fetch(u, { cache: fresh ? "no-store" : "default", signal });
   if (!res.ok) throw new Error(`manifest: HTTP ${res.status} em ${manifestUrl}`);
   return parseManifest(await res.json());
 }

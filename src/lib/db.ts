@@ -40,6 +40,41 @@ export function aoProgresso(fn: (p: Progresso) => void): () => void {
   return () => ouvintes.delete(fn);
 }
 
+/**
+ * Sem nenhum byte por este tempo, um download é dado como parado (a conexão do celular caiu no meio) e vira
+ * erro, para a ilha oferecer "Tentar de novo" em vez de esperar para sempre. O prazo recomeça a cada pedaço,
+ * então um download lento, mas andando, não é cortado.
+ */
+export const PARADO_MS = 20_000;
+
+interface Vigia {
+  signal: AbortSignal;
+  /** chegou alguma coisa: o prazo recomeça (passada solta ao DuckDB, como aviso de progresso) */
+  mexeu: () => void;
+  /** rejeita quando o prazo vence: para o que não aceita signal (a subida do motor) */
+  parado: Promise<never>;
+  fim(): void;
+}
+
+function vigiar(oque: string): Vigia {
+  const ctrl = new AbortController();
+  let rejeitar: (e: Error) => void = () => undefined;
+  const parado = new Promise<never>((_, r) => (rejeitar = r));
+  // quem não disputa com `parado` só vê o abort do signal
+  parado.catch(() => undefined);
+  let prazo: ReturnType<typeof setTimeout> | undefined;
+  function mexeu(): void {
+    clearTimeout(prazo);
+    prazo = setTimeout(() => {
+      const e = new Error(`o download parou: nada chegou em ${PARADO_MS / 1000} s (${oque})`);
+      ctrl.abort(e);
+      rejeitar(e);
+    }, PARADO_MS);
+  }
+  mexeu();
+  return { signal: ctrl.signal, mexeu, parado, fim: () => clearTimeout(prazo) };
+}
+
 async function abrir(): Promise<Banco> {
   // todo download passa por aqui (iniciar): nada sai antes de a pessoa aceitar baixar (lib/licenca)
   await esperarLicenca();
@@ -50,15 +85,25 @@ async function abrir(): Promise<Banco> {
     new Blob([`importScripts(${JSON.stringify(bundle.mainWorker)});`], { type: "text/javascript" }),
   );
   const db = new duckdb.AsyncDuckDB(new duckdb.VoidLogger(), new Worker(workerUrl));
+  // o progresso do motor não serve de porcentagem (o total é o tamanho comprimido, os recebidos já vêm
+  // descomprimidos), mas cada aviso é sinal de que o download anda
+  const v = vigiar("o motor de busca");
   try {
     // manifest e motor em paralelo: os dois são a espera da primeira visita
-    const [manifest] = await Promise.all([fetchManifest(MANIFEST_URL), db.instantiate(bundle.mainModule)]);
+    const [manifest] = await Promise.race([
+      Promise.all([
+        fetchManifest(MANIFEST_URL, { signal: v.signal }),
+        db.instantiate(bundle.mainModule, undefined, v.mexeu),
+      ]),
+      v.parado,
+    ]);
     const conn = await db.connect();
     return { db, conn, manifest };
   } catch (e) {
     await db.terminate();
     throw e;
   } finally {
+    v.fim();
     URL.revokeObjectURL(workerUrl);
   }
 }
@@ -77,28 +122,50 @@ let carregadas = new Map<string, Promise<void>>();
 // arquivos avulsos (os pedaços da busca dos cosméticos), por caminho; o caminho já traz o build
 let avulsos = new Map<string, Promise<string>>();
 
-async function obter(u: string, tabela: string, total: number): Promise<Uint8Array> {
-  const res = await fetch(u);
-  if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status} em ${u}`), { status: res.status });
-  if (!res.body || !total) return new Uint8Array(await res.arrayBuffer());
-  // lê em pedaços para informar o progresso; o total vem do manifest porque o Content-Length é o
-  // do corpo comprimido (o Pages manda gzip) e o stream entrega os bytes já descomprimidos
-  const buf = new Uint8Array(total);
-  let recebidos = 0;
+/** O corpo inteiro, em pedaços: cada um recomeça o prazo do vigia. */
+async function corpo(res: Response, v: Vigia): Promise<Uint8Array<ArrayBuffer>> {
+  if (!res.body) return new Uint8Array(await res.arrayBuffer());
+  const pedacos: Uint8Array[] = [];
   const leitor = res.body.getReader();
   for (;;) {
     const { done, value } = await leitor.read();
     if (done) break;
-    if (recebidos + value.length > total) {
-      // maior que o manifest diz: para aqui; o buffer vazio falha na validação e baixa de novo
-      await leitor.cancel();
-      return new Uint8Array(0);
-    }
-    buf.set(value, recebidos);
-    recebidos += value.length;
-    for (const fn of ouvintes) fn({ tabela, recebidos, total });
+    v.mexeu();
+    pedacos.push(value);
   }
-  return recebidos === total ? buf : buf.slice(0, recebidos);
+  const buf = new Uint8Array(pedacos.reduce((n, p) => n + p.length, 0));
+  pedacos.reduce((i, p) => (buf.set(p, i), i + p.length), 0);
+  return buf;
+}
+
+async function obter(u: string, tabela: string, total: number): Promise<Uint8Array> {
+  const v = vigiar(u);
+  try {
+    const res = await fetch(u, { signal: v.signal });
+    if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status} em ${u}`), { status: res.status });
+    if (!res.body || !total) return await corpo(res, v);
+    // lê em pedaços para informar o progresso; o total vem do manifest porque o Content-Length é o
+    // do corpo comprimido (o Pages manda gzip) e o stream entrega os bytes já descomprimidos
+    const buf = new Uint8Array(total);
+    let recebidos = 0;
+    const leitor = res.body.getReader();
+    for (;;) {
+      const { done, value } = await leitor.read();
+      if (done) break;
+      v.mexeu();
+      if (recebidos + value.length > total) {
+        // maior que o manifest diz: para aqui; o buffer vazio falha na validação e baixa de novo
+        await leitor.cancel();
+        return new Uint8Array(0);
+      }
+      buf.set(value, recebidos);
+      recebidos += value.length;
+      for (const fn of ouvintes) fn({ tabela, recebidos, total });
+    }
+    return recebidos === total ? buf : buf.slice(0, recebidos);
+  } finally {
+    v.fim();
+  }
 }
 
 /** Tamanho do manifest e "PAR1" no fim: um Parquet truncado não passa. */
@@ -153,16 +220,22 @@ export async function carregar(nome: string): Promise<void> {
 /** Caminho relativo ao manifest, sem nada que escape da pasta de dados nem da string SQL. */
 const CAMINHO = /^[a-z0-9_]+(\/[a-z0-9_.-]+)*$/i;
 
-async function bytesDe(b: Banco, caminho: string): Promise<{ u: string; res: Response }> {
+async function bytesDe(b: Banco, caminho: string): Promise<{ u: string; buf: Uint8Array<ArrayBuffer> }> {
   if (!CAMINHO.test(caminho) || caminho.includes("..")) throw new Error(`caminho de dados inválido: ${caminho}`);
   const u = new URL(caminho, MANIFEST_URL).href;
-  const res = await fetch(u);
-  if (res.status === 404 && (await releuManifest(b))) {
-    // o build sumiu: quem pediu monta os caminhos de novo a partir do manifest novo
-    throw Object.assign(new Error(`os dados foram atualizados: ${caminho}`), { status: 404, buildMudou: true });
+  const v = vigiar(u);
+  try {
+    const res = await fetch(u, { signal: v.signal });
+    if (res.status === 404 && (await releuManifest(b))) {
+      // o build sumiu: quem pediu monta os caminhos de novo a partir do manifest novo
+      throw Object.assign(new Error(`os dados foram atualizados: ${caminho}`), { status: 404, buildMudou: true });
+    }
+    if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status} em ${u}`), { status: res.status });
+    // o Pages manda gzip; o corpo lido já vem descomprimido, do tamanho do arquivo
+    return { u, buf: await corpo(res, v) };
+  } finally {
+    v.fim();
   }
-  if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status} em ${u}`), { status: res.status });
-  return { u, res };
 }
 
 /**
@@ -175,8 +248,7 @@ export async function baixarArquivo(caminho: string, bytes: number): Promise<str
   let p = avulsos.get(caminho);
   if (!p) {
     p = (async () => {
-      const { u, res } = await bytesDe(b, caminho);
-      const buf = new Uint8Array(await res.arrayBuffer());
+      const { u, buf } = await bytesDe(b, caminho);
       if (!inteiro(buf, bytes)) throw new Error(`arquivo incompleto: ${buf.length} de ${bytes} bytes em ${u}`);
       const arquivo = caminho.replaceAll("/", "_");
       await b.db.registerFileBuffer(arquivo, buf);
@@ -191,9 +263,7 @@ export async function baixarArquivo(caminho: string, bytes: number): Promise<str
 /** Baixa um JSON pelo caminho (relativo ao manifest), conferindo tamanho e sha256 como o manifest informa. */
 export async function baixarJson(caminho: string, bytes: number, sha256: string): Promise<unknown> {
   if (!banco) await iniciar();
-  const { u, res } = await bytesDe(await banco!, caminho);
-  // o Pages manda JSON com gzip; o arrayBuffer já vem descomprimido, do tamanho do arquivo
-  const buf = new Uint8Array(await res.arrayBuffer());
+  const { u, buf } = await bytesDe(await banco!, caminho);
   const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", buf)), (x) =>
     x.toString(16).padStart(2, "0"),
   ).join("");
