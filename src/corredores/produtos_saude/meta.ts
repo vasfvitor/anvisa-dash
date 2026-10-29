@@ -1,5 +1,6 @@
 // Corredor 5: dispositivos médicos, que a ANVISA chama de produtos para saúde.
 import type { Corredor } from "../tipos";
+import { TABELA_FABRICACAO_PS } from "./consultas";
 
 export const meta: Corredor = {
   id: "produtos_saude",
@@ -9,6 +10,7 @@ export const meta: Corredor = {
   tecnico: "produtos para saúde",
   slug: "dispositivos",
   tabela: "produtos_saude_por_produto",
+  tabelasDoProduto: [TABELA_FABRICACAO_PS],
   icone: "pulso",
   deco: ["pulso", "documento", "caixas", "certo", "etiqueta", "brilho", "pulso", "gota", "documento"],
   titulo: "Dispositivos médicos liberados pela ANVISA",

@@ -49,17 +49,22 @@ export interface Download {
   bytes: number;
   /** a busca baixa arquivos por palavra (os cosméticos): cada busca nova baixa um pouco mais */
   porBusca: boolean;
+  /** o que a página de um produto baixa a mais (os preços da CMED, as análises dos alimentos) */
+  produto: number;
 }
 
 /**
- * O que a primeira busca de um corredor baixa, pelo manifest do build. Os tamanhos do manifest são os dos
- * arquivos; pela rede vai menos, porque o Pages manda gzip. Abrir um produto pode baixar mais uma tabela
- * (os preços da CMED, as análises dos alimentos), que não entra aqui.
+ * O que a primeira busca de um corredor baixa, e o que abrir um produto baixa a mais, pelo manifest do build.
+ * Os tamanhos do manifest são os dos arquivos; pela rede vai menos, porque o Pages manda gzip.
  */
-export function downloadDe(m: Manifest, c: { tabela: string; tipoProduto?: number }): Download {
+export function downloadDe(
+  m: Manifest,
+  c: { tabela: string; tipoProduto?: number; tabelasDoProduto?: string[] },
+): Download {
   const t = m.tables[c.tabela];
+  const produto = (c.tabelasDoProduto ?? []).reduce((n, nome) => n + (m.tables[nome]?.bytes ?? 0), 0);
   // os arquivos por palavra: de início só o índice e a lista de empresas, menos de 250 KB juntos (fonteIndice)
   const tabela = t?.busca ? 250_000 : (t?.bytes ?? 0);
   const medidas = c.tipoProduto ? (m.tables[TABELA_MEDIDAS]?.bytes ?? 0) : 0;
-  return { bytes: MOTOR_BYTES + tabela + medidas, porBusca: Boolean(t?.busca) };
+  return { bytes: MOTOR_BYTES + tabela + medidas, porBusca: Boolean(t?.busca), produto };
 }

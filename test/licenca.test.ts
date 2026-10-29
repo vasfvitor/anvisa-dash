@@ -65,6 +65,7 @@ describe("o tamanho anunciado", () => {
   const manifest = {
     tables: {
       alimentos: { bytes: 3_000_000 },
+      cmed: { bytes: 5_000_000 },
       cosmeticos: { bytes: 24_000_000, busca: { bytes: 118_000 } },
       medidas: { bytes: 400_000 },
     },
@@ -75,9 +76,17 @@ describe("o tamanho anunciado", () => {
     expect(downloadDe(manifest, { tabela: "alimentos", tipoProduto: 6 })).toEqual({
       bytes: MOTOR_BYTES + 3_000_000 + 400_000,
       porBusca: false,
+      produto: 0,
     });
     // sem tipoProduto, o corredor não mostra medidas e não as baixa
     expect(downloadDe(manifest, { tabela: "alimentos" }).bytes).toBe(MOTOR_BYTES + 3_000_000);
+  });
+
+  it("o que abrir um produto baixa a mais; tabela fora do manifest não conta", async () => {
+    const { downloadDe } = await licenca();
+    expect(downloadDe(manifest, { tabela: "alimentos", tabelasDoProduto: ["cmed", "nao_publicada"] }).produto).toBe(
+      5_000_000,
+    );
   });
 
   it("nos arquivos por palavra, só o começo, não a tabela inteira", async () => {

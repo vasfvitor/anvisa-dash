@@ -1,5 +1,6 @@
 // Corredor 1: alimentos e suplementos (o padrão, na raiz do site).
 import type { Corredor } from "../tipos";
+import { TABELA_CRUA, TABELA_DETALHE } from "./consultas";
 
 export const meta: Corredor = {
   id: "alimentos",
@@ -8,6 +9,7 @@ export const meta: Corredor = {
   curto: "Alimentos",
   slug: "alimentos",
   tabela: "alimentos_por_produto",
+  tabelasDoProduto: [TABELA_CRUA, TABELA_DETALHE],
   icone: "capsula",
   deco: ["capsula", "folha", "pote", "trigo", "colher", "leite", "gota", "brilho", "etiqueta"],
   titulo: "Alimentos e suplementos liberados pela ANVISA",

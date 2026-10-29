@@ -109,7 +109,8 @@ async function aceitar(): Promise<void> {
   if (!produto.value) buscar(false);
 }
 const download = computed(() => props.downloads[corredor.value.id]);
-const megas = computed(() => fmtInt(Math.max(1, Math.round(download.value.bytes / 1024 ** 2))));
+/** tamanho redondo para a pergunta: MB inteiros, ou KB abaixo de 1 MB */
+const cerca = (n: number) => (n < 1024 ** 2 ? fmtBytes(n) : `${fmtInt(Math.round(n / 1024 ** 2))} MB`);
 
 async function tentarDeNovo(): Promise<void> {
   await motor.subir();
@@ -203,9 +204,10 @@ const titulo = computed(() => {
   <div v-if="motor.status === 'licenca'" class="estado licenca" role="status">
     <p>
       A busca roda inteira no seu navegador: para buscar em {{ corredor.nome.toLocaleLowerCase("pt-BR") }}, ele baixa
-      cerca de <strong>{{ megas }} MB</strong
-      >{{ download.porBusca ? ", e cada busca nova baixa só o pedaço de que precisa" : "" }}. Nas próximas visitas, o
-      navegador reaproveita o que já baixou enquanto os dados não mudam.
+      cerca de <strong>{{ cerca(download.bytes) }}</strong
+      >{{ download.porBusca ? ", e cada busca nova baixa só o pedaço de que precisa" : "" }}.
+      <template v-if="download.produto">Abrir um produto baixa mais {{ cerca(download.produto) }}.</template>
+      Nas próximas visitas, o navegador reaproveita o que já baixou enquanto os dados não mudam.
     </p>
     <button class="btn" type="button" @click="aceitar">Baixar e buscar</button>
   </div>
@@ -234,9 +236,13 @@ const titulo = computed(() => {
       <rect class="etiqueta" x="17" y="40" width="30" height="15" rx="2" />
     </svg>
     <p>
-      <strong v-if="motor.status === 'iniciando'">Carregando…</strong>
+      <!-- em partes, como a pergunta somou: primeiro o motor (sem porcentagem: ver db.ts), depois a tabela -->
+      <strong v-if="motor.status === 'iniciando'">{{
+        motor.motorNoAr ? "Carregando…" : "Preparando o motor de busca…"
+      }}</strong>
       <strong v-else
-        >Baixando os dados ({{ Math.round(motor.progresso * 100) }}% de {{ fmtBytes(motor.tamanho) }})</strong
+        >Baixando os dados de {{ corredor.nome.toLocaleLowerCase("pt-BR") }} ({{ Math.round(motor.progresso * 100) }}%
+        de {{ fmtBytes(motor.tamanho) }})</strong
       >
     </p>
   </div>

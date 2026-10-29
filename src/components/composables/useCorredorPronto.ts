@@ -19,6 +19,7 @@ export function useCorredorPronto(corredor: Ref<Corredor>) {
   const origem = shallowRef<Origem | null>(null);
   const progresso = ref(0); // 0 a 1, download da tabela do corredor
   const tamanho = ref(0); // bytes da tabela do corredor, do manifest
+  const motorNoAr = ref(false); // o DuckDB já subiu nesta aba (a espera inicial é o download dele)
   const vez = vezes();
 
   const parar = aoProgresso((p) => {
@@ -47,6 +48,7 @@ export function useCorredorPronto(corredor: Ref<Corredor>) {
     if (status.value === "licenca") return;
     try {
       const t = (await iniciar()).tables[c.tabela];
+      motorNoAr.value = true;
       if (!minhaVez()) return;
       origem.value = t?.source ?? null;
       tamanho.value = t?.bytes ?? 0;
@@ -72,5 +74,5 @@ export function useCorredorPronto(corredor: Ref<Corredor>) {
     return subir();
   }
 
-  return { status, erro, origem, progresso, tamanho, trocou, subir, aceitar };
+  return { status, erro, origem, progresso, tamanho, motorNoAr, trocou, subir, aceitar };
 }

@@ -1,5 +1,6 @@
 // Corredor 4: remédios, que a ANVISA chama de medicamentos.
 import type { Corredor } from "../tipos";
+import { TABELA_CMED } from "./consultas";
 
 export const meta: Corredor = {
   id: "medicamentos",
@@ -9,6 +10,7 @@ export const meta: Corredor = {
   tecnico: "medicamentos",
   slug: "remedios",
   tabela: "medicamentos_por_produto",
+  tabelasDoProduto: [TABELA_CMED],
   icone: "comprimido",
   deco: ["comprimido", "capsula", "gota", "documento", "certo", "brilho", "etiqueta", "comprimido", "gota"],
   titulo: "Remédios registrados na ANVISA",

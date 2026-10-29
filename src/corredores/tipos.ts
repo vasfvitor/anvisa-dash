@@ -14,6 +14,8 @@ export interface Corredor {
   slug: string;
   /** tabela principal no manifest (a do download com barra de progresso) */
   tabela: string;
+  /** tabelas que a página de um produto baixa além da principal (para a pergunta antes de baixar dizer quanto) */
+  tabelasDoProduto?: string[];
   icone: string;
   /** ícones que flutuam em volta do título */
   deco: string[];
