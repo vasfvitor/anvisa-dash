@@ -97,6 +97,25 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # O Pages publica até 1 GB e o site cresce com os dados (uma página por empresa): o tamanho fica no
+      # resumo de cada execução, com aviso perto do limite e falha antes do upload, para o site anterior
+      # seguir no ar em vez de um deploy recusado.
+      - name: Tamanho do site
+        env:
+          AVISO: 800000000
+          LIMITE: 950000000
+        run: |
+          bytes=$(du -sb dist | cut -f1)
+          arquivos=$(find dist -type f | wc -l)
+          mb=$((bytes / 1000000))
+          echo "dist: $mb MB em $arquivos arquivos" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$bytes" -gt "$LIMITE" ]; then
+            echo "::error::dist com $mb MB, acima de $((LIMITE / 1000000)) MB (o Pages recusa acima de 1 GB)"
+            exit 1
+          elif [ "$bytes" -gt "$AVISO" ]; then
+            echo "::warning::dist com $mb MB, perto do limite de 1 GB do Pages"
+          fi
+
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist
