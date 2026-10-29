@@ -1553,6 +1553,13 @@ a.badge:hover {
   margin: 0.6rem 0 0;
 }
 
+/* Páginas de empresa e de fabricante: a prosa em largura de leitura. Fica aqui, e não num <style> da página,
+   porque um <style> com escopo faz o Astro marcar cada elemento com data-astro-cid-…: nessas páginas, que
+   chegam a milhares de linhas de tabela, isso era um quarto dos bytes do site. */
+main.prosa p {
+  max-width: 44rem;
+}
+
 /* As tabelas das páginas de empresa e de fabricante: um produto (ou fábrica, ou empresa) por linha, os detalhes
    em .linha dentro da célula */
 /* números nunca quebram no meio (a fonte mono vem de .numero em base.css) */

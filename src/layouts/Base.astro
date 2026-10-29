@@ -22,8 +22,18 @@ interface Props {
   inicio?: boolean;
   /** JSON-LD (schema.org) que descreve o que a página mostra */
   estruturados?: Record<string, unknown>[];
+  /** parágrafos em largura de leitura (main.prosa p, em componentes.css): as páginas de empresa e de fabricante */
+  prosa?: boolean;
 }
-const { title, corredor, description = DESCRICAO, noindex = false, inicio = false, estruturados = [] } = Astro.props;
+const {
+  title,
+  corredor,
+  description = DESCRICAO,
+  noindex = false,
+  inicio = false,
+  estruturados = [],
+  prosa = false,
+} = Astro.props;
 const titulo = tituloPagina(title);
 // endereço canônico: o da página sem query (?q=, ?p= são estado da busca, não páginas)
 const canonico = new URL(Astro.url.pathname, Astro.site).href;
@@ -106,7 +116,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
         </nav>
       </div>
     </header>
-    <main id="conteudo" class:list={{ "com-busca": corredor }}>
+    <main id="conteudo" class:list={{ "com-busca": corredor, prosa }}>
       <slot />
     </main>
     <footer class="site">

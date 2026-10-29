@@ -149,6 +149,7 @@ const organizacao = {
   description={descricao}
   noindex={!indexavel(e)}
   estruturados={[organizacao]}
+  prosa
 >
   <h1>{nome}</h1>
   <p class="lead">{resumoLinha}</p>
@@ -539,10 +540,3 @@ const organizacao = {
     </section>
   )}
 </Base>
-
-<style>
-  /* prosa em largura de leitura (as tabelas, table.produtos, estão em componentes.css) */
-  p {
-    max-width: 44rem;
-  }
-</style>

@@ -40,6 +40,7 @@ const organizacao = {
   description={descricao}
   noindex={!indexavelFabricante(f)}
   estruturados={[organizacao]}
+  prosa
 >
   <h1>{nome}</h1>
   <p class="lead">{[pais, paraEmpresas, dispositivos].filter(Boolean).join(" · ")}</p>
@@ -89,10 +90,3 @@ const organizacao = {
     </p>
   </section>
 </Base>
-
-<style>
-  /* prosa em largura de leitura (a tabela, table.produtos, está em componentes.css) */
-  p {
-    max-width: 44rem;
-  }
-</style>
