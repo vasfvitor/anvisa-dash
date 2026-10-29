@@ -56,7 +56,7 @@ interface Vigia {
   fim(): void;
 }
 
-function vigiar(oque: string): Vigia {
+function vigiar(oque: string, ms = PARADO_MS): Vigia {
   const ctrl = new AbortController();
   let rejeitar: (e: Error) => void = () => undefined;
   const parado = new Promise<never>((_, r) => (rejeitar = r));
@@ -66,10 +66,10 @@ function vigiar(oque: string): Vigia {
   function mexeu(): void {
     clearTimeout(prazo);
     prazo = setTimeout(() => {
-      const e = new Error(`o download parou: nada chegou em ${PARADO_MS / 1000} s (${oque})`);
+      const e = new Error(`o download parou: nada chegou em ${ms / 1000} s (${oque})`);
       ctrl.abort(e);
       rejeitar(e);
-    }, PARADO_MS);
+    }, ms);
   }
   mexeu();
   return { signal: ctrl.signal, mexeu, parado, fim: () => clearTimeout(prazo) };
@@ -97,7 +97,17 @@ async function abrir(): Promise<Banco> {
       ]),
       v.parado,
     ]);
+    v.fim();
     const conn = await db.connect();
+    // A extensão de Parquet também vem da rede (extensions.duckdb.org), e o DuckDB a baixaria no primeiro
+    // read_parquet, já com a tela em "Baixando os dados" e fora de qualquer vigia. Carregada aqui, entra na
+    // espera do motor. Sem aviso de progresso, o prazo vale para o download inteiro (0,5 MB): mais folgado.
+    const ext = vigiar("a extensão de Parquet", 60_000);
+    try {
+      await Promise.race([conn.query("LOAD parquet"), ext.parado]);
+    } finally {
+      ext.fim();
+    }
     return { db, conn, manifest };
   } catch (e) {
     await db.terminate();

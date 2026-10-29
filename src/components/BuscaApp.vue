@@ -109,8 +109,11 @@ async function aceitar(): Promise<void> {
   if (!produto.value) buscar(false);
 }
 const download = computed(() => props.downloads[corredor.value.id]);
-/** tamanho redondo para a pergunta: MB inteiros, ou KB abaixo de 1 MB */
-const cerca = (n: number) => (n < 1024 ** 2 ? fmtBytes(n) : `${fmtInt(Math.round(n / 1024 ** 2))} MB`);
+/** tamanho redondo para a pergunta: KB até 999, MB inteiros daí para cima (nunca "1.023 KB") */
+function cerca(n: number): string {
+  const kb = Math.round(n / 1024);
+  return kb < 1000 ? `${fmtInt(kb)} KB` : `${fmtInt(Math.max(1, Math.round(n / 1024 ** 2)))} MB`;
+}
 
 async function tentarDeNovo(): Promise<void> {
   await motor.subir();
@@ -205,8 +208,11 @@ const titulo = computed(() => {
     <p>
       A busca roda inteira no seu navegador: para buscar em {{ corredor.nome.toLocaleLowerCase("pt-BR") }}, ele baixa
       cerca de <strong>{{ cerca(download.bytes) }}</strong
-      >{{ download.porBusca ? ", e cada busca nova baixa só o pedaço de que precisa" : "" }}.
-      <template v-if="download.produto">Abrir um produto baixa mais {{ cerca(download.produto) }}.</template>
+      >{{ download.porBusca ? ", e cada busca ou produto aberto baixa só o pedaço de que precisa" : "" }}.
+      <!-- "até": a tabela extra depende do produto (os fabricantes, só nos dispositivos que os têm) -->
+      <template v-if="download.produto"
+        >Abrir um produto pode baixar até {{ cerca(download.produto) }} a mais.</template
+      >
       Nas próximas visitas, o navegador reaproveita o que já baixou enquanto os dados não mudam.
     </p>
     <button class="btn" type="button" @click="aceitar">Baixar e buscar</button>

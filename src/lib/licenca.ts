@@ -49,7 +49,7 @@ export interface Download {
   bytes: number;
   /** a busca baixa arquivos por palavra (os cosméticos): cada busca nova baixa um pouco mais */
   porBusca: boolean;
-  /** o que a página de um produto baixa a mais (os preços da CMED, as análises dos alimentos) */
+  /** o máximo que a página de um produto baixa a mais (os preços da CMED, as análises dos alimentos) */
   produto: number;
 }
 
