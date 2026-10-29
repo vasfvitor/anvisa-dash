@@ -4,6 +4,8 @@
 import { computed, nextTick, onMounted, reactive, shallowRef, watch, watchEffect } from "vue";
 import { MODO_ROTULO, type Consulta } from "../lib/detect";
 import { CORREDORES, rotaDo } from "../corredores";
+import type { IdCorredor } from "../corredores/tipos";
+import type { Download } from "../lib/licenca";
 import { FONTES } from "../corredores/fontes";
 import { fmtBytes, fmtCnpj, fmtInt, plural } from "../lib/format";
 import { tituloPagina } from "../lib/marca";
@@ -22,6 +24,9 @@ import Facetas from "./Facetas.vue";
 import Icone from "./Icone.vue";
 import Inicio from "./Inicio.vue";
 import MedidasBloco from "./MedidasBloco.vue";
+
+// o que a primeira busca de cada corredor baixa, pelo manifest do build (para a pergunta antes de baixar)
+const props = defineProps<{ downloads: Record<IdCorredor, Download> }>();
 
 const estado = useEstado(buscar);
 const { corredor, entrada, filtros, produto, consulta } = estado;
@@ -97,6 +102,14 @@ onMounted(async () => {
   await nextTick();
   document.documentElement.dataset.ilha = "montada";
 });
+
+// o sim da pessoa (uma vez, fica guardado): o corredor sobe e a busca da URL, ou já digitada, roda
+async function aceitar(): Promise<void> {
+  await motor.aceitar();
+  if (!produto.value) buscar(false);
+}
+const download = computed(() => props.downloads[corredor.value.id]);
+const megas = computed(() => fmtInt(Math.max(1, Math.round(download.value.bytes / 1024 ** 2))));
 
 async function tentarDeNovo(): Promise<void> {
   await motor.subir();
@@ -187,7 +200,16 @@ const titulo = computed(() => {
     @empresa="(c) => buscarPor(fmtCnpj(c))"
   />
 
-  <div v-if="motor.status === 'iniciando' || motor.status === 'baixando'" class="carregamento" role="status">
+  <div v-if="motor.status === 'licenca'" class="estado licenca" role="status">
+    <p>
+      A busca roda inteira no seu navegador: para buscar em {{ corredor.nome.toLocaleLowerCase("pt-BR") }}, ele baixa
+      cerca de <strong>{{ megas }} MB</strong
+      >{{ download.porBusca ? ", e cada busca nova baixa só o pedaço de que precisa" : "" }}. Nas próximas visitas, o
+      navegador reaproveita o que já baixou enquanto os dados não mudam.
+    </p>
+    <button class="btn" type="button" @click="aceitar">Baixar e buscar</button>
+  </div>
+  <div v-else-if="motor.status === 'iniciando' || motor.status === 'baixando'" class="carregamento" role="status">
     <!-- um pote enchendo: o nível acompanha o download da tabela do corredor -->
     <svg
       class="pote-carregando"
@@ -226,15 +248,18 @@ const titulo = computed(() => {
     <button class="btn" type="button" @click="tentarDeNovo">Tentar de novo</button>
   </div>
 
-  <component
-    :is="telas.pagina"
-    v-if="produto"
-    :id="produto"
-    :key="`${corredor.id}-${produto}`"
-    @voltar="voltar"
-    @empresa="(c: string) => buscarPor(fmtCnpj(c))"
-    @titulo="guardarTitulo"
-  />
+  <!-- a página do produto pede os dados ao montar: espera o sim, para não ficar em "Carregando" sob a pergunta -->
+  <template v-if="produto">
+    <component
+      :is="telas.pagina"
+      v-if="motor.status !== 'licenca'"
+      :id="produto"
+      :key="`${corredor.id}-${produto}`"
+      @voltar="voltar"
+      @empresa="(c: string) => buscarPor(fmtCnpj(c))"
+      @titulo="guardarTitulo"
+    />
+  </template>
 
   <p v-else-if="consulta && semPalavra" class="estado" role="status">
     Digite ao menos {{ palavraMinima }} letras de uma palavra do nome.

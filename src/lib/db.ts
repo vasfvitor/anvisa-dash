@@ -13,6 +13,7 @@
 //   manda max-age=600 e ETag). Depois de baixado, toda consulta é local.
 import * as duckdb from "@duckdb/duckdb-wasm";
 import { MANIFEST_URL } from "./config";
+import { esperarLicenca } from "./licenca";
 import { fetchManifest, tabelaUrl, type Manifest } from "./manifest";
 
 export type Valor = string | number | boolean | null;
@@ -40,6 +41,8 @@ export function aoProgresso(fn: (p: Progresso) => void): () => void {
 }
 
 async function abrir(): Promise<Banco> {
+  // todo download passa por aqui (iniciar): nada sai antes de a pessoa aceitar baixar (lib/licenca)
+  await esperarLicenca();
   const todos = duckdb.getJsDelivrBundles();
   const bundle = await duckdb.selectBundle({ mvp: todos.mvp, eh: todos.eh });
   // worker de outra origem (jsDelivr) só sobe via um Blob da nossa origem que o importa

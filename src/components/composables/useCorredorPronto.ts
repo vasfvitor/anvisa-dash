@@ -1,15 +1,17 @@
-// Se o corredor ativo está pronto para buscar. Um DuckDB só para o site inteiro sobe assim que a ilha monta;
-// cada corredor baixa a tabela dele (com progresso) e monta as tabelas derivadas. O que já foi baixado
-// fica em memória, então voltar a um corredor é instantâneo.
+// Se o corredor ativo está pronto para buscar. Até a pessoa aceitar baixar (lib/licenca), o corredor fica em
+// "licenca" e nada é baixado. Depois, um DuckDB só para o site inteiro sobe; cada corredor baixa a tabela dele
+// (com progresso) e monta as tabelas derivadas. O que já foi baixado fica em memória, então voltar a um
+// corredor é instantâneo.
 import { onBeforeUnmount, ref, shallowRef, type Ref } from "vue";
 import type { Corredor } from "../../corredores";
 import { aoProgresso, iniciar } from "../../lib/db";
+import { permitirDownload, podeBaixar } from "../../lib/licenca";
 import { FONTES } from "../../corredores/fontes";
 import { prepararMedidas } from "../../lib/medidas";
 import type { Origem } from "../../lib/manifest";
 import { vezes } from "../../lib/vez";
 
-export type Status = "iniciando" | "baixando" | "pronto" | "erro";
+export type Status = "licenca" | "iniciando" | "baixando" | "pronto" | "erro";
 
 export function useCorredorPronto(corredor: Ref<Corredor>) {
   const status = ref<Status>("iniciando");
@@ -39,9 +41,10 @@ export function useCorredorPronto(corredor: Ref<Corredor>) {
   async function subir(): Promise<void> {
     const minhaVez = vez.nova();
     const c = corredor.value;
-    status.value = "iniciando";
+    status.value = podeBaixar() ? "iniciando" : "licenca";
     progresso.value = 0;
     erro.value = "";
+    if (status.value === "licenca") return;
     try {
       const t = (await iniciar()).tables[c.tabela];
       if (!minhaVez()) return;
@@ -63,5 +66,11 @@ export function useCorredorPronto(corredor: Ref<Corredor>) {
     }
   }
 
-  return { status, erro, origem, progresso, tamanho, trocou, subir };
+  /** O sim da pessoa: guarda e sobe o corredor atual. */
+  function aceitar(): Promise<void> {
+    permitirDownload();
+    return subir();
+  }
+
+  return { status, erro, origem, progresso, tamanho, trocou, subir, aceitar };
 }
