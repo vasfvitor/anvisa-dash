@@ -140,8 +140,8 @@ watch(titulo, (t) => t && emit("titulo", t));
           </table>
         </div>
         <p class="note">
-          Apresentação com preço livre (regime “Liberado” na lista da CMED) não tem teto de PMC, só monitoramento.
-          Apresentação de uso restrito a hospitais não tem PMC.
+          No regime “Liberado”, só o preço fábrica (PF) é livre; o preço máximo ao consumidor (PMC) segue as margens da
+          CMED, como diz a própria lista. Apresentação de uso restrito a hospitais não tem PMC.
         </p>
       </section>
 
