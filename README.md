@@ -142,6 +142,9 @@ DADOS_LIVE=/tmp/dados/data/<build_id> pnpm test                     # as derivad
 
 ## Publicação
 
+Quando um workflow fica vermelho, o [RUNBOOK.md](RUNBOOK.md) diz o que a mensagem quer dizer, se o site
+foi afetado e o que fazer. Quem muda um alarme ou uma mensagem de erro atualiza o RUNBOOK no mesmo commit.
+
 `.github/workflows/pages.yml` testa, checa e publica no GitHub Pages a cada push em `main`. À noite
 (22:30, 01:30 e 04:30 UTC) ele compara o `build_id` do manifest com o de `/build.json` no site e só
 republica quando o pipeline de dados publicou um build novo: o GitHub atrasa crons em horas, e o
