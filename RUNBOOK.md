@@ -188,5 +188,3 @@ Achados em 2026-11-03, ainda sem correção.
   opcionais.
 - **Ninguém vigia se o contém está em dia.** Se o cron parar ou o build falhar todo dia, nenhum outro
   workflow fica vermelho. Fase 5 (página de status).
-- **keepalive verde sem ter feito nada.** Como no anvisa-api: conferir no log do dia 1 as linhas
-  `enabled`. Fase 2.
