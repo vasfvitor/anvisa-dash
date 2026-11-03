@@ -145,7 +145,9 @@ DADOS_LIVE=/tmp/dados/data/<build_id> pnpm test                     # as derivad
 `.github/workflows/pages.yml` testa, checa e publica no GitHub Pages a cada push em `main`. À noite
 (22:30, 01:30 e 04:30 UTC) ele compara o `build_id` do manifest com o de `/build.json` no site e só
 republica quando o pipeline de dados publicou um build novo: o GitHub atrasa crons em horas, e o
-pipeline pula dias sem dados novos. A busca lê o manifest ao vivo; o rebuild atualiza as páginas de
+pipeline pula dias sem dados novos. `.github/workflows/live.yml` roda todo dia às 06:15 UTC (e à mão) a
+suíte com `DADOS_LIVE` sobre o build publicado inteiro, e fica vermelho quando o anvisa-api muda algo que o
+contém lê; não publica nada. A busca lê o manifest ao vivo; o rebuild atualiza as páginas de
 empresa e a lista de A a Z, o `llms.txt`, o dicionário, o "sobre" e o rodapé. O sitemap
 (`src/pages/sitemap-index.xml.ts` e `sitemap-0.xml.ts`) lista as páginas fixas e as listas de A a Z com o
 `lastmod` do build de dados e só as páginas de empresa com dois produtos ou mais, que envasam para duas

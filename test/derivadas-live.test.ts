@@ -101,6 +101,11 @@ const SQL_MEDIDAS_ANTIGO = `CREATE TABLE medidas_antigo AS
     GROUP BY co_tipo_produto, co_seq_dossie_investig_med, prod`;
 const pronta = !!pasta && TABELAS.every((t) => existsSync(join(pasta, `${t}.parquet`)));
 const comOpcionais = pronta && OPCIONAIS.every((t) => existsSync(join(pasta, `${t}.parquet`)));
+// com DADOS_LIVE definido, faltar tabela é erro e não motivo para pular: o workflow live.yml conta com isso
+if (pasta && !pronta) {
+  const faltam = TABELAS.filter((t) => !existsSync(join(pasta, `${t}.parquet`)));
+  throw new Error(`DADOS_LIVE=${pasta}: faltam ${faltam.join(", ")}`);
+}
 
 describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_LIVE)", () => {
   let instancia: DuckDBInstance;
