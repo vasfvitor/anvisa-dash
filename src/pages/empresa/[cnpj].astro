@@ -234,7 +234,8 @@ const organizacao = {
                         {situacaoDe(p.ativo).curto}
                       </span>
                     </span>
-                    <span class="linha muted">{p.tipo}</span>
+                    {/* dispositivos: o tipo não acompanha risco nem prazo (produtos_saude/consultas.ts) */}
+                    {c.id !== "produtos_saude" && <span class="linha muted">{p.tipo}</span>}
                     <span class={`linha ${v.classe === "perigo" ? "perigo" : "muted"}`} title={v.dica}>
                       {v.curto}
                     </span>

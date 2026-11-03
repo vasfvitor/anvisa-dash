@@ -2,9 +2,8 @@
 import { computed } from "vue";
 import type { ProdutoSaude } from "./fonte";
 import { fmtProcesso } from "../../lib/format";
-import { dicaTipos, situacaoDe } from "../../lib/situacao";
+import { situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
-import { meta } from "./meta";
 import { validade } from "../../lib/validade";
 import { cliqueInterno, montarUrl } from "../../components/composables/useUrlState";
 import Destaque from "../../components/Destaque.vue";
@@ -16,7 +15,6 @@ const emit = defineEmits<{ abrir: [id: string] }>();
 
 const ativo = computed(() => props.p.situacao_registro === "Ativo");
 const sit = computed(() => situacaoDe(ativo.value));
-const cadastro = computed(() => props.p.tipo_regularizacao === "Cadastrado");
 const val = computed(() => validade(props.p.validade, props.p.dt_vencimento, ativo.value));
 const href = computed(() => montarUrl({ produto: props.p.id }));
 
@@ -37,15 +35,10 @@ function abrir(ev: MouseEvent): void {
       <p v-if="p.nome_tecnico" class="cartao-empresa"><Destaque :texto="legivel(p.nome_tecnico)" :termo="termo" /></p>
       <p class="cartao-empresa"><Destaque :texto="legivel(p.empresa, 'nome')" :termo="termo" /></p>
       <div class="alergia compacta">
-        <span class="selo" :title="dicaTipos(meta.tipos)">{{ p.tipo_regularizacao }}</span>
         <span v-if="p.grupo" class="selo" title="Classe de risco, de I (menor) a IV (maior)"
           ><Icone nome="pulso" />{{ p.grupo }}</span
         >
-        <span
-          v-if="!cadastro || p.dt_vencimento"
-          class="selo"
-          :class="val.classe === 'neutro' ? '' : val.classe"
-          :title="val.dica"
+        <span v-if="p.dt_vencimento" class="selo" :class="val.classe === 'neutro' ? '' : val.classe" :title="val.dica"
           ><Icone :nome="val.classe === 'perigo' ? 'alerta' : val.classe === 'ok' ? 'certo' : 'gota'" />{{
             val.curto
           }}</span
@@ -54,7 +47,7 @@ function abrir(ev: MouseEvent): void {
       <EmpresaComMedidas v-if="medidas" :n="medidas" />
       <p class="cartao-rodape">
         <span
-          >{{ cadastro ? "Cadastro" : "Registro" }} <span class="numero">{{ p.registro }}</span></span
+          >Nº <span class="numero">{{ p.registro }}</span></span
         >
         <span v-if="p.processo"
           >Processo <span class="numero">{{ fmtProcesso(p.processo) }}</span></span

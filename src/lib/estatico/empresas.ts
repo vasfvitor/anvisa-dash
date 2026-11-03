@@ -206,7 +206,7 @@ export interface Entrada {
   cosmeticosTotais: (Totais & { cnpj: string })[];
   /** medicamentos: `tipo` é a categoria regulatória, `registro` os 9 dígitos, `vencimento` com precisão de mês */
   medicamentos?: (LinhaValidade & DaEmpresa)[];
-  /** produtos para saúde: `tipo` Registrado ou Cadastrado, `vencimento` só nos registros */
+  /** produtos para saúde: `tipo` não aparece na página (o primeiro dígito, sem prazo nem risco), `vencimento` nos de classe III e IV */
   produtosSaude?: (LinhaValidade & DaEmpresa)[];
   medidas: (LinhaMedida & DaEmpresa)[];
   /** alimentos_fabricacao: ausente ou vazia quando o build de dados ainda não tem a tabela */

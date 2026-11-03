@@ -4,7 +4,7 @@ import { fabricantesComPagina, fonte, type ProdutoSaude } from "./fonte";
 import { slugFabricante } from "../../lib/chave";
 import { fmtCnpj, fmtData, fmtProcesso, plural, url } from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
-import { notaTipo, SITUACAO, situacaoDe } from "../../lib/situacao";
+import { SITUACAO, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 import { validade } from "../../lib/validade";
 import PaginaProduto from "../../components/PaginaProduto.vue";
@@ -57,7 +57,6 @@ void carregar();
 
 const ativo = computed(() => p.value?.situacao_registro === "Ativo");
 const sit = computed(() => situacaoDe(ativo.value));
-const cadastro = computed(() => p.value?.tipo_regularizacao === "Cadastrado");
 const val = computed(() => (p.value ? validade(p.value.validade, p.value.dt_vencimento, ativo.value) : null));
 const titulo = computed(() => (p.value ? legivel(p.value.nome, "nome") : ""));
 // a consulta oficial de produtos para saúde, com o registro já preenchido
@@ -83,9 +82,7 @@ watch(titulo, (t) => t && emit("titulo", t));
       <header class="produto-cabecalho" :class="{ inativo: !ativo }">
         <div class="produto-status">
           <span class="situacao grande" :class="ativo ? 'ok' : 'off'" :title="sit.dica">{{ sit.longo }}</span>
-          <span class="produto-tipo"
-            >{{ p.tipo_regularizacao }} · {{ meta.item[0] }}{{ p.grupo ? ` · ${p.grupo}` : "" }}</span
-          >
+          <span class="produto-tipo">Dispositivo médico{{ p.grupo ? ` · ${p.grupo}` : "" }}</span>
         </div>
         <h1>{{ titulo }}</h1>
         <p v-if="p.nome_tecnico" class="lead">{{ legivel(p.nome_tecnico) }}</p>
@@ -118,7 +115,7 @@ watch(titulo, (t) => t && emit("titulo", t));
         </div>
       </div>
 
-      <section v-if="val && (!cadastro || p.dt_vencimento)" class="secao">
+      <section v-if="val" class="secao">
         <h2><Icone nome="gota" />Até quando vale</h2>
         <div class="selos-validade">
           <span class="selo grande" :class="val.classe === 'neutro' ? '' : val.classe"
@@ -128,10 +125,6 @@ watch(titulo, (t) => t && emit("titulo", t));
           >
         </div>
         <p v-if="val.antiga" class="note">{{ val.dica }}</p>
-      </section>
-      <section v-else class="secao">
-        <h2><Icone nome="gota" />Até quando vale</h2>
-        <p>Cadastro não tem data de vencimento: vale enquanto a ANVISA o mantiver liberado.</p>
       </section>
 
       <section v-if="fabricantes.length" class="secao">
@@ -159,8 +152,8 @@ watch(titulo, (t) => t && emit("titulo", t));
       <section class="secao tecnico">
         <h2><Icone nome="documento" />Dados técnicos</h2>
         <dl class="ficha">
-          <dt>Nº do {{ cadastro ? "cadastro" : "registro" }}</dt>
-          <dd>{{ p.registro }} <Copiar :valor="p.registro" rotulo="nº do registro" /></dd>
+          <dt>Nº na ANVISA</dt>
+          <dd>{{ p.registro }} <Copiar :valor="p.registro" rotulo="nº na ANVISA" /></dd>
           <template v-if="p.processo">
             <dt>Nº do processo</dt>
             <dd>{{ fmtProcesso(p.processo) }} <Copiar :valor="p.processo" rotulo="nº do processo" /></dd>
@@ -178,13 +171,6 @@ watch(titulo, (t) => t && emit("titulo", t));
             <dt>Classe de risco</dt>
             <dd>{{ p.classe_risco }} <span class="note">(de I, menor, a IV, maior)</span></dd>
           </template>
-          <dt>{{ meta.rotuloTipo ?? "Tipo" }}</dt>
-          <dd>
-            {{ p.tipo_regularizacao }}
-            <span v-if="notaTipo(meta.tipos, p.tipo_regularizacao)" class="note">{{
-              notaTipo(meta.tipos, p.tipo_regularizacao)
-            }}</span>
-          </dd>
           <dt>Situação</dt>
           <dd>
             {{ sit.tecnico }} <span class="note">({{ sit.dica }})</span>

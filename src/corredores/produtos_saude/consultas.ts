@@ -22,17 +22,18 @@ export const sqlFabricacaoPsDe = (de = `"${TABELA_FABRICACAO_PS}"`) =>
 const alinhada = (coluna: string) => `array_to_string(list_transform(${coluna}, lambda x: coalesce(x, '')), '|')`;
 
 /**
- * ps: a tabela principal com as colunas que o cartão e a página leem. `tipo_regularizacao` é Registrado ou
- * Cadastrado, `grupo` a classe de risco (Classe I a IV): as duas facetas além da situação. A validade da
- * liberação (Em dia, Vencida, Sem data) vai à parte, para o selo, com a data do dia; um cadastro pode ter
- * prazo (12.009 de classe III ou IV em 2026-11-03), então o selo sai sempre que houver data. A lista de fabricantes vira texto com "|" (o Arrow devolve coluna de lista como vetor), e as chaves e
- * os países deles também, na mesma ordem; `comChaves` falso (manifest de antes do build de dados que as
- * publica) deixa as duas vazias.
+ * ps: a tabela principal com as colunas que o cartão e a página leem. `grupo` é a classe de risco (Classe I a
+ * IV), a faceta além da situação. `tipo_regularizacao` sai nulo, e com isso a faceta de tipo some (contarFacetas
+ * ignora nulos): o `tipo` do anvisa-api vem do primeiro dígito do número e os dados não o ligam a risco nem a
+ * prazo (2026-11-03: 12.009 "Cadastrados" de classe III ou IV com vencimento). A validade da liberação (Em dia,
+ * Vencida, Sem data) vai à parte, para o selo, com a data do dia. A lista de fabricantes vira texto com "|" (o
+ * Arrow devolve coluna de lista como vetor), e as chaves e os países deles também, na mesma ordem; `comChaves`
+ * falso (manifest de antes do build de dados que as publica) deixa as duas vazias.
  */
 export const sqlPs = (comChaves: boolean) => `CREATE OR REPLACE TABLE ps AS
     SELECT id, registro, processo, nome, nome_tecnico, classe_risco, cnpj, empresa, linhas,
       CASE WHEN ativo THEN 'Ativo' ELSE 'Inativo' END AS situacao_registro,
-      tipo AS tipo_regularizacao,
+      NULL::VARCHAR AS tipo_regularizacao,
       'Classe ' || classe_risco AS grupo,
       strftime(publicacao, '%Y-%m-%d') AS publicacao,
       strftime(vencimento, '%Y-%m-%d') AS dt_vencimento,
@@ -40,7 +41,7 @@ export const sqlPs = (comChaves: boolean) => `CREATE OR REPLACE TABLE ps AS
       array_to_string(fabricantes, '|') AS fabricantes,
       ${comChaves ? alinhada("fabricantes_chaves") : "''"} AS fabricantes_chaves,
       ${comChaves ? alinhada("fabricantes_paises") : "''"} AS fabricantes_paises,
-      -- só para ordenação: sem data (os cadastros) por último
+      -- só para ordenação: sem data por último
       vencimento AS ordem_data,
       ${sqlPalavras("concat_ws(' ', nome, nome_tecnico, empresa)")} AS busca,
       ${sqlPalavras("nome")} AS busca_nome,

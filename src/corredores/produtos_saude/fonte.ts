@@ -1,7 +1,7 @@
 // Corredor 5, produtos para saúde (dispositivos médicos): uma linha por registro ou cadastro, com os
-// fabricantes juntos. Medido em 2026-10-22 no arquivo de 2026-10-13: 100.681 produtos (77.178 cadastros, sem
-// prazo, e 23.503 registros com validade). A origem não tem situação: liberado é cadastro vigente ou registro
-// com validade não vencida na data do arquivo (derivar.py no repo `anvisa`).
+// fabricantes juntos. No arquivo de 2026-10-13: 100.681 produtos; os de classe III e IV têm data de vencimento,
+// os de classe I e II não. A origem não tem situação: liberado é validade VIGENTE ou não vencida na data do
+// arquivo (derivar.py no repo `anvisa`).
 import { sqlFabricacaoPsDe, sqlPs, TABELA, TABELA_FABRICACAO_PS } from "./consultas";
 import { carregar, consultar, iniciar } from "../../lib/db";
 import type { Consulta } from "../../lib/detect";
@@ -23,13 +23,13 @@ export interface ProdutoSaude {
   /** quantas linhas a origem traz (uma por fabricante) */
   linhas: number;
   situacao_registro: "Ativo" | "Inativo";
-  /** Registrado ou Cadastrado */
-  tipo_regularizacao: string;
+  /** sempre nulo: o corredor não mostra tipo (consultas.ts, sqlPs) */
+  tipo_regularizacao: string | null;
   /** Classe I a IV */
   grupo: string | null;
   /** AAAA-MM-DD da publicação */
   publicacao: string | null;
-  /** AAAA-MM-DD da validade do registro; nulo nos cadastros */
+  /** AAAA-MM-DD da validade; nulo quando a fonte não traz data (VIGENTE) */
   dt_vencimento: string | null;
   /** Em dia, Vencida ou Sem data */
   validade: string;
