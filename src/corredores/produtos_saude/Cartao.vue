@@ -41,7 +41,11 @@ function abrir(ev: MouseEvent): void {
         <span v-if="p.grupo" class="selo" title="Classe de risco, de I (menor) a IV (maior)"
           ><Icone nome="pulso" />{{ p.grupo }}</span
         >
-        <span v-if="!cadastro" class="selo" :class="val.classe === 'neutro' ? '' : val.classe" :title="val.dica"
+        <span
+          v-if="!cadastro || p.dt_vencimento"
+          class="selo"
+          :class="val.classe === 'neutro' ? '' : val.classe"
+          :title="val.dica"
           ><Icone :nome="val.classe === 'perigo' ? 'alerta' : val.classe === 'ok' ? 'certo' : 'gota'" />{{
             val.curto
           }}</span

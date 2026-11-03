@@ -28,10 +28,10 @@ export const meta: Corredor = {
     { valor: "10163770014", texto: "10163770014", dica: "registro" },
   ],
   grupo: "Classe de risco",
-  tipos: {
-    Cadastrado: "risco I ou II; entra sem análise prévia e não tem data de vencimento",
-    Registrado: "risco III ou IV; analisado pela ANVISA, com data de vencimento",
-  },
+  // Sem explicação de Cadastrado e Registrado: o `tipo` do anvisa-api vem do primeiro dígito do número, e os dados
+  // não o ligam a risco nem a prazo (2026-11-03: 18.533 Registrados de classe I ou II sem vencimento, 12.009
+  // Cadastrados de classe III ou IV com vencimento). A classe e o vencimento, que os dados trazem, dizem isso.
+  tipos: {},
   item: ["dispositivo médico", "dispositivos médicos"],
   dica: "Luvas, seringas, testes rápidos, implantes e aparelhos de medir pressão são dispositivos médicos.",
   tipoProduto: 8,

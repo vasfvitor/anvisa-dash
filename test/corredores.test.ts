@@ -19,8 +19,14 @@ describe("corredores", () => {
     }
   });
   it("cada corredor explica os seus tipos numa oração curta, sem ponto final", () => {
+    // dispositivos: a fonte não diz o que Cadastrado e Registrado querem dizer (meta.ts), e nada é melhor que errado
+    const semExplicacao = new Set(["produtos_saude"]);
     for (const c of CORREDORES) {
       const valores = Object.entries(c.tipos);
+      if (semExplicacao.has(c.id)) {
+        expect(valores, c.id).toEqual([]);
+        continue;
+      }
       expect(valores.length, c.id).toBeGreaterThan(0);
       for (const [valor, oracao] of valores) {
         expect(valor, c.id).toMatch(/^\S/);

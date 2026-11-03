@@ -24,8 +24,8 @@ const alinhada = (coluna: string) => `array_to_string(list_transform(${coluna}, 
 /**
  * ps: a tabela principal com as colunas que o cartão e a página leem. `tipo_regularizacao` é Registrado ou
  * Cadastrado, `grupo` a classe de risco (Classe I a IV): as duas facetas além da situação. A validade da
- * liberação (Em dia, Vencida, Sem data) vai à parte, para o selo, com a data do dia; os cadastros não têm
- * prazo. A lista de fabricantes vira texto com "|" (o Arrow devolve coluna de lista como vetor), e as chaves e
+ * liberação (Em dia, Vencida, Sem data) vai à parte, para o selo, com a data do dia; um cadastro pode ter
+ * prazo (12.009 de classe III ou IV em 2026-11-03), então o selo sai sempre que houver data. A lista de fabricantes vira texto com "|" (o Arrow devolve coluna de lista como vetor), e as chaves e
  * os países deles também, na mesma ordem; `comChaves` falso (manifest de antes do build de dados que as
  * publica) deixa as duas vazias.
  */

@@ -118,7 +118,7 @@ watch(titulo, (t) => t && emit("titulo", t));
         </div>
       </div>
 
-      <section v-if="val && !cadastro" class="secao">
+      <section v-if="val && (!cadastro || p.dt_vencimento)" class="secao">
         <h2><Icone nome="gota" />Até quando vale</h2>
         <div class="selos-validade">
           <span class="selo grande" :class="val.classe === 'neutro' ? '' : val.classe"
