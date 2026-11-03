@@ -12,24 +12,27 @@ Quem cria ou muda um alarme ou uma mensagem de erro (um `throw`, um `::error::`,
 
 ## Índice
 
-| Workflow       | Trecho da mensagem                                                          | Entrada                                                         |
-| -------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Publicar site  | `manifest: HTTP`, `fetch failed`                                            | [anvisa-api fora do ar](#anvisa-api-fora-do-ar)                 |
-| Publicar site  | `manifest com schema_version`, `manifest inválido`, `manifest sem a tabela` | [Contrato do anvisa-api mudou](#contrato-do-anvisa-api-mudou)   |
-| Publicar site  | `HTTP 404 em`, `arquivo incompleto`                                         | [Parquet não baixou](#parquet-não-baixou)                       |
-| Publicar site  | `Binder Error`, `Referenced column`                                         | [Coluna do anvisa-api mudou](#coluna-do-anvisa-api-mudou)       |
-| Publicar site  | `dist com N MB`                                                             | [Site perto do limite do Pages](#site-perto-do-limite-do-pages) |
-| Publicar site  | `o tamanho do motor foi medido`, `MOTOR_VERSAO`                             | [Versão do DuckDB-WASM mudou](#versão-do-duckdb-wasm-mudou)     |
-| Publicar site  | `heap out of memory`, tempo esgotado                                        | [Build sem memória ou lento](#build-sem-memória-ou-lento)       |
-| Publicar site  | `format:check`, `lint`, `test`, `check`                                     | [Lint, formato, testes ou tipos](#lint-formato-testes-ou-tipos) |
-| Testes ao vivo | `faltam`, `AssertionError`, `curl: (22)`                                    | [Testes ao vivo falharam](#testes-ao-vivo-falharam)             |
-| (visitante)    | `Não foi possível carregar os dados de`, `A busca falhou`                   | [Erro que um visitante relata](#erro-que-um-visitante-relata)   |
+| Workflow       | Trecho da mensagem                                                          | Entrada                                                             |
+| -------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Publicar site  | `não deu para ler o build_id` (aviso amarelo)                               | [Manifest não abriu no verificar](#manifest-não-abriu-no-verificar) |
+| Publicar site  | `manifest: HTTP`, `fetch failed`                                            | [anvisa-api fora do ar](#anvisa-api-fora-do-ar)                     |
+| Publicar site  | `manifest com schema_version`, `manifest inválido`, `manifest sem a tabela` | [Contrato do anvisa-api mudou](#contrato-do-anvisa-api-mudou)       |
+| Publicar site  | `HTTP 404 em`, `arquivo incompleto`                                         | [Parquet não baixou](#parquet-não-baixou)                           |
+| Publicar site  | `Binder Error`, `Referenced column`                                         | [Coluna do anvisa-api mudou](#coluna-do-anvisa-api-mudou)           |
+| Publicar site  | `dist com N MB`                                                             | [Site perto do limite do Pages](#site-perto-do-limite-do-pages)     |
+| Publicar site  | `o tamanho do motor foi medido`, `MOTOR_VERSAO`                             | [Versão do DuckDB-WASM mudou](#versão-do-duckdb-wasm-mudou)         |
+| Publicar site  | `heap out of memory`, tempo esgotado                                        | [Build sem memória ou lento](#build-sem-memória-ou-lento)           |
+| Publicar site  | `format:check`, `lint`, `test`, `check`                                     | [Lint, formato, testes ou tipos](#lint-formato-testes-ou-tipos)     |
+| Testes ao vivo | `faltam`, `AssertionError`, `curl: (22)`                                    | [Testes ao vivo falharam](#testes-ao-vivo-falharam)                 |
+| (visitante)    | `Não foi possível carregar os dados de`, `A busca falhou`                   | [Erro que um visitante relata](#erro-que-um-visitante-relata)       |
 
 ## Publicar site
 
 Roda em push no `main`, à mão, e três vezes por noite (22:30, 01:30 e 04:30 UTC). À noite, o job
 `verificar` compara o `build_id` do manifest do anvisa-api com o de `/build.json` do site e só publica
-quando há um build novo. Se não conseguir ler um dos dois, publica mesmo assim.
+quando há um build novo. Se não conseguir ler o manifest, não publica e deixa um aviso amarelo (ver
+[Manifest não abriu no verificar](#manifest-não-abriu-no-verificar)). Se quem não abre é o `/build.json`
+do próprio site, publica.
 
 A busca do site lê o manifest ao vivo, no navegador. O build gera o resto: páginas de empresa, listas de
 A a Z, `llms.txt`, dicionário, "sobre" e rodapé. Em qualquer falha deste workflow, **o site anterior
@@ -40,12 +43,24 @@ continua no ar**.
 - **Onde aparece:** passo Build (ou `check`).
 - **Mensagens:** `manifest: HTTP 503 em https://vasfvitor.github.io/anvisa-api/manifest.json`, ou
   `TypeError: fetch failed`.
-- **O que quer dizer:** o manifest do anvisa-api não abriu. Enquanto isso durar, o `verificar` também não
-  consegue ler e manda publicar, então pode ficar vermelho três vezes por noite.
+- **O que quer dizer:** o manifest do anvisa-api não abriu durante o build. Isso só aparece num push ou
+  num "Run workflow": nos horários fixos, o `verificar` para antes, com o aviso amarelo.
 - **O site foi afetado?** As páginas estáticas seguem as anteriores. A busca, que lê o manifest ao vivo,
   também pode estar fora.
 - **Agir ou esperar:** esperar. Ver o
   [RUNBOOK do anvisa-api](https://github.com/vasfvitor/anvisa-api/blob/main/RUNBOOK.md).
+
+### Manifest não abriu no verificar
+
+- **Onde aparece:** job `verificar`, como aviso amarelo. O run fica verde e o build não roda.
+- **Mensagem:** `::warning::não deu para ler o build_id do manifest do anvisa-api; nada publicado, o site segue com o build atual`
+- **O que quer dizer:** num horário fixo, o manifest do anvisa-api não abriu, ou veio sem `build_id`. O
+  contém não publica, porque o build falharia.
+- **O site foi afetado?** As páginas estáticas seguem as anteriores. A busca lê o mesmo manifest ao vivo,
+  então pode estar fora também.
+- **Agir ou esperar:** esperar. Ver o
+  [RUNBOOK do anvisa-api](https://github.com/vasfvitor/anvisa-api/blob/main/RUNBOOK.md).
+- **Pedir ajuda quando:** o aviso se repetir por mais de um dia com o anvisa-api verde.
 
 ### Contrato do anvisa-api mudou
 

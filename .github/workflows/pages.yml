@@ -45,11 +45,16 @@ jobs:
             echo "mudou=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # ?t= fura o cache de 600 s do Pages; uma falha conta como mudança (publica)
-          novo=$(curl -fsS "$MANIFEST?t=$(date +%s)" | jq -r .build_id) || novo=""
+          # ?t= fura o cache de 600 s do Pages. Manifest que não abre não é motivo para publicar: o build
+          # falharia nele. O run pula com um aviso e o site segue com o build atual; o alarme do próprio
+          # anvisa-api diz por quê. Um /build.json que não abre ainda publica: o site pode estar quebrado.
+          novo=$(curl -fsS "$MANIFEST?t=$(date +%s)" | jq -er .build_id) || novo=""
           site=$(curl -fsS "$PUBLICADO?t=$(date +%s)" | jq -r .build_id) || site=""
           echo "manifest: ${novo:-?} · site: ${site:-?}"
-          if [ -n "$novo" ] && [ "$novo" != null ] && [ "$novo" = "$site" ]; then
+          if [ -z "$novo" ]; then
+            echo "::warning::não deu para ler o build_id do manifest do anvisa-api; nada publicado, o site segue com o build atual"
+            echo "mudou=false" >> "$GITHUB_OUTPUT"
+          elif [ "$novo" = "$site" ]; then
             echo "unchanged: build $novo is current"
             echo "mudou=false" >> "$GITHUB_OUTPUT"
           else
