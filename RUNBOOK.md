@@ -180,9 +180,11 @@ Achados em 2026-11-03, ainda sem correção.
   simplesmente não mostra medidas da ANVISA, sem dizer que não conseguiu conferir. Fase 3.
 - **O build lê o manifest com cache.** Isso deixa mais provável o 404 de
   [Parquet não baixou](#parquet-não-baixou). Fase 3.
-- **Links de download quebram depois de cada deploy do anvisa-api.** O dicionário e o `llms.txt` apontam
-  para os Parquet do build em que o site foi gerado. Depois de um build novo do anvisa-api, eles dão 404
-  até o contém publicar de novo.
+- **Caminhos do `llms.txt` quebram por algumas horas depois de cada deploy do anvisa-api.** Os exemplos de
+  `read_parquet` do `llms.txt` e a distribuição de cada tabela nos dados estruturados do dicionário apontam
+  para os Parquet do build em que o site foi gerado, e dão 404 até o contém publicar de novo (até cerca de
+  3 horas por dia). O `llms.txt` avisa que o manifest lista os arquivos atuais. Desde 07/11/2026, o "Baixar
+  Parquet" do dicionário leva à tabela na página do próprio anvisa-api, que não quebra.
 - **Seções opcionais somem sem aviso.** Se uma tabela opcional faltar no manifest, as seções que dependem
   dela somem das páginas e o build fica verde. O `Testes ao vivo` também não confere as tabelas
   opcionais.

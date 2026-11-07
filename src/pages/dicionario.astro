@@ -12,6 +12,9 @@ const m = await manifestDoBuild(MANIFEST_URL);
 const tabelas = Object.entries(m.tables);
 // o dicionário que o pipeline gera ao lado do manifest (a mesma informação, sem o site em volta)
 const docs = m.docs ? new URL(m.docs, MANIFEST_URL).href : undefined;
+// o download leva à tabela na página do pipeline, refeita a cada deploy: o caminho do Parquet deste build dá
+// 404 entre um deploy do anvisa-api e o build seguinte deste site
+const baixar = (nome: string) => (docs ? `${docs}#${nome}` : tabelaUrl(MANIFEST_URL, m, nome));
 
 // um Dataset (schema.org) por tabela que a página descreve, com o Parquet como distribuição
 const pagina = new URL(Astro.url.pathname, Astro.site).href;
@@ -111,7 +114,7 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
               Ordenado por <code>{t.sort.join(", ")}</code>.
             </>
           ) : null}{" "}
-          <a href={tabelaUrl(MANIFEST_URL, m, nome)}>Baixar Parquet</a>.
+          <a href={baixar(nome)}>Baixar Parquet</a> na página do anvisa-api, sempre com o build atual.
         </p>
         <div class="table-wrap">
           <table>
