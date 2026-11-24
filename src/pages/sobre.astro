@@ -5,7 +5,7 @@ import { CORREDORES } from "../corredores";
 import { arquivosDaTabela } from "../lib/arquivos";
 import { MANIFEST_URL } from "../lib/config";
 import { TABELA_MEDIDAS } from "../lib/consultas";
-import { fmtBytes, url } from "../lib/format";
+import { fmtBytes, fmtDataLocal, url } from "../lib/format";
 import { manifestDoBuild } from "../lib/manifest";
 
 const m = await manifestDoBuild(MANIFEST_URL);
@@ -33,7 +33,7 @@ const medidas = tam(TABELA_MEDIDAS);
 
 <Base
   title="Sobre"
-  description="De onde vêm os dados do contém., quando são atualizados, como a busca funciona e o que são as medidas de fiscalização da ANVISA."
+  description="De onde vêm os dados do contém. e de quando são, como a busca funciona e o que são as medidas de fiscalização da ANVISA."
 >
   <h1>Sobre</h1>
   <p class="lead">
@@ -54,8 +54,8 @@ const medidas = tam(TABELA_MEDIDAS);
     ))}
   </ul>
   <p>
-    A ANVISA atualiza esses arquivos nos dias úteis, por volta das 12h30 (horário de Brasília). No fim do dia eles são
-    convertidos para Parquet e publicados com um <a href={MANIFEST_URL}>manifest</a>. A estrutura está no{" "}
+    Esta versão do site usa esses arquivos convertidos para Parquet em {fmtDataLocal(m.built_at)} (build{" "}
+    <code>{m.build_id}</code>) e publicados com um <a href={MANIFEST_URL}>manifest</a>. A estrutura está no{" "}
     <a href={url("/dicionario/")}>dicionário de dados</a>. Datas fora do comum, como validades no ano 3033, aparecem
     como a ANVISA publicou.
   </p>
