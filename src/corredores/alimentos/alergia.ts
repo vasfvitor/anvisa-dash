@@ -35,7 +35,8 @@ const CURTOS: Record<string, string> = {
 };
 export const nomeCurto = (item: string): string => CURTOS[item] ?? item;
 
-export type Sinal = "sim" | "nao" | "varia" | null;
+/** "naoInformado": a value other than Sim or Não, never read as "sem glúten" */
+export type Sinal = "sim" | "nao" | "varia" | "naoInformado" | null;
 
 export interface ResumoAlergia {
   gluten: Sinal;
@@ -49,12 +50,20 @@ export interface ResumoAlergia {
   temDados: boolean;
 }
 
+// "sim" anywhere is a warning; "nao" only when every presentation says Não
 function sinal(valores: Set<string>): Sinal {
   if (valores.has("sim") && valores.has("nao")) return "varia";
   if (valores.has("sim")) return "sim";
+  if (valores.has("?")) return "naoInformado";
   if (valores.has("nao")) return "nao";
   return null;
 }
+
+// Sim and Não, normalised; anything else is "?" (not informed)
+const declarado = (valor: string): string => {
+  const v = normalizar(valor.trim());
+  return v === "sim" || v === "nao" ? v : "?";
+};
 
 /** Junta as declarações de todas as apresentações de um produto. */
 export function resumirAlergia(
@@ -67,7 +76,7 @@ export function resumirAlergia(
     for (const { rotulo, valor } of intolerancias(s)) {
       if (!valor) continue;
       const r = normalizar(rotulo);
-      const v = normalizar(valor) === "sim" ? "sim" : "nao";
+      const v = declarado(valor);
       if (r.includes("gluten")) gluten.add(v);
       else if (r.includes("lactose")) lactose.add(v);
     }
@@ -120,7 +129,8 @@ const SINAL: Record<string, Sinal> = { sim: "sim", nao: "nao", varia: "varia" };
  * test/derivadas-live.test.ts confere). Sem nenhuma declaração as seis colunas vêm nulas: temDados falso.
  */
 export function resumoDe(c: ColunasAlergia): ResumoAlergia {
-  const sinalDe = (s: string | null) => (s ? (SINAL[normalizar(s)] ?? null) : null);
+  // a value other than Sim, Não or Varia is not informed, never "nao"
+  const sinalDe = (s: string | null) => (s ? (SINAL[normalizar(s.trim())] ?? "naoInformado") : null);
   const r = {
     gluten: sinalDe(c.gluten),
     lactose: sinalDe(c.lactose),

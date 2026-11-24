@@ -33,6 +33,16 @@ describe("resumirAlergia", () => {
   it("sem dados", () => {
     expect(resumirAlergia([null], [null]).temDados).toBe(false);
   });
+  it("only an explicit Não is reassuring; any other value is not informed", () => {
+    const r = resumirAlergia([null], ["Contém Glúten - Não informado | Contém Lactose - NÃO"]);
+    expect(r.gluten).toBe("naoInformado");
+    expect(r.lactose).toBe("nao");
+    expect(r.temDados).toBe(true);
+    // one presentation says Não and another an unknown value: not "sem glúten"
+    expect(resumirAlergia([null, null], ["Contém Glúten - Não", "Contém Glúten - ?"]).gluten).toBe("naoInformado");
+    // a Sim still warns
+    expect(resumirAlergia([null, null], ["Contém Glúten - Sim", "Contém Glúten - Talvez"]).gluten).toBe("sim");
+  });
 });
 
 describe("parsers", () => {
@@ -73,6 +83,20 @@ describe("resumoDe", () => {
       varia: true,
       temDados: true,
     });
+  });
+
+  it("a column value other than Sim, Não or Varia is not informed, never Não", () => {
+    const r = resumoDe({
+      gluten: "Não informado",
+      lactose: "Não ",
+      contem: null,
+      pode_conter: null,
+      nao_contem: null,
+      alergia_varia: null,
+    });
+    expect(r.gluten).toBe("naoInformado");
+    expect(r.lactose).toBe("nao");
+    expect(r.temDados).toBe(true);
   });
 
   it("sem declaração (as seis colunas nulas) não tem dados", () => {

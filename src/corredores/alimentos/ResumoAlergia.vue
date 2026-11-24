@@ -8,8 +8,12 @@ const verNaoContem = ref(false);
 
 function rotulo(nome: string, icone: string, s: Sinal): { texto: string; classe: string; icone: string } | null {
   if (s === "sim") return { texto: `Contém ${nome}`, classe: "perigo", icone };
-  if (s === "nao") return { texto: `Sem ${nome}`, classe: "ok", icone };
-  if (s === "varia") return { texto: `${nome[0]!.toUpperCase()}${nome.slice(1)}: varia`, classe: "atencao", icone };
+  // the company declares it: the reassuring badge says so
+  if (s === "nao") return { texto: `Sem ${nome}, segundo a empresa`, classe: "ok", icone };
+  const Nome = `${nome[0]!.toUpperCase()}${nome.slice(1)}`;
+  if (s === "varia") return { texto: `${Nome}: varia`, classe: "atencao", icone };
+  // a value other than Sim or Não: said in words, with no colour
+  if (s === "naoInformado") return { texto: `${Nome}: não informado`, classe: "", icone };
   return null;
 }
 const intolerancias = computed(() =>
