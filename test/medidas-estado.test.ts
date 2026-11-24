@@ -10,22 +10,28 @@ interface Pedido {
   pagina: number;
   registros: string[];
   responder: (m: Medida[]) => void;
+  falhar: (e: Error) => void;
 }
 
 const { pedidos, contagens } = vi.hoisted(() => ({
   pedidos: [] as Pedido[],
-  contagens: [] as { tipo: number; cnpjs: string[]; responder: (n: Map<string, number>) => void }[],
+  contagens: [] as {
+    tipo: number;
+    cnpjs: string[];
+    responder: (n: Map<string, number>) => void;
+    falhar: (e: Error) => void;
+  }[],
 }));
 
 vi.mock("../src/lib/medidas", () => ({
   MEDIDAS_POR_PAGINA: 20,
   buscarMedidas: (tipo: number, q: Consulta, pagina: number, registros: string[] = []) =>
-    new Promise<Medida[]>((responder) => {
-      pedidos.push({ tipo, q, pagina, registros, responder });
+    new Promise<Medida[]>((responder, falhar) => {
+      pedidos.push({ tipo, q, pagina, registros, responder, falhar });
     }),
   medidasPorEmpresa: (tipo: number, cnpjs: string[]) =>
-    new Promise<Map<string, number>>((responder) => {
-      contagens.push({ tipo, cnpjs, responder });
+    new Promise<Map<string, number>>((responder, falhar) => {
+      contagens.push({ tipo, cnpjs, responder, falhar });
     }),
 }));
 
@@ -161,6 +167,64 @@ describe("useMedidas", () => {
     await p2;
     void m.buscar(3, q, []);
     expect(pedidos).toHaveLength(3);
+  });
+
+  it("a failed load is an error, never an empty list; the same search retries and clears it", async () => {
+    const m = montar();
+    const p1 = m.buscar(3, texto("biojet"));
+    pedidos[0]!.falhar(new Error("rede"));
+    await p1;
+    expect(m.erro.value).toBe(true);
+    expect(m.erroBusca.value).toBe(true);
+    expect(m.itens.value).toEqual([]);
+    expect(m.buscada.value).toEqual(texto("biojet"));
+    expect(m.carregando.value).toBe(false);
+    const p2 = m.buscar(3, texto("biojet"));
+    expect(pedidos).toHaveLength(2);
+    pedidos[1]!.responder(medidas(1, 1));
+    await p2;
+    expect(m.erro.value).toBe(false);
+    expect(m.itens.value).toHaveLength(1);
+  });
+
+  it("a failed next page keeps the measures shown and flags the error", async () => {
+    const m = montar();
+    const p1 = m.buscar(6, texto("suplemento"));
+    pedidos[0]!.responder(medidas(20, 25));
+    await p1;
+    const p2 = m.mais();
+    pedidos[1]!.falhar(new Error("rede"));
+    await p2;
+    expect(m.itens.value).toHaveLength(20);
+    expect(m.erro.value).toBe(true);
+  });
+
+  it("an error from an outdated request, or after limpar, is dropped", async () => {
+    const m = montar();
+    const a = m.buscar(3, texto("cloro"));
+    m.limpar();
+    pedidos[0]!.falhar(new Error("rede"));
+    await a;
+    expect(m.erro.value).toBe(false);
+  });
+
+  it("a failed count for the cards is an error until a count succeeds or the corridor changes", async () => {
+    const m = montar();
+    const p1 = m.marcar(3, ["11111111000111"]);
+    contagens[0]!.falhar(new Error("rede"));
+    await p1;
+    expect(m.erroMarcas.value).toBe(true);
+    expect(m.erro.value).toBe(true);
+    const p2 = m.marcar(3, ["11111111000111"]);
+    expect(contagens).toHaveLength(2);
+    contagens[1]!.responder(new Map());
+    await p2;
+    expect(m.erro.value).toBe(false);
+    const p3 = m.marcar(3, ["22222222000122"]);
+    contagens[2]!.falhar(new Error("rede"));
+    await p3;
+    m.limparMarcas();
+    expect(m.erro.value).toBe(false);
   });
 
   it("sem tipo no corredor, não marca", async () => {

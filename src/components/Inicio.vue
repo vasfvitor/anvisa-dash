@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, shallowRef, watch } from "vue";
+import { computed, onMounted, ref, shallowRef, watch } from "vue";
 import type { Corredor } from "../corredores";
 import type { Fonte, ValorFaceta } from "../lib/fonte";
 import { fmtCnpj, fmtInt } from "../lib/format";
-import { recentes, type Medida } from "../lib/medidas";
+import { ERRO_MEDIDAS, recentes, type Medida } from "../lib/medidas";
 import { legivel } from "../lib/texto";
 import MedidaCartao from "./MedidaCartao.vue";
 
@@ -26,6 +26,7 @@ const principais = computed(() => grupos.value.slice(0, 12));
 
 // as últimas medidas de fiscalização do corredor, depois que ele fica pronto (não disputam o download)
 const medidas = shallowRef<Medida[]>([]);
+const erroMedidas = ref(false);
 let pedidas = false;
 watch(
   () => props.pronto,
@@ -36,7 +37,8 @@ watch(
     recentes(tipo).then(
       (m) => (medidas.value = m),
       () => {
-        // sem as medidas, a abertura só não mostra a seção
+        // a seção diz que as medidas não carregaram, para não parecer que não há nenhuma
+        erroMedidas.value = true;
       },
     );
   },
@@ -63,9 +65,10 @@ watch(
       </div>
     </template>
 
-    <template v-if="medidas.length">
+    <template v-if="medidas.length || erroMedidas">
       <h2>Medidas recentes da ANVISA</h2>
-      <div class="medidas-lista">
+      <p v-if="erroMedidas" class="aviso" role="status">{{ ERRO_MEDIDAS }}</p>
+      <div v-else class="medidas-lista">
         <MedidaCartao v-for="m in medidas" :key="m.id" :m="m" @empresa="(c: string) => emit('exemplo', fmtCnpj(c))" />
       </div>
     </template>

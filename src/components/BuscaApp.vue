@@ -83,8 +83,12 @@ watch(
 
 useNavegacao(estado, { trocou: motor.trocou, subir: motor.subir, limpar, buscar });
 
-// as medidas só aparecem junto da lista da mesma busca (não as de um termo novo sobre a lista antiga)
-const medidasDaBusca = computed(() => m.itens.length > 0 && JSON.stringify(m.buscada) === JSON.stringify(b.buscada));
+// as medidas só aparecem junto da lista da mesma busca (não as de um termo novo sobre a lista antiga); uma falha ao
+// carregá-las aparece no lugar delas, para não parecer que não há nenhuma
+const medidasDaBusca = computed(
+  () =>
+    (JSON.stringify(m.buscada) === JSON.stringify(b.buscada) && (m.itens.length > 0 || m.erroBusca)) || m.erroMarcas,
+);
 const semResultados = computed(() => !b.total && !b.carregando);
 // nenhum liberado, mas há encerrados: o vazio diz quantos e oferece mostrá-los antes das medidas
 const encerrados = computed(() =>
@@ -316,6 +320,7 @@ const titulo = computed(() => {
         :itens="m.itens"
         :total="m.total"
         :carregando="m.carregando"
+        :erro="m.erro"
         :tem-mais="m.temMais"
         @mais="m.mais()"
         @empresa="(c: string) => buscarPor(fmtCnpj(c))"
@@ -355,6 +360,7 @@ const titulo = computed(() => {
         :itens="m.itens"
         :total="m.total"
         :carregando="m.carregando"
+        :erro="m.erro"
         :tem-mais="m.temMais"
         @mais="m.mais()"
         @empresa="(c: string) => buscarPor(fmtCnpj(c))"

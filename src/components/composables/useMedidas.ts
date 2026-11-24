@@ -10,6 +10,12 @@ export function useMedidas() {
   const itens = shallowRef<Medida[]>([]);
   const total = ref(0);
   const carregando = ref(false);
+  /** the last request for the search's measures failed (a failed "mais" keeps the pages already shown) */
+  const erroBusca = ref(false);
+  /** the last count for the cards' companies failed: a card without a mark may still have measures */
+  const erroMarcas = ref(false);
+  /** some measures failed to load: said where they would be, never left looking like none */
+  const erro = computed(() => erroBusca.value || erroMarcas.value);
   /** consulta que gerou as medidas atuais (para só mostrá-las junto da lista da mesma busca) */
   const buscada = shallowRef<Consulta | null>(null);
   let tipo = 0;
@@ -39,9 +45,17 @@ export function useMedidas() {
       if (linhas.length) total.value = linhas[0]!.total;
       else if (!p) total.value = 0;
       buscada.value = q;
+      erroBusca.value = false;
     } catch {
-      // sem medidas a busca continua valendo; a mesma busca pode tentar de novo
-      if (minhaVez()) ultima = "";
+      // sem medidas a busca continua valendo, com o aviso de erro; a mesma busca pode tentar de novo
+      if (!minhaVez()) return;
+      ultima = "";
+      if (!p) {
+        itens.value = [];
+        total.value = 0;
+      }
+      buscada.value = q;
+      erroBusca.value = true;
     } finally {
       if (minhaVez()) carregando.value = false;
     }
@@ -56,10 +70,14 @@ export function useMedidas() {
     const minha = geracao;
     try {
       const n = await medidasPorEmpresa(tipoProduto, faltam);
-      if (minha === geracao && n.size) porEmpresa.value = new Map([...porEmpresa.value, ...n]);
+      if (minha !== geracao) return;
+      if (n.size) porEmpresa.value = new Map([...porEmpresa.value, ...n]);
+      erroMarcas.value = false;
     } catch {
-      // sem a marca, o cartão continua igual; as próximas páginas perguntam de novo
-      if (minha === geracao) for (const c of faltam) perguntados.delete(c);
+      // sem a marca o cartão continua igual, com o aviso de erro; as próximas páginas perguntam de novo
+      if (minha !== geracao) return;
+      for (const c of faltam) perguntados.delete(c);
+      erroMarcas.value = true;
     }
   }
 
@@ -68,6 +86,7 @@ export function useMedidas() {
     geracao++;
     perguntados.clear();
     porEmpresa.value = new Map();
+    erroMarcas.value = false;
   }
 
   /** Esquece as medidas e o que estiver a caminho (troca de corredor, busca sem medidas). */
@@ -78,6 +97,7 @@ export function useMedidas() {
     total.value = 0;
     buscada.value = null;
     carregando.value = false;
+    erroBusca.value = false;
   }
 
   /**
@@ -103,5 +123,20 @@ export function useMedidas() {
 
   const temMais = computed(() => itens.value.length < total.value && itens.value.length >= MEDIDAS_POR_PAGINA);
 
-  return { itens, total, carregando, buscada, temMais, porEmpresa, buscar, mais, marcar, limpar, limparMarcas };
+  return {
+    itens,
+    total,
+    carregando,
+    erro,
+    erroBusca,
+    erroMarcas,
+    buscada,
+    temMais,
+    porEmpresa,
+    buscar,
+    mais,
+    marcar,
+    limpar,
+    limparMarcas,
+  };
 }

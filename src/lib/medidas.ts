@@ -14,6 +14,8 @@ const TABELA = TABELA_MEDIDAS;
 export const MEDIDAS_POR_PAGINA = 20;
 /** O que o cartão e a página lembram ao lado do número de medidas da empresa. */
 export const SOBRE_A_EMPRESA = "Medidas contra a empresa, não necessariamente sobre este produto.";
+/** Said where the measures would be when they fail to load, so a failure never reads as "no measures". */
+export const ERRO_MEDIDAS = "Não foi possível carregar as medidas de fiscalização.";
 
 export interface Medida {
   /** dossiê e produto: a chave de um cartão */

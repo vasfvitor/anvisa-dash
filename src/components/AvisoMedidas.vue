@@ -4,7 +4,7 @@
 // produto quando isto aparece, então a tabela principal não disputa o download.
 import { onMounted, ref, shallowRef } from "vue";
 import { plural } from "../lib/format";
-import { medidasPorEmpresa, porRegistro, type Medida } from "../lib/medidas";
+import { ERRO_MEDIDAS, medidasPorEmpresa, porRegistro, type Medida } from "../lib/medidas";
 import Icone from "./Icone.vue";
 import MedidaCartao from "./MedidaCartao.vue";
 import { noApp, urlEmpresa } from "./composables/useUrlState";
@@ -14,6 +14,7 @@ const emit = defineEmits<{ empresa: [cnpj: string] }>();
 
 const doProduto = shallowRef<Medida[]>([]);
 const daEmpresa = ref(0);
+const erro = ref(false);
 
 onMounted(() => {
   const produto = props.registro ? porRegistro(props.tipo, props.registro) : Promise.resolve([]);
@@ -23,7 +24,8 @@ onMounted(() => {
       daEmpresa.value = n.get(props.cnpj) ?? 0;
     },
     () => {
-      // sem as medidas a página do produto continua completa; só não mostra o aviso
+      // sem as medidas a página do produto continua completa, e diz que elas não carregaram
+      erro.value = true;
     },
   );
 });
@@ -38,6 +40,10 @@ onMounted(() => {
         <MedidaCartao v-for="m in doProduto" :key="m.id" :m="m" @empresa="(c: string) => emit('empresa', c)" />
       </div>
     </div>
+  </div>
+  <div v-else-if="erro" class="aviso aviso-medidas" role="status">
+    <Icone nome="alerta" />
+    <div>{{ ERRO_MEDIDAS }}</div>
   </div>
   <div v-else-if="daEmpresa" class="aviso aviso-medidas" role="note">
     <Icone nome="alerta" />
