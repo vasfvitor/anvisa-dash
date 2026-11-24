@@ -2,11 +2,14 @@
 import "@fontsource-variable/fraunces/soft.css";
 import "@fontsource-variable/figtree";
 import "@fontsource-variable/jetbrains-mono";
+import ArquivosAnvisa from "../components/ArquivosAnvisa.astro";
 import Corredores from "../components/Corredores.astro";
 import Logo from "../components/Logo.astro";
+import { arquivosDaTabela } from "../lib/arquivos";
 import { MANIFEST_URL } from "../lib/config";
+import { TABELA_MEDIDAS } from "../lib/consultas";
 import { CORREDOR_PADRAO, CORREDORES } from "../corredores";
-import { fmtData, url } from "../lib/format";
+import { url } from "../lib/format";
 import { manifestDoBuild } from "../lib/manifest";
 import { DESCRICAO, NOME, tituloPagina } from "../lib/marca";
 import "../styles/global.css";
@@ -40,18 +43,17 @@ const canonico = new URL(Astro.url.pathname, Astro.site).href;
 // JSON dentro de <script>: "</" não pode aparecer cru
 const jsonLd = (d: Record<string, unknown>) => JSON.stringify(d).replace(/</g, "\\u003c");
 
-// rodapé com a origem de cada corredor no último build, que roda quando os dados mudam (a troca de corredor
-// não recarrega a página, então o rodapé cita todos)
+// rodapé com os arquivos da ANVISA de cada corredor no último build, que roda quando os dados mudam (a troca de
+// corredor não recarrega a página, então o rodapé cita todos); as tabelas derivadas levam aos arquivos crus
 const tabelas = (await manifestDoBuild(MANIFEST_URL)).tables;
-const medidas = tabelas.produtos_irregulares?.source;
 const origens = [
-  ...CORREDORES.flatMap((c) => {
-    const origem = tabelas[c.tabela]?.source;
-    return origem ? [{ nome: c.curto, origem }] : [];
-  }),
+  ...CORREDORES.map((c) => ({ nome: c.curto, tabela: c.tabela })),
   // as medidas de fiscalização aparecem em todo corredor
-  ...(medidas ? [{ nome: "Medidas", origem: medidas }] : []),
-];
+  { nome: "Medidas", tabela: TABELA_MEDIDAS },
+].flatMap(({ nome, tabela }) => {
+  const arquivos = arquivosDaTabela(tabelas, tabela);
+  return arquivos.length ? [{ nome, arquivos }] : [];
+});
 const atual = Astro.url.pathname.replace(/\/+$/, "/");
 const ativo = (p: string) => (atual === url(p) ? "page" : undefined);
 // para o script inline marcar o corredor pela URL antes da primeira pintura
@@ -126,12 +128,11 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
           <div>
             <dt>Fonte</dt>
             <dd>
-              Dados abertos da ANVISA:
-              {origens.map(({ nome, origem }, i) => (
+              Dados abertos da ANVISA.
+              {origens.map(({ nome, arquivos }, i) => (
                 <>
-                  {/* o Astro descarta a quebra de linha depois de "ANVISA:" */ i > 0 ? " · " : " "}
-                  {nome}
-                  {origem.loaded_at && <> de {fmtData(origem.loaded_at)}</>} (<a href={origem.url}>{origem.name}</a>)
+                  {/* o Astro descarta a quebra de linha depois de "ANVISA." */ i > 0 ? " · " : " "}
+                  {nome}: <ArquivosAnvisa arquivos={arquivos} />
                 </>
               ))}
             </dd>

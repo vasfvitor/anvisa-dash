@@ -17,6 +17,8 @@ export interface Origem {
   loaded_at?: string;
   last_modified?: string;
   bytes?: number;
+  /** when the table joins several files (CMED joins two): each with its own URL and Last-Modified */
+  files?: { name: string; url: string; last_modified?: string }[];
 }
 
 /** Arquivos de busca de uma tabela grande demais para baixar inteira (só os cosméticos; ver SPEC no repo `anvisa`). */

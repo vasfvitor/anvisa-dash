@@ -19,6 +19,7 @@ const montar = () =>
     pagina: "https://contem.abelhaninja.de/dicionario/",
     parquet: "https://exemplo.org/saneantes.parquet",
     atualizado: "2026-10-06T00:00:00",
+    origens: ["https://dados.anvisa.gov.br/x.csv"],
   });
 
 describe("conjuntoDados", () => {
@@ -34,6 +35,17 @@ describe("conjuntoDados", () => {
       { "@type": "PropertyValue", name: "no_produto" },
       { "@type": "PropertyValue", name: "nu_processo", description: "Nº do processo." },
     ]);
+  });
+
+  it("isBasedOn is ANVISA's file, or the list of them for a derived table", () => {
+    expect(montar().isBasedOn).toBe("https://dados.anvisa.gov.br/x.csv");
+    const derivada = conjuntoDados("x", tabela, info, {
+      pagina: "https://contem.abelhaninja.de/dicionario/",
+      parquet: "https://exemplo.org/x.parquet",
+      atualizado: "2026-10-06T00:00:00",
+      origens: ["https://dados.anvisa.gov.br/a.csv", "https://dados.anvisa.gov.br/b.csv"],
+    });
+    expect(derivada.isBasedOn).toEqual(["https://dados.anvisa.gov.br/a.csv", "https://dados.anvisa.gov.br/b.csv"]);
   });
 
   it("palavras do corredor mais as comuns; nunca uma licença inventada", () => {

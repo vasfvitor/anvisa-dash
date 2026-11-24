@@ -1,13 +1,18 @@
 ---
+import ArquivosAnvisa from "../components/ArquivosAnvisa.astro";
 import Base from "../layouts/Base.astro";
 import { CORREDORES } from "../corredores";
+import { arquivosDaTabela } from "../lib/arquivos";
 import { MANIFEST_URL } from "../lib/config";
 import { TABELA_MEDIDAS } from "../lib/consultas";
-import { fmtBytes, fmtData, url } from "../lib/format";
+import { fmtBytes, url } from "../lib/format";
 import { manifestDoBuild } from "../lib/manifest";
 
 const m = await manifestDoBuild(MANIFEST_URL);
-const fontes = Object.entries(m.tables);
+// raw tables only: the derived ones are computed from these, and their source is the recipe, not an ANVISA file
+const fontes = Object.entries(m.tables)
+  .filter(([, t]) => !t.fontes?.length)
+  .map(([nome]) => ({ nome, arquivos: arquivosDaTabela(m.tables, nome) }));
 // tamanhos do build atual (mudam todo dia: sempre do manifest, nunca escritos aqui)
 const tam = (t: string) => {
   const tabela = m.tables[t];
@@ -42,10 +47,9 @@ const medidas = tam(TABELA_MEDIDAS);
     <a href="https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/">dados.anvisa.gov.br</a>:
   </p>
   <ul>
-    {fontes.map(([nome, t]) => (
+    {fontes.map(({ nome, arquivos }) => (
       <li>
-        <a href={t.source.url}>{t.source.name}</a>
-        {t.source.loaded_at && <>, dados de {fmtData(t.source.loaded_at)}</>} (tabela <code>{nome}</code>)
+        <ArquivosAnvisa arquivos={arquivos} /> (tabela <code>{nome}</code>)
       </li>
     ))}
   </ul>

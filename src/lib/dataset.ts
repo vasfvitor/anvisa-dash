@@ -23,12 +23,13 @@ const ANVISA = {
 /**
  * O Dataset de uma tabela. `pagina` é a URL do dicionário (a âncora da seção vira @id e url) e
  * `parquet` a URL do arquivo; as colunas levam a descrição que o manifest traz.
+ * `origens` are the URLs of ANVISA's files behind the table (arquivosDaTabela), never derivar.py.
  */
 export function conjuntoDados(
   nome: string,
   t: Tabela,
   info: InfoTabela,
-  { pagina, parquet, atualizado }: { pagina: string; parquet: string; atualizado: string },
+  { pagina, parquet, atualizado, origens }: { pagina: string; parquet: string; atualizado: string; origens: string[] },
 ) {
   const id = `${pagina}#${nome}`;
   return {
@@ -43,7 +44,7 @@ export function conjuntoDados(
     inLanguage: "pt-BR",
     spatialCoverage: { "@type": "Place", name: "Brasil" },
     dateModified: atualizado,
-    isBasedOn: t.source.url,
+    isBasedOn: origens.length === 1 ? origens[0] : origens,
     creator: ANVISA,
     variableMeasured: t.columns.map((c) => ({
       "@type": "PropertyValue",

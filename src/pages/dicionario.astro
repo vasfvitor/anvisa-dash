@@ -1,9 +1,11 @@
 ---
+import ArquivosAnvisa from "../components/ArquivosAnvisa.astro";
 import Base from "../layouts/Base.astro";
 import { TABELAS } from "../corredores";
 import { MANIFEST_URL } from "../lib/config";
+import { arquivosDaTabela } from "../lib/arquivos";
 import { conjuntoDados } from "../lib/dataset";
-import { fmtBytes, fmtData, fmtDataLocal, fmtInt } from "../lib/format";
+import { fmtBytes, fmtDataLocal, fmtInt } from "../lib/format";
 import { manifestDoBuild, tabelaUrl } from "../lib/manifest";
 
 // gerado a cada build a partir do manifest: tabela ou coluna nova aparece aqui sem mudar código, com o título,
@@ -26,6 +28,7 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
       pagina,
       parquet: tabelaUrl(MANIFEST_URL, m, nome),
       atualizado: t.source.loaded_at ?? m.built_at,
+      origens: arquivosDaTabela(m.tables, nome).map((a) => a.url),
     }),
   ];
 });
@@ -100,14 +103,14 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
                   <code>{f}</code>
                 </a>,
               ])}{" "}
-              a cada build (<a href={t.source.url}>receita</a>)
+              a cada build (<a href={t.source.url}>receita</a>), a partir de{" "}
+              <ArquivosAnvisa arquivos={arquivosDaTabela(m.tables, nome)} />.
             </>
           ) : (
             <>
-              Origem: <a href={t.source.url}>{t.source.name}</a>
+              Origem: <ArquivosAnvisa arquivos={arquivosDaTabela(m.tables, nome)} />.
             </>
           )}
-          {t.source.loaded_at && <>, dados de {fmtData(t.source.loaded_at)}</>}.
           {t.sort?.length ? (
             <>
               {" "}

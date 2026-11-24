@@ -1,0 +1,23 @@
+---
+// ANVISA's files of a table, each linked, with ANVISA's date said once per run of files sharing it:
+// "X e Y, arquivos gerados pela ANVISA em 20/11/2026; Z, arquivo gerado pela ANVISA em 09/10/2026".
+import { geradoEm, porData, separador, type ArquivoAnvisa } from "../lib/arquivos";
+
+interface Props {
+  arquivos: ArquivoAnvisa[];
+}
+const grupos = porData(Astro.props.arquivos);
+---
+
+{grupos.map((g, j) => (
+  <>
+    {j > 0 ? "; " : ""}
+    {g.arquivos.map((a, k) => (
+      <>
+        {separador(k, g.arquivos.length)}
+        <a href={a.url}>{a.name}</a>
+      </>
+    ))}
+    {g.data && `, ${geradoEm(g.arquivos.length, g.data)}`}
+  </>
+))}

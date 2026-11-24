@@ -8,9 +8,10 @@ import { TABELA as COSMETICOS } from "../corredores/cosmeticos/consultas";
 import { TABELA as MEDICAMENTOS, TABELA_CMED } from "../corredores/medicamentos/consultas";
 import { TABELA as PRODUTOS_SAUDE, TABELA_FABRICACAO_PS } from "../corredores/produtos_saude/consultas";
 import { TABELA as SANEANTES } from "../corredores/saneantes/consultas";
+import { arquivosDaTabela, geradoEm, separador, type ArquivoAnvisa } from "../lib/arquivos";
 import { MANIFEST_URL } from "../lib/config";
 import { TABELA_CERTIFICADOS, TABELA_MEDIDAS } from "../lib/consultas";
-import { fmtData, fmtInt } from "../lib/format";
+import { fmtInt } from "../lib/format";
 import { manifestDoBuild, tabelaUrl } from "../lib/manifest";
 import { DESCRICAO, NOME } from "../lib/marca";
 import { CONSULTAS, consultaProduto } from "../lib/semjs";
@@ -35,6 +36,13 @@ export const GET: APIRoute = async ({ site }) => {
   const tipo = (id: string) => CORREDORES.find((c) => c.id === id)?.tipoProduto;
   const temFabricantes = TABELA_FABRICACAO_PS in m.tables;
   const temCertificados = TABELA_CERTIFICADOS in m.tables;
+  // ANVISA's files behind a table (a derived table's own source is the recipe), each with ANVISA's date
+  const origem = (t: string) => {
+    const arquivos = arquivosDaTabela(m.tables, t);
+    const um = (a: ArquivoAnvisa, i: number) =>
+      `${separador(i, arquivos.length)}[${a.name}](${a.url})${a.data ? ` (${geradoEm(1, a.data)})` : ""}`;
+    return arquivos.length ? `, a partir de ${arquivos.map(um).join("")}` : "";
+  };
 
   const texto = `# ${NOME}.
 
@@ -56,7 +64,7 @@ A página de um produto (${raiz("/alimentos/")}?p=<id>, ${raiz("/limpeza/")}?p=<
 
 Arquivos Parquet do build ${m.build_id}, com os dados abertos da ANVISA. O [manifest](${MANIFEST_URL}) lista os arquivos atuais.
 
-${tabelas.map((t) => `- [${t}](${arquivo(t)}): ${fmtInt(m.tables[t]!.rows)} linhas${m.tables[t]!.source.loaded_at ? `, dados de ${fmtData(m.tables[t]!.source.loaded_at)}` : ""}`).join("\n")}
+${tabelas.map((t) => `- [${t}](${arquivo(t)}): ${fmtInt(m.tables[t]!.rows)} linhas${origem(t)}`).join("\n")}
 
 - ${ALIMENTOS}: uma linha por produto (co_seq_produto), com as apresentações agrupadas e o resumo de alergênicos (gluten, lactose, contem, pode_conter, nao_contem). ativo é liberado, marcas separadas por ";"; registros são os números das apresentações. A tabela por apresentação é alimentos; a de detalhe (ingredientes, embalagens, alergênicos por apresentação), alimentos_resultado.
 - ${TABELA_FABRICACAO}: quem envasa ou fabrica os alimentos de cada empresa, uma linha por empresa detentora (cnpj, empresa) e fabricante: a envasadora brasileira (fabricante_cnpj, cidade) ou o fabricante no exterior (fabricante_codigo, o código da ANVISA). vinculo é propria (o mesmo CNPJ), grupo (outra filial da mesma raiz de 8 dígitos), terceira ou exterior; produtos e produtos_ativos contam os produtos da detentora com aquele fabricante.
