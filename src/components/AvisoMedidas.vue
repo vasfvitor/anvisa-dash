@@ -4,7 +4,7 @@
 // produto quando isto aparece, então a tabela principal não disputa o download.
 import { onMounted, ref, shallowRef } from "vue";
 import { plural } from "../lib/format";
-import { ERRO_MEDIDAS, medidasPorEmpresa, porRegistro, type Medida } from "../lib/medidas";
+import { avisoDoProduto, medidasPorEmpresa, porRegistro, type Medida } from "../lib/medidas";
 import Icone from "./Icone.vue";
 import MedidaCartao from "./MedidaCartao.vue";
 import { noApp, urlEmpresa } from "./composables/useUrlState";
@@ -14,20 +14,16 @@ const emit = defineEmits<{ empresa: [cnpj: string] }>();
 
 const doProduto = shallowRef<Medida[]>([]);
 const daEmpresa = ref(0);
-const erro = ref(false);
+const erro = ref("");
 
-onMounted(() => {
+onMounted(async () => {
   const produto = props.registro ? porRegistro(props.tipo, props.registro) : Promise.resolve([]);
-  Promise.all([produto, medidasPorEmpresa(props.tipo, [props.cnpj])]).then(
-    ([m, n]) => {
-      doProduto.value = m;
-      daEmpresa.value = n.get(props.cnpj) ?? 0;
-    },
-    () => {
-      // sem as medidas a página do produto continua completa, e diz que elas não carregaram
-      erro.value = true;
-    },
-  );
+  // each lookup settles on its own: a failed company count never hides the product's own measures
+  const [p, e] = await Promise.allSettled([produto, medidasPorEmpresa(props.tipo, [props.cnpj])]);
+  const aviso = avisoDoProduto(p, e, props.cnpj);
+  doProduto.value = aviso.doProduto;
+  daEmpresa.value = aviso.daEmpresa;
+  erro.value = aviso.erro;
 });
 </script>
 
@@ -41,11 +37,11 @@ onMounted(() => {
       </div>
     </div>
   </div>
-  <div v-else-if="erro" class="aviso aviso-medidas" role="status">
+  <div v-if="!doProduto.length && erro" class="aviso aviso-medidas" role="status">
     <Icone nome="alerta" />
-    <div>{{ ERRO_MEDIDAS }}</div>
+    <div>{{ erro }}</div>
   </div>
-  <div v-else-if="daEmpresa" class="aviso aviso-medidas" role="note">
+  <div v-if="!doProduto.length && daEmpresa" class="aviso aviso-medidas" role="note">
     <Icone nome="alerta" />
     <div>
       {{ plural(daEmpresa, "medida", "medidas") }} da ANVISA contra esta empresa, não necessariamente sobre este

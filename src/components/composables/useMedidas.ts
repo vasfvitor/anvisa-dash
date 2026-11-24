@@ -12,10 +12,17 @@ export function useMedidas() {
   const carregando = ref(false);
   /** the last request for the search's measures failed (a failed "mais" keeps the pages already shown) */
   const erroBusca = ref(false);
-  /** the last count for the cards' companies failed: a card without a mark may still have measures */
-  const erroMarcas = ref(false);
+  /** CNPJs whose count for the cards failed; each leaves the set when a later count for it succeeds */
+  const falhas = shallowRef(new Set<string>());
+  /** the distinct CNPJs of the list shown (the last marcar call): a new search replaces them */
+  const lista = shallowRef(new Set<string>());
+  /** the counts failed for every company of the list shown, for some of them, or for none */
+  const erroMarcas = computed<"todas" | "algumas" | null>(() => {
+    const n = [...lista.value].filter((c) => falhas.value.has(c)).length;
+    return !n ? null : n === lista.value.size ? "todas" : "algumas";
+  });
   /** some measures failed to load: said where they would be, never left looking like none */
-  const erro = computed(() => erroBusca.value || erroMarcas.value);
+  const erro = computed(() => erroBusca.value || !!erroMarcas.value);
   /** consulta que gerou as medidas atuais (para só mostrá-las junto da lista da mesma busca) */
   const buscada = shallowRef<Consulta | null>(null);
   let tipo = 0;
@@ -47,7 +54,7 @@ export function useMedidas() {
       buscada.value = q;
       erroBusca.value = false;
     } catch {
-      // sem medidas a busca continua valendo, com o aviso de erro; a mesma busca pode tentar de novo
+      // the search still stands, with the error said; the same search may try again
       if (!minhaVez()) return;
       ultima = "";
       if (!p) {
@@ -61,10 +68,15 @@ export function useMedidas() {
     }
   }
 
-  /** Conta as medidas das empresas dos cartões que ainda não foram perguntadas (cada página da lista). */
+  /**
+   * Counts the measures of the cards' companies not asked yet (called with the whole list on each page). A
+   * company whose count failed is asked again by the next call that lists it: a later page or a new search.
+   */
   async function marcar(tipoProduto: number | undefined, cnpjs: (string | null)[]): Promise<void> {
+    const distintos = [...new Set(cnpjs)].filter((c): c is string => !!c);
+    lista.value = new Set(distintos);
     if (!tipoProduto) return;
-    const faltam = [...new Set(cnpjs)].filter((c): c is string => !!c && !perguntados.has(c));
+    const faltam = distintos.filter((c) => !perguntados.has(c));
     if (!faltam.length) return;
     for (const c of faltam) perguntados.add(c);
     const minha = geracao;
@@ -72,12 +84,13 @@ export function useMedidas() {
       const n = await medidasPorEmpresa(tipoProduto, faltam);
       if (minha !== geracao) return;
       if (n.size) porEmpresa.value = new Map([...porEmpresa.value, ...n]);
-      erroMarcas.value = false;
+      if (faltam.some((c) => falhas.value.has(c)))
+        falhas.value = new Set([...falhas.value].filter((c) => !faltam.includes(c)));
     } catch {
-      // sem a marca o cartão continua igual, com o aviso de erro; as próximas páginas perguntam de novo
+      // the card stays as it is, with the error said in the measures block; the next call asks again
       if (minha !== geracao) return;
       for (const c of faltam) perguntados.delete(c);
-      erroMarcas.value = true;
+      falhas.value = new Set([...falhas.value, ...faltam]);
     }
   }
 
@@ -86,7 +99,8 @@ export function useMedidas() {
     geracao++;
     perguntados.clear();
     porEmpresa.value = new Map();
-    erroMarcas.value = false;
+    falhas.value = new Set();
+    lista.value = new Set();
   }
 
   /** Esquece as medidas e o que estiver a caminho (troca de corredor, busca sem medidas). */

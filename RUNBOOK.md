@@ -168,6 +168,13 @@ parênteses. Por exemplo:
 - `(o download parou: nada chegou em 20 s ...)` ou `(o download não terminou em 180 s ...)`: o motor de
   busca vem do jsDelivr e a extensão Parquet de extensions.duckdb.org. Um deles está lento ou fora.
 - `A busca falhou. (...)`: uma consulta deu erro. Se repetir com qualquer termo, pedir ajuda.
+- Uma destas frases no lugar das medidas da ANVISA: a consulta à tabela `medidas` falhou no navegador (a
+  busca e o produto continuam). Recarregar a página costuma resolver; se repetir, pedir ajuda.
+  - `Não foi possível carregar as medidas de fiscalização.`
+  - `Não foi possível carregar as medidas das empresas desta lista.`
+  - `Não foi possível carregar as medidas de algumas empresas desta lista.`
+  - `Não foi possível carregar as medidas contra este produto.`
+  - `Não foi possível carregar as medidas contra a empresa deste produto.`
 
 ## Problemas conhecidos
 

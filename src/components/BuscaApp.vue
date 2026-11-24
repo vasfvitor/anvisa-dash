@@ -11,6 +11,7 @@ import { fmtBytes, fmtBytesRedondo, fmtCnpj, fmtInt, plural } from "../lib/forma
 import { tituloPagina } from "../lib/marca";
 import { PALAVRA_MINIMA } from "../lib/fonte";
 import { palavrasDaBusca } from "../lib/palavras";
+import { blocoDaBusca } from "../lib/medidas";
 import { legivel } from "../lib/texto";
 import CaixaBusca from "./CaixaBusca.vue";
 import { useBusca } from "./composables/useBusca";
@@ -83,12 +84,10 @@ watch(
 
 useNavegacao(estado, { trocou: motor.trocou, subir: motor.subir, limpar, buscar });
 
-// as medidas só aparecem junto da lista da mesma busca (não as de um termo novo sobre a lista antiga); uma falha ao
-// carregá-las aparece no lugar delas, para não parecer que não há nenhuma
-const medidasDaBusca = computed(
-  () =>
-    (JSON.stringify(m.buscada) === JSON.stringify(b.buscada) && (m.itens.length > 0 || m.erroBusca)) || m.erroMarcas,
-);
+// the measures block, by blocoDaBusca: the search's measures only next to the list of the same search
+const mesmaBusca = computed(() => JSON.stringify(m.buscada) === JSON.stringify(b.buscada));
+const bloco = computed(() => blocoDaBusca(mesmaBusca.value, m.itens, m.erroBusca, m.erroMarcas));
+const medidasDaBusca = computed(() => bloco.value.itens.length > 0 || bloco.value.erros.length > 0);
 const semResultados = computed(() => !b.total && !b.carregando);
 // nenhum liberado, mas há encerrados: o vazio diz quantos e oferece mostrá-los antes das medidas
 const encerrados = computed(() =>
@@ -317,11 +316,11 @@ const titulo = computed(() => {
       </p>
       <MedidasBloco
         v-if="medidasDaBusca && semResultados"
-        :itens="m.itens"
+        :itens="bloco.itens"
         :total="m.total"
         :carregando="m.carregando"
-        :erro="m.erro"
-        :tem-mais="m.temMais"
+        :erros="bloco.erros"
+        :tem-mais="mesmaBusca && m.temMais"
         @mais="m.mais()"
         @empresa="(c: string) => buscarPor(fmtCnpj(c))"
       />
@@ -357,11 +356,11 @@ const titulo = computed(() => {
       </p>
       <MedidasBloco
         v-if="medidasDaBusca && !semResultados"
-        :itens="m.itens"
+        :itens="bloco.itens"
         :total="m.total"
         :carregando="m.carregando"
-        :erro="m.erro"
-        :tem-mais="m.temMais"
+        :erros="bloco.erros"
+        :tem-mais="mesmaBusca && m.temMais"
         @mais="m.mais()"
         @empresa="(c: string) => buscarPor(fmtCnpj(c))"
       />

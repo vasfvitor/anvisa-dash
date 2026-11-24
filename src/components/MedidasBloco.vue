@@ -1,12 +1,12 @@
 <script setup lang="ts">
 // As medidas de fiscalização que citam a busca, no fim dos resultados (ou antes da dica, quando nenhum
-// produto liberado apareceu). Uma falha ao carregá-las é dita aqui, no lugar delas.
+// produto liberado apareceu). A failure to load them is said here, in their place, worded for what failed.
 import { fmtInt } from "../lib/format";
-import { ERRO_MEDIDAS, type Medida } from "../lib/medidas";
+import type { Medida } from "../lib/medidas";
 import Icone from "./Icone.vue";
 import MedidaCartao from "./MedidaCartao.vue";
 
-defineProps<{ itens: Medida[]; total: number; carregando: boolean; erro: boolean; temMais: boolean }>();
+defineProps<{ itens: Medida[]; total: number; carregando: boolean; erros: string[]; temMais: boolean }>();
 const emit = defineEmits<{ mais: []; empresa: [cnpj: string] }>();
 </script>
 
@@ -18,7 +18,7 @@ const emit = defineEmits<{ mais: []; empresa: [cnpj: string] }>();
     <div class="medidas-lista">
       <MedidaCartao v-for="m in itens" :key="m.id" :m="m" @empresa="(c: string) => emit('empresa', c)" />
     </div>
-    <p v-if="erro" class="aviso" role="status">{{ ERRO_MEDIDAS }}</p>
+    <p v-for="e in erros" :key="e" class="aviso" role="status">{{ e }}</p>
     <p v-if="temMais" class="mais">
       <button class="btn" type="button" :disabled="carregando" @click="emit('mais')">
         {{ carregando ? "Carregando…" : `Mostrar mais medidas (${fmtInt(itens.length)} de ${fmtInt(total)})` }}

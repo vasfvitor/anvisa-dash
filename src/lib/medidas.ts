@@ -16,6 +16,14 @@ export const MEDIDAS_POR_PAGINA = 20;
 export const SOBRE_A_EMPRESA = "Medidas contra a empresa, não necessariamente sobre este produto.";
 /** Said where the measures would be when they fail to load, so a failure never reads as "no measures". */
 export const ERRO_MEDIDAS = "Não foi possível carregar as medidas de fiscalização.";
+/** The cards' per-company counts failed for every company of the list shown, or for some of them. */
+export const ERRO_MARCAS = {
+  todas: "Não foi possível carregar as medidas das empresas desta lista.",
+  algumas: "Não foi possível carregar as medidas de algumas empresas desta lista.",
+} as const;
+/** A product page's measures, when only one of its two lookups failed. */
+export const ERRO_PRODUTO = "Não foi possível carregar as medidas contra este produto.";
+export const ERRO_EMPRESA = "Não foi possível carregar as medidas contra a empresa deste produto.";
 
 export interface Medida {
   /** dossiê e produto: a chave de um cartão */
@@ -142,4 +150,55 @@ export async function medidasPorEmpresa(tipo: number, cnpjs: string[]): Promise<
     [tipo],
   );
   return new Map(linhas.map((l) => [l.cnpj, l.n]));
+}
+
+/** What a product page shows from its two lookups, each settled on its own: one failing never hides the other. */
+export interface AvisoProduto {
+  /** measures that name this product by its registration */
+  doProduto: Medida[];
+  /** the company's count of measures in the corridor */
+  daEmpresa: number;
+  /** the failure to say, "" when nothing that would be shown failed */
+  erro: string;
+}
+
+/**
+ * The product's own measures win (the red alert, which leaves the company count out); without them, a failed
+ * lookup is said, naming which one, and the company count still shows when it loaded.
+ */
+export function avisoDoProduto(
+  produto: PromiseSettledResult<Medida[]>,
+  empresa: PromiseSettledResult<Map<string, number>>,
+  cnpj: string,
+): AvisoProduto {
+  const doProduto = produto.status === "fulfilled" ? produto.value : [];
+  const daEmpresa = empresa.status === "fulfilled" ? (empresa.value.get(cnpj) ?? 0) : 0;
+  if (doProduto.length) return { doProduto, daEmpresa, erro: "" };
+  const falhou = { produto: produto.status === "rejected", empresa: empresa.status === "rejected" };
+  const erro =
+    falhou.produto && falhou.empresa
+      ? ERRO_MEDIDAS
+      : falhou.produto
+        ? ERRO_PRODUTO
+        : falhou.empresa
+          ? ERRO_EMPRESA
+          : "";
+  return { doProduto, daEmpresa, erro };
+}
+
+/**
+ * What the search's measures block shows. The measures, and their failure, only next to the list of the same
+ * search (`mesmaBusca`), never an earlier search's under new results; a failed count for the cards is about the
+ * list shown, so it is said on its own. An empty result means no block.
+ */
+export function blocoDaBusca(
+  mesmaBusca: boolean,
+  itens: Medida[],
+  erroBusca: boolean,
+  erroMarcas: keyof typeof ERRO_MARCAS | null,
+): { itens: Medida[]; erros: string[] } {
+  return {
+    itens: mesmaBusca ? itens : [],
+    erros: [...(mesmaBusca && erroBusca ? [ERRO_MEDIDAS] : []), ...(erroMarcas ? [ERRO_MARCAS[erroMarcas]] : [])],
+  };
 }

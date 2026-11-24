@@ -1,6 +1,7 @@
 // O SQL das medidas sem DuckDB (como em fontes.test.ts): o banco só anota cada consulta, e o teste a
 // confere com os parâmetros no lugar dos `?`. O manifest de mentira diz se a tabela foi publicada.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Medida } from "../src/lib/medidas";
 
 interface Chamada {
   sql: string;
@@ -19,7 +20,19 @@ vi.mock("../src/lib/db", () => ({
   },
 }));
 
-const { buscarMedidas, medidasPorEmpresa, porRegistro, predicado, recentes } = await import("../src/lib/medidas");
+const {
+  avisoDoProduto,
+  blocoDaBusca,
+  buscarMedidas,
+  ERRO_EMPRESA,
+  ERRO_MARCAS,
+  ERRO_MEDIDAS,
+  ERRO_PRODUTO,
+  medidasPorEmpresa,
+  porRegistro,
+  predicado,
+  recentes,
+} = await import("../src/lib/medidas");
 
 function comValores({ sql, params }: Chamada): string {
   let i = 0;
@@ -101,5 +114,41 @@ describe("medidas", () => {
     expect(await porRegistro(3, "341750056")).toEqual([]);
     expect(await medidasPorEmpresa(3, ["43461789000190"])).toEqual(new Map());
     expect(estado.chamadas).toHaveLength(0);
+  });
+});
+
+describe("blocoDaBusca", () => {
+  const medida = { id: "1" } as Medida;
+
+  it("an earlier search's measures never show under new results, even when the cards' count failed", () => {
+    expect(blocoDaBusca(false, [medida], false, "algumas")).toEqual({ itens: [], erros: [ERRO_MARCAS.algumas] });
+    expect(blocoDaBusca(false, [medida], true, null)).toEqual({ itens: [], erros: [] });
+  });
+
+  it("the same search shows its measures and says each failure in its own words", () => {
+    expect(blocoDaBusca(true, [medida], false, null)).toEqual({ itens: [medida], erros: [] });
+    expect(blocoDaBusca(true, [], true, "todas")).toEqual({ itens: [], erros: [ERRO_MEDIDAS, ERRO_MARCAS.todas] });
+  });
+});
+
+describe("avisoDoProduto", () => {
+  const medida = { id: "1" } as Medida;
+  const ok = <T>(value: T): PromiseSettledResult<T> => ({ status: "fulfilled", value });
+  const falhou: PromiseSettledResult<never> = { status: "rejected", reason: new Error("rede") };
+  const cnpj = "11111111000111";
+
+  it("a failed company count never hides the product's own measures", () => {
+    expect(avisoDoProduto(ok([medida]), falhou, cnpj)).toEqual({ doProduto: [medida], daEmpresa: 0, erro: "" });
+  });
+
+  it("names the lookup that failed, and keeps the one that loaded", () => {
+    expect(avisoDoProduto(falhou, ok(new Map([[cnpj, 3]])), cnpj)).toEqual({
+      doProduto: [],
+      daEmpresa: 3,
+      erro: ERRO_PRODUTO,
+    });
+    expect(avisoDoProduto(ok([]), falhou, cnpj)).toEqual({ doProduto: [], daEmpresa: 0, erro: ERRO_EMPRESA });
+    expect(avisoDoProduto(falhou, falhou, cnpj).erro).toBe(ERRO_MEDIDAS);
+    expect(avisoDoProduto(ok([]), ok(new Map()), cnpj)).toEqual({ doProduto: [], daEmpresa: 0, erro: "" });
   });
 });

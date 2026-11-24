@@ -213,7 +213,7 @@ describe("useMedidas", () => {
     const p1 = m.marcar(3, ["11111111000111"]);
     contagens[0]!.falhar(new Error("rede"));
     await p1;
-    expect(m.erroMarcas.value).toBe(true);
+    expect(m.erroMarcas.value).toBe("todas");
     expect(m.erro.value).toBe(true);
     const p2 = m.marcar(3, ["11111111000111"]);
     expect(contagens).toHaveLength(2);
@@ -225,6 +225,53 @@ describe("useMedidas", () => {
     await p3;
     m.limparMarcas();
     expect(m.erro.value).toBe(false);
+  });
+
+  it("a later page's success never clears an earlier page's failure; the next page retries it", async () => {
+    const m = montar();
+    const a = "11111111000111";
+    const b = "22222222000122";
+    // page 1 asks for a; "mostrar mais" lists a and b while a is still on its way, so it asks for b only
+    const p1 = m.marcar(3, [a]);
+    const p2 = m.marcar(3, [a, b]);
+    expect(contagens[1]!.cnpjs).toEqual([b]);
+    contagens[0]!.falhar(new Error("rede"));
+    contagens[1]!.responder(new Map());
+    await Promise.all([p1, p2]);
+    expect(m.erroMarcas.value).toBe("algumas");
+    // the next page lists a again and asks for it with the new company
+    const c = "33333333000133";
+    const p3 = m.marcar(3, [a, b, c]);
+    expect(contagens[2]!.cnpjs).toEqual([a, c]);
+    contagens[2]!.falhar(new Error("rede"));
+    await p3;
+    expect(m.erroMarcas.value).toBe("algumas");
+    const p4 = m.marcar(3, [a, b, c]);
+    expect(contagens[3]!.cnpjs).toEqual([a, c]);
+    contagens[3]!.responder(new Map([[c, 2]]));
+    await p4;
+    expect(m.erroMarcas.value).toBeNull();
+  });
+
+  it("a new search's list without the failed companies has no error; with them, it asks again", async () => {
+    const m = montar();
+    const a = "11111111000111";
+    const b = "22222222000122";
+    const p1 = m.marcar(3, [a]);
+    contagens[0]!.falhar(new Error("rede"));
+    await p1;
+    expect(m.erroMarcas.value).toBe("todas");
+    const p2 = m.marcar(3, [b]);
+    expect(m.erroMarcas.value).toBeNull();
+    contagens[1]!.responder(new Map());
+    await p2;
+    expect(m.erroMarcas.value).toBeNull();
+    const p3 = m.marcar(3, [a, b]);
+    expect(contagens[2]!.cnpjs).toEqual([a]);
+    contagens[2]!.responder(new Map([[a, 1]]));
+    await p3;
+    expect(m.erroMarcas.value).toBeNull();
+    expect(m.porEmpresa.value.get(a)).toBe(1);
   });
 
   it("sem tipo no corredor, não marca", async () => {
