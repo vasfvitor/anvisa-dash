@@ -23,7 +23,8 @@ const ANVISA = {
 /**
  * O Dataset de uma tabela. `pagina` é a URL do dicionário (a âncora da seção vira @id e url) e
  * `parquet` a URL do arquivo; as colunas levam a descrição que o manifest traz.
- * `origens` are the URLs of ANVISA's files behind the table (arquivosDaTabela), never derivar.py.
+ * `origens` are the URLs of ANVISA's files behind the table (arquivosDaTabela), never derivar.py; with none (a
+ * source missing from the manifest) the Dataset has no isBasedOn rather than an empty one.
  */
 export function conjuntoDados(
   nome: string,
@@ -44,7 +45,7 @@ export function conjuntoDados(
     inLanguage: "pt-BR",
     spatialCoverage: { "@type": "Place", name: "Brasil" },
     dateModified: atualizado,
-    isBasedOn: origens.length === 1 ? origens[0] : origens,
+    ...(origens.length ? { isBasedOn: origens.length === 1 ? origens[0] : origens } : {}),
     creator: ANVISA,
     variableMeasured: t.columns.map((c) => ({
       "@type": "PropertyValue",

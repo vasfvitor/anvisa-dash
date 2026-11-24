@@ -48,6 +48,16 @@ describe("conjuntoDados", () => {
     expect(derivada.isBasedOn).toEqual(["https://dados.anvisa.gov.br/a.csv", "https://dados.anvisa.gov.br/b.csv"]);
   });
 
+  it("no isBasedOn when none of ANVISA's files is known (a source missing from the manifest)", () => {
+    const orfa = conjuntoDados("x", tabela, info, {
+      pagina: "https://contem.abelhaninja.de/dicionario/",
+      parquet: "https://exemplo.org/x.parquet",
+      atualizado: "2026-10-06T00:00:00",
+      origens: [],
+    });
+    expect(orfa).not.toHaveProperty("isBasedOn");
+  });
+
   it("palavras do corredor mais as comuns; nunca uma licença inventada", () => {
     const d = montar();
     expect(d.keywords).toEqual(["saneantes", "ANVISA", "dados abertos", "Parquet"]);

@@ -8,7 +8,7 @@ import { TABELA as COSMETICOS } from "../corredores/cosmeticos/consultas";
 import { TABELA as MEDICAMENTOS, TABELA_CMED } from "../corredores/medicamentos/consultas";
 import { TABELA as PRODUTOS_SAUDE, TABELA_FABRICACAO_PS } from "../corredores/produtos_saude/consultas";
 import { TABELA as SANEANTES } from "../corredores/saneantes/consultas";
-import { arquivosDaTabela, geradoEm, separador, type ArquivoAnvisa } from "../lib/arquivos";
+import { arquivosDaTabela, dataDosArquivos, separador, type ArquivoAnvisa } from "../lib/arquivos";
 import { MANIFEST_URL } from "../lib/config";
 import { TABELA_CERTIFICADOS, TABELA_MEDIDAS } from "../lib/consultas";
 import { fmtInt } from "../lib/format";
@@ -40,7 +40,7 @@ export const GET: APIRoute = async ({ site }) => {
   const origem = (t: string) => {
     const arquivos = arquivosDaTabela(m.tables, t);
     const um = (a: ArquivoAnvisa, i: number) =>
-      `${separador(i, arquivos.length)}[${a.name}](${a.url})${a.data ? ` (${geradoEm(1, a.data)})` : ""}`;
+      `${separador(i, arquivos.length)}[${a.name}](${a.url}) (${dataDosArquivos(1, a)})`;
     return arquivos.length ? `, a partir de ${arquivos.map(um).join("")}` : "";
   };
 

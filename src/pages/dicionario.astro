@@ -41,8 +41,8 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
 >
   <h1>Dicionário de dados</h1>
   <p class="lead">
-    O site consulta arquivos Parquet feitos dos dados abertos da ANVISA e refeitos quando a ANVISA muda um arquivo. Esta
-    página descreve o build <code>{m.build_id}</code>, gerado em {fmtDataLocal(m.built_at)}.
+    O site consulta arquivos Parquet feitos dos dados abertos da ANVISA. Esta página descreve o build{" "}
+    <code>{m.build_id}</code>, gerado em {fmtDataLocal(m.built_at)}.
   </p>
   <p class="note">
     Manifest: <a href={MANIFEST_URL}>{MANIFEST_URL}</a>. Os caminhos dos arquivos mudam a cada build; leia sempre o
@@ -72,6 +72,8 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
   {tabelas.map(([nome, t]) => {
     // o título do site quando a tabela tem Dataset, senão o do manifest; sem nenhum, o nome
     const titulo = TABELAS[nome]?.titulo ?? t.title;
+    // empty when a source is missing from the manifest: the sentence then names none
+    const arquivos = arquivosDaTabela(m.tables, nome);
     return (
       <section id={nome}>
         <h2>
@@ -103,12 +105,17 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
                   <code>{f}</code>
                 </a>,
               ])}{" "}
-              a cada build (<a href={t.source.url}>receita</a>), a partir de{" "}
-              <ArquivosAnvisa arquivos={arquivosDaTabela(m.tables, nome)} />.
+              a cada build (<a href={t.source.url}>receita</a>)
+              {arquivos.length ? (
+                <>
+                  , a partir de <ArquivosAnvisa arquivos={arquivos} />
+                </>
+              ) : null}
+              .
             </>
           ) : (
             <>
-              Origem: <ArquivosAnvisa arquivos={arquivosDaTabela(m.tables, nome)} />.
+              Origem: <ArquivosAnvisa arquivos={arquivos} />.
             </>
           )}
           {t.sort?.length ? (
@@ -117,7 +124,8 @@ const conjuntos = tabelas.flatMap(([nome, t]) => {
               Ordenado por <code>{t.sort.join(", ")}</code>.
             </>
           ) : null}{" "}
-          <a href={baixar(nome)}>Baixar Parquet</a> na página do anvisa-api, sempre com o build atual.
+          <a href={baixar(nome)}>Baixar Parquet</a> na página do anvisa-api, que pode trazer um build mais novo que o de{" "}
+          {fmtDataLocal(m.built_at)} descrito aqui.
         </p>
         <div class="table-wrap">
           <table>
