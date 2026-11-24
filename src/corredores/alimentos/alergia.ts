@@ -112,7 +112,7 @@ export function resumirAlergia(
 
 /** As colunas de alergênicos de uma linha de `produtos` (de alimentos_por_produto), como o cartão as recebe. */
 export interface ColunasAlergia {
-  /** Sim, Não ou Varia; nulo sem declaração */
+  /** Sim, Não, Varia or Não informado (anvisa-api's derivar.py, same rule as resumirAlergia); null without a declaration */
   gluten: string | null;
   lactose: string | null;
   /** itens separados por "|"; nulo sem declaração */
@@ -122,14 +122,15 @@ export interface ColunasAlergia {
   alergia_varia: boolean | null;
 }
 
-const SINAL: Record<string, Sinal> = { sim: "sim", nao: "nao", varia: "varia" };
+// the column's values, normalised; "nao informado" comes from anvisa-api since its commit of 2026-11-24
+const SINAL: Record<string, Sinal> = { sim: "sim", nao: "nao", varia: "varia", "nao informado": "naoInformado" };
 
 /**
  * O resumo a partir das colunas já calculadas (a mesma regra de resumirAlergia, aplicada no repo `anvisa`;
  * test/derivadas-live.test.ts confere). Sem nenhuma declaração as seis colunas vêm nulas: temDados falso.
  */
 export function resumoDe(c: ColunasAlergia): ResumoAlergia {
-  // a value other than Sim, Não or Varia is not informed, never "nao"
+  // any other value is not informed too, never "nao"
   const sinalDe = (s: string | null) => (s ? (SINAL[normalizar(s.trim())] ?? "naoInformado") : null);
   const r = {
     gluten: sinalDe(c.gluten),

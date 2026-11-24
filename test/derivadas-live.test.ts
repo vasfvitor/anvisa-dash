@@ -170,7 +170,12 @@ describe.skipIf(!pronta)("derivadas do repo anvisa contra o SQL da ilha (DADOS_L
          r.alergenicos_json, r.intolerancias_json
        FROM produtos_pub p LEFT JOIN resumo r ON r.co_seq_produto = p.id::INTEGER WHERE p.area = 'alimentos'`,
     );
-    const SINAL: Record<string, Sinal> = { Sim: "sim", Não: "nao", Varia: "varia" };
+    const SINAL: Record<string, Sinal> = {
+      Sim: "sim",
+      Não: "nao",
+      Varia: "varia",
+      "Não informado": "naoInformado",
+    };
     const erros: string[] = [];
     let comDados = 0;
     for (const l of todas) {

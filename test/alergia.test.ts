@@ -99,6 +99,22 @@ describe("resumoDe", () => {
     expect(r.temDados).toBe(true);
   });
 
+  it("reads back each value anvisa-api's derivar.py writes for what resumirAlergia computes", () => {
+    // derivar.py: Sim with Não is Varia, then Sim, then Não informado (any other value), then Não
+    const casos: [string[], string][] = [
+      [["Contém Glúten - Sim", "Contém Glúten - Não"], "Varia"],
+      [["Contém Glúten - Sim", "Contém Glúten - ?"], "Sim"],
+      [["Contém Glúten - Não", "Contém Glúten - ?"], "Não informado"],
+      [["Contém Glúten - Não"], "Não"],
+    ];
+    for (const [intol, coluna] of casos) {
+      const esperado = resumirAlergia([], intol).gluten;
+      const colunas = { lactose: null, contem: null, pode_conter: null, nao_contem: null, alergia_varia: null };
+      expect(resumoDe({ ...colunas, gluten: coluna }).gluten).toBe(esperado);
+      expect(resumoDe({ ...colunas, gluten: coluna.toUpperCase() }).gluten).toBe(esperado);
+    }
+  });
+
   it("sem declaração (as seis colunas nulas) não tem dados", () => {
     const r = resumoDe({
       gluten: null,
