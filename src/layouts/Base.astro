@@ -43,8 +43,8 @@ const canonico = new URL(Astro.url.pathname, Astro.site).href;
 // JSON dentro de <script>: "</" não pode aparecer cru
 const jsonLd = (d: Record<string, unknown>) => JSON.stringify(d).replace(/</g, "\\u003c");
 
-// rodapé com os arquivos da ANVISA de cada corredor no último build, que roda quando os dados mudam (a troca de
-// corredor não recarrega a página, então o rodapé cita todos); as tabelas derivadas levam aos arquivos crus
+// Footer with ANVISA's files for every corridor in this build (switching corridors does not reload the page, so
+// the footer names them all); derived tables resolve to the raw files.
 const tabelas = (await manifestDoBuild(MANIFEST_URL)).tables;
 const origens = [
   ...CORREDORES.map((c) => ({ nome: c.curto, tabela: c.tabela })),
@@ -131,7 +131,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
               Dados abertos da ANVISA.
               {origens.map(({ nome, arquivos }, i) => (
                 <>
-                  {/* o Astro descarta a quebra de linha depois de "ANVISA." */ i > 0 ? " · " : " "}
+                  {/* Astro drops the line break after "ANVISA." */ i > 0 ? " · " : " "}
                   {nome}: <ArquivosAnvisa arquivos={arquivos} />
                 </>
               ))}

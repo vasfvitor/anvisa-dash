@@ -37,7 +37,7 @@ watch(
     recentes(tipo).then(
       (m) => (medidas.value = m),
       () => {
-        // a seção diz que as medidas não carregaram, para não parecer que não há nenhuma
+        // the section says the measures failed to load, so it never looks like there are none
         erroMedidas.value = true;
       },
     );
