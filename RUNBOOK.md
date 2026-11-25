@@ -20,6 +20,7 @@ Quem cria ou muda um alarme ou uma mensagem de erro (um `throw`, um `::error::`,
 | Publicar site  | `HTTP 404 em`, `arquivo incompleto`                                         | [Parquet não baixou](#parquet-não-baixou)                           |
 | Publicar site  | `Binder Error`, `Referenced column`                                         | [Coluna do anvisa-api mudou](#coluna-do-anvisa-api-mudou)           |
 | Publicar site  | `dist com N MB`                                                             | [Site perto do limite do Pages](#site-perto-do-limite-do-pages)     |
+| Publicar site  | `No artifacts named "github-pages"`, `Fetching artifact metadata failed`    | [Deploy não achou o site enviado](#deploy-não-achou-o-site-enviado) |
 | Publicar site  | `o tamanho do motor foi medido`, `MOTOR_VERSAO`                             | [Versão do DuckDB-WASM mudou](#versão-do-duckdb-wasm-mudou)         |
 | Publicar site  | `heap out of memory`, tempo esgotado                                        | [Build sem memória ou lento](#build-sem-memória-ou-lento)           |
 | Publicar site  | `format:check`, `lint`, `test`, `check`                                     | [Lint, formato, testes ou tipos](#lint-formato-testes-ou-tipos)     |
@@ -104,6 +105,27 @@ continua no ar**.
 - **Agir ou esperar:** com o aviso, planejar. Com o erro, agir: é uma decisão de produto (o que deixa de
   ter página própria). Pedir ajuda.
 
+### Deploy não achou o site enviado
+
+- **Onde aparece:** no fim do job `publicar`, no primeiro passo `Run actions/deploy-pages` e, se ele
+  falhar, no segundo, que vem depois de "Wait before the one retry of the deploy".
+- **Mensagens:**
+  - `Error: No artifacts named "github-pages" were found for this workflow run.`
+  - `Fetching artifact metadata failed. Is githubstatus.com reporting issues with API requests, Pages, or Actions? Please re-run the deployment at a later time.`
+- **O que quer dizer:** o build e o envio do site deram certo, mas o serviço de artefatos do GitHub não
+  achou o que acabou de receber (7 deploys em 24 e 25/11/2026). O workflow tenta o deploy de novo uma
+  vez, dois minutos depois, e nunca mais que isso. Cada tentativa espera no máximo 4 minutos, e o job
+  inteiro tem limite de 25 minutos.
+- **O site foi afetado?** Não: enquanto nenhum deploy der certo, o site anterior continua no ar.
+- **O que fazer:**
+  - Primeira tentativa com erro e a segunda verde: nada. O run fica verde; o erro da primeira tentativa
+    continua no log.
+  - As duas com erro: o job fica vermelho. Rodar de novo só o job que falhou ("Re-run failed jobs" na
+    página do run, ou `gh run rerun <id> --failed -R vasfvitor/anvisa-dash`). O job refaz o build e o
+    envio antes do deploy.
+- **Pedir ajuda quando:** o job rodado de novo falhar do mesmo jeito sem incidente aberto em
+  githubstatus.com para Actions ou Pages. Com incidente aberto, esperar ele fechar e rodar de novo.
+
 ### Versão do DuckDB-WASM mudou
 
 - **Onde aparece:** passo `pnpm test`, no teste "o tamanho do motor foi medido na versão instalada".
@@ -115,7 +137,7 @@ continua no ar**.
 
 ### Build sem memória ou lento
 
-- **Mensagens:** `JavaScript heap out of memory`, ou o job passou de 15 minutos.
+- **Mensagens:** `JavaScript heap out of memory`, ou o job passou do limite de 25 minutos.
 - **O que quer dizer:** o site tem dezenas de milhares de páginas e cresce com os dados.
 - **O que fazer:** rodar de novo uma vez.
 - **Pedir ajuda quando:** repetir.
