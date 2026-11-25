@@ -22,6 +22,7 @@ import { iniciar } from "../../lib/db";
 // SITUACAO aqui é o campo da apresentação; a situação na ANVISA entra como ESTADO
 import { notaTipo, SITUACAO as ESTADO, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
+import { itemProduto } from "../../lib/relato";
 import PaginaProduto from "../../components/PaginaProduto.vue";
 import Copiar from "../../components/Copiar.vue";
 import AvisoMedidas from "../../components/AvisoMedidas.vue";
@@ -72,6 +73,16 @@ const ativo = computed(() => !!p.value && estaAtivo(p.value));
 const sit = computed(() => situacaoDe(ativo.value));
 const indeferido = computed(() => !!p.value && foiIndeferido(p.value));
 const notificado = computed(() => p.value?.tipo_regularizacao === "Notificado");
+// the product and its number, for the "Encontrou um erro?" sentence
+const relato = computed(() =>
+  p.value
+    ? itemProduto(
+        titulo.value,
+        [notificado.value ? "notificação" : "registro", fmtRegistro(p.value.nu_registro_notificacao_produto)],
+        ["processo", fmtProcesso(p.value.nu_processo)],
+      )
+    : "",
+);
 
 watch(titulo, (t) => t && emit("titulo", t));
 
@@ -172,6 +183,7 @@ const linkAnvisa = computed(() =>
     :achou="!!p"
     :link-anvisa="linkAnvisa"
     :item="meta.item[0]"
+    :relato="relato"
     @voltar="emit('voltar')"
   >
     <article v-if="p">

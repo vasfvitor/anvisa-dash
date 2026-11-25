@@ -5,6 +5,7 @@ import { fmtCnpj, fmtData, fmtMesAno, fmtProcesso, fmtReais, fmtRegistro, url } 
 import { CNPJ } from "../../lib/estatico/empresas";
 import { notaTipo, SITUACAO, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
+import { itemProduto } from "../../lib/relato";
 import PaginaProduto from "../../components/PaginaProduto.vue";
 import Copiar from "../../components/Copiar.vue";
 import AvisoMedidas from "../../components/AvisoMedidas.vue";
@@ -45,6 +46,16 @@ void carregar();
 const ativo = computed(() => p.value?.situacao_registro === "Ativo");
 const sit = computed(() => situacaoDe(ativo.value));
 const titulo = computed(() => (p.value ? legivel(p.value.nome, "nome") : ""));
+// the product and its number, for the "Encontrou um erro?" sentence
+const relato = computed(() =>
+  p.value
+    ? itemProduto(
+        titulo.value,
+        ["registro", fmtRegistro(p.value.registro_produto)],
+        ["processo", fmtProcesso(p.value.processo)],
+      )
+    : "",
+);
 const vencido = computed(() => {
   const v = p.value?.dt_vencimento;
   return Boolean(v && v < new Date().toISOString().slice(0, 10));
@@ -66,6 +77,7 @@ watch(titulo, (t) => t && emit("titulo", t));
     :achou="!!p"
     :link-anvisa="linkAnvisa"
     :item="meta.item[0]"
+    :relato="relato"
     @voltar="emit('voltar')"
   >
     <article v-if="p">

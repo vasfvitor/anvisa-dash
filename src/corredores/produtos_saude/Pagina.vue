@@ -6,6 +6,7 @@ import { fmtCnpj, fmtData, fmtProcesso, plural, url } from "../../lib/format";
 import { CNPJ } from "../../lib/estatico/empresas";
 import { SITUACAO, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
+import { itemProduto } from "../../lib/relato";
 import { validade } from "../../lib/validade";
 import PaginaProduto from "../../components/PaginaProduto.vue";
 import Copiar from "../../components/Copiar.vue";
@@ -59,6 +60,12 @@ const ativo = computed(() => p.value?.situacao_registro === "Ativo");
 const sit = computed(() => situacaoDe(ativo.value));
 const val = computed(() => (p.value ? validade(p.value.validade, p.value.dt_vencimento, ativo.value) : null));
 const titulo = computed(() => (p.value ? legivel(p.value.nome, "nome") : ""));
+// the product and its number, for the "Encontrou um erro?" sentence
+const relato = computed(() =>
+  p.value
+    ? itemProduto(titulo.value, ["nº na ANVISA", p.value.registro], ["processo", fmtProcesso(p.value.processo)])
+    : "",
+);
 // a consulta oficial de produtos para saúde, com o registro já preenchido
 const linkAnvisa = computed(() =>
   p.value
@@ -76,6 +83,7 @@ watch(titulo, (t) => t && emit("titulo", t));
     :achou="!!p"
     :link-anvisa="linkAnvisa"
     :item="meta.item[0]"
+    :relato="relato"
     @voltar="emit('voltar')"
   >
     <article v-if="p">

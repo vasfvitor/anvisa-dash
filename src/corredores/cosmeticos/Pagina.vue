@@ -5,6 +5,7 @@ import { fmtCnpj, fmtData, fmtProcesso, fmtRegistro, url } from "../../lib/forma
 import { CNPJ } from "../../lib/estatico/empresas";
 import { notaTipo, SITUACAO, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
+import { itemProduto } from "../../lib/relato";
 import { validade } from "../../lib/validade";
 import PaginaProduto from "../../components/PaginaProduto.vue";
 import Copiar from "../../components/Copiar.vue";
@@ -38,6 +39,16 @@ const sit = computed(() => situacaoDe(ativo.value));
 const registrado = computed(() => p.value?.tipo_regularizacao === "Registrado");
 const val = computed(() => (p.value ? validade(p.value.grupo, p.value.dt_vencimento, ativo.value) : null));
 const titulo = computed(() => (p.value ? legivel(p.value.no_produto, "nome") : ""));
+// the product and its number, for the "Encontrou um erro?" sentence
+const relato = computed(() =>
+  p.value
+    ? itemProduto(
+        titulo.value,
+        ["registro", fmtRegistro(p.value.nu_registro)],
+        ["processo", fmtProcesso(p.value.nu_processo)],
+      )
+    : "",
+);
 
 // a consulta da ANVISA separa os registrados dos regularizados (notificados e isentos). Abre com o processo
 // já preenchido; a página de detalhe de cada um não foi conferida (a consulta estava fora do ar em 2026-10-09)
@@ -57,6 +68,7 @@ watch(titulo, (t) => t && emit("titulo", t));
     :achou="!!p"
     :link-anvisa="linkAnvisa"
     :item="meta.item[0]"
+    :relato="relato"
     @voltar="emit('voltar')"
   >
     <article v-if="p">

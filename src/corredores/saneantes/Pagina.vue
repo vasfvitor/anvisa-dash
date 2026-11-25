@@ -5,6 +5,7 @@ import { fmtCnpj, fmtData, fmtProcesso, fmtRegistro, url } from "../../lib/forma
 import { CNPJ } from "../../lib/estatico/empresas";
 import { notaTipo, SITUACAO, situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
+import { itemProduto } from "../../lib/relato";
 import { validade } from "../../lib/validade";
 import PaginaProduto from "../../components/PaginaProduto.vue";
 import Copiar from "../../components/Copiar.vue";
@@ -39,6 +40,16 @@ const notificado = computed(() => p.value?.tipo_regularizacao === "Notificado");
 const val = computed(() => (p.value ? validade(p.value.grupo, p.value.dt_vencimento, ativo.value) : null));
 // o nome do saneante costuma trazer a marca ("RAID ELÉTRICO LÍQUIDO JOHNSON"): iniciais maiúsculas
 const titulo = computed(() => (p.value ? legivel(p.value.no_produto, "nome") : ""));
+// the product and its number, for the "Encontrou um erro?" sentence
+const relato = computed(() =>
+  p.value
+    ? itemProduto(
+        titulo.value,
+        ["registro", fmtRegistro(p.value.nu_registro_produto)],
+        ["processo", fmtProcesso(p.value.nu_processo)],
+      )
+    : "",
+);
 
 // a consulta da ANVISA separa os registrados ("produtos") dos isentos de registro ("notificados"). A página
 // de detalhe abre pelo nº do processo, mas só para o que a ANVISA considera vigente: vencido ou encerrado dá
@@ -61,6 +72,7 @@ watch(titulo, (t) => t && emit("titulo", t));
     :achou="!!p"
     :link-anvisa="linkAnvisa"
     :item="meta.item[0]"
+    :relato="relato"
     @voltar="emit('voltar')"
   >
     <article v-if="p">

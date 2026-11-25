@@ -27,6 +27,7 @@ import { fmtCnpj, fmtData, fmtInt, fmtProcesso, fmtRegistro, marcas, plural, url
 import { manifestDoBuild } from "../../lib/manifest";
 import { situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
+import { relatoHtml } from "../../lib/relato";
 
 export async function getStaticPaths() {
   const empresas = await empresasDoBuild();
@@ -141,6 +142,12 @@ const semMedidas = faltaMedidas(await manifestDoBuild(MANIFEST_URL));
 const letra = letraDe(e.nome);
 
 const canonico = new URL(Astro.url.pathname, Astro.site).href;
+// "Encontrou um erro?" after the data: the report names the company and its CNPJ (the name may already be the CNPJ)
+const relato = relatoHtml({
+  pagina: canonico,
+  item: e.nome ? `${nome} (CNPJ ${fmtCnpj(e.cnpj)})` : nome,
+  titulo: nome,
+});
 const organizacao = {
   "@context": "https://schema.org",
   "@type": "Organization",
@@ -552,4 +559,5 @@ const organizacao = {
       <p class="note">{semMedidas}</p>
     </section>
   )}
+  <p class="note relato" set:html={relato} />
 </Base>
