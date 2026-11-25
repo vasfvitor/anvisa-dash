@@ -65,14 +65,14 @@ jobs:
     needs: verificar
     if: needs.verificar.outputs.mudou == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: read # só lê o repositório
       pages: write # publica no GitHub Pages
       id-token: write # OIDC exigido por deploy-pages
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url || steps.deploy_retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -125,5 +125,17 @@ jobs:
         with:
           path: dist
 
+      # GitHub's artifact service sometimes answers "No artifacts named github-pages were found" right after a
+      # successful upload (7 deploys on 2026-11-24/25). One retry two minutes later, never more: if it fails
+      # too, the job is red as before.
       - id: deploy
+        continue-on-error: true
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+      - name: Wait before the one retry of the deploy
+        if: steps.deploy.outcome == 'failure'
+        run: sleep 120
+
+      - id: deploy_retry
+        if: steps.deploy.outcome == 'failure'
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
