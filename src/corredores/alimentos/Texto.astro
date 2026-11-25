@@ -1,15 +1,25 @@
 ---
 // O texto próprio do corredor, abaixo da busca na tela inicial: o que esta consulta cobre e como ler o que
-// ela mostra, para quem chega pelo buscador. HTML puro, fora da ilha. A proporção de suplementos é a medida
-// em index.astro (9.233 dos cerca de 10.300 liberados em 2026-10-10).
+// ela mostra, para quem chega pelo buscador. HTML puro, fora da ilha. The supplement count and the liberated
+// total come from the build (sqlSuplementos and the hero's totals); without them the sentence is left out.
+import type { DadosDoTexto } from "../tipos";
+import { fmtInt } from "../../lib/format";
+
+type Props = DadosDoTexto;
+const { numeros, suplementos, arquivos } = Astro.props;
 ---
 
 <section class="texto-corredor" data-texto="alimentos">
-  <h2>Quase tudo aqui é suplemento</h2>
+  <h2>O que precisa de liberação</h2>
   <p>
     Arroz, café e biscoito não precisam de liberação da ANVISA, por isso não estão nesta lista. Precisam os suplementos
-    (whey, creatina, vitamina, colágeno, pré-treino), as fórmulas e papinhas para bebês e as dietas por sonda. Nove em
-    cada dez produtos liberados aqui são suplementos.
+    (whey, creatina, vitamina, colágeno, pré-treino), as fórmulas e papinhas para bebês e as dietas por sonda.{" "}
+    {numeros && suplementos !== undefined && (
+      <>
+        Dos {fmtInt(numeros.ativos)} produtos liberados na lista da ANVISA{arquivos && ` (${arquivos})`},{" "}
+        {fmtInt(suplementos)} estão numa categoria de suplemento da ANVISA.
+      </>
+    )}
   </p>
   <p>
     Um suplemento aparece aqui com o nome que a empresa cadastrou, que nem sempre é o do rótulo. “Whey 100% Pure” pode

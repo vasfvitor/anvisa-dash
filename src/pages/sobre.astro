@@ -4,8 +4,9 @@ import Base from "../layouts/Base.astro";
 import { CORREDORES } from "../corredores";
 import { arquivosDaTabela } from "../lib/arquivos";
 import { MANIFEST_URL } from "../lib/config";
-import { TABELA_MEDIDAS } from "../lib/consultas";
-import { fmtBytes, fmtDataLocal, url } from "../lib/format";
+import { faltaMedidas, TABELA_MEDIDAS } from "../lib/consultas";
+import { fmtBytes, fmtDataLocal, fmtInt, url } from "../lib/format";
+import { MOTOR_BYTES, MOTOR_VERSAO } from "../lib/licenca";
 import { manifestDoBuild } from "../lib/manifest";
 
 const m = await manifestDoBuild(MANIFEST_URL);
@@ -18,13 +19,17 @@ const tam = (t: string) => {
   const tabela = m.tables[t];
   return tabela ? fmtBytes(tabela.bytes) : null;
 };
-// os cosméticos não baixam a tabela inteira: cada busca baixa os pedaços dela (em geral de 50 a 850 KB)
+// os cosméticos não baixam a tabela inteira: cada busca baixa os pedaços dela; the page says their mean size,
+// from the manifest (bytes_total over arquivos)
 const corredores = CORREDORES.flatMap((c) => {
   const t = tam(c.tabela);
   if (!t) return [];
   return m.tables[c.tabela]?.busca ? [] : [`${t} em ${c.curto.toLowerCase()}`];
 });
 const cosmeticos = m.tables.cosmeticos?.busca;
+const pedacos = cosmeticos?.arquivos
+  ? `, de ${fmtBytes(Math.round(cosmeticos.bytes_total / cosmeticos.arquivos))} em média (${fmtInt(cosmeticos.arquivos)} pedaços)`
+  : "";
 // as apresentações de um alimento leem a tabela crua e a de detalhe, baixadas na primeira página de produto
 const detalheBytes = (m.tables.alimentos?.bytes ?? 0) + (m.tables.alimentos_resultado?.bytes ?? 0);
 const detalhe = detalheBytes ? fmtBytes(detalheBytes) : null;
@@ -63,14 +68,13 @@ const medidas = tam(TABELA_MEDIDAS);
   <h2>Como a busca funciona</h2>
   <p>
     Não há servidor. A busca roda no seu navegador com o{" "}
-    <a href="https://duckdb.org/docs/api/wasm/overview">DuckDB-WASM</a>. A primeira visita baixa cerca de 5 MB do motor
-    e a tabela que você abriu ({corredores.join(", ")})
+    <a href="https://duckdb.org/docs/api/wasm/overview">DuckDB-WASM</a>. A primeira visita baixa {fmtBytes(MOTOR_BYTES)}{" "}
+    do motor (medidos na versão {MOTOR_VERSAO}) e a tabela que você abriu ({corredores.join(", ")})
     {detalhe && <>, mais {detalhe} ao abrir as apresentações de um alimento</>}
     {medidas && <> e {medidas} de medidas de fiscalização</>}. Depois os arquivos ficam no cache.
     {cosmeticos && (
       <>
-        Os cosméticos são grandes demais para baixar de uma vez: cada busca baixa só os pedaços que precisa, em geral de
-        50 a 850 KB.
+        {` Os cosméticos são grandes demais para baixar de uma vez: cada busca baixa só os pedaços que precisa${pedacos}.`}
       </>
     )}
   </p>
@@ -102,6 +106,7 @@ const medidas = tam(TABELA_MEDIDAS);
     A ANVISA publica medidas contra produtos irregulares: suspensão, proibição, recolhimento, interdição, apreensão e
     inutilização. Elas aparecem nas buscas e na página do produto.
   </p>
+  {faltaMedidas(m) && <p>{faltaMedidas(m)}</p>}
   <p>
     Uma medida diz o que a ANVISA publicou, não se o produto ainda está à venda. O aviso na página de um produto pode
     ser sobre outro produto da mesma empresa. Medidas contra pessoas aparecem sem o nome.

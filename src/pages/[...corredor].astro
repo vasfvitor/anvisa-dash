@@ -9,9 +9,10 @@ import TextoCosmeticos from "../corredores/cosmeticos/Texto.astro";
 import TextoMedicamentos from "../corredores/medicamentos/Texto.astro";
 import TextoProdutosSaude from "../corredores/produtos_saude/Texto.astro";
 import TextoSaneantes from "../corredores/saneantes/Texto.astro";
-import type { IdCorredor } from "../corredores/tipos";
+import type { DadosDoTexto, IdCorredor } from "../corredores/tipos";
+import { arquivosDaTabela, dataDosArquivos, porData } from "../lib/arquivos";
 import { MANIFEST_URL } from "../lib/config";
-import { totaisDoBuild } from "../lib/estatico/dados";
+import { suplementosDoBuild, totaisDoBuild } from "../lib/estatico/dados";
 import { downloadDe, type Download } from "../lib/licenca";
 import { manifestDoBuild } from "../lib/manifest";
 
@@ -33,12 +34,21 @@ const { id } = Astro.props;
 const corredor = CORREDORES.find((c) => c.id === id) as Corredor;
 const totais = await totaisDoBuild();
 const Texto = TEXTOS[corredor.id];
+const suplementos = await suplementosDoBuild();
 // o tamanho que a ilha anuncia antes de baixar, de todos os corredores (a troca de corredor não recarrega)
 const manifest = await manifestDoBuild(MANIFEST_URL);
 const downloads = Object.fromEntries(CORREDORES.map((c) => [c.id, downloadDe(manifest, c)])) as Record<
   IdCorredor,
   Download
 >;
+// what each corridor's text says from the build: its totals and ANVISA's files with their dates
+const dadosDoTexto = (c: Corredor): DadosDoTexto => ({
+  numeros: totais[c.id],
+  suplementos: c.id === "alimentos" ? suplementos : undefined,
+  arquivos: porData(arquivosDaTabela(manifest.tables, c.tabela))
+    .map((g) => dataDosArquivos(g.arquivos.length, g))
+    .join("; "),
+});
 ---
 
 <Base title={corredor.titulo} description={corredor.descricao} corredor={corredor.id}>
@@ -51,7 +61,7 @@ const downloads = Object.fromEntries(CORREDORES.map((c) => [c.id, downloadDe(man
           <Abertura c={c} numeros={totais[c.id]} />
         </template>
         <template data-texto={c.id}>
-          <Outro />
+          <Outro {...dadosDoTexto(c)} />
         </template>
       </>
     );
@@ -67,5 +77,5 @@ const downloads = Object.fromEntries(CORREDORES.map((c) => [c.id, downloadDe(man
     <p class="estado erro">A busca precisa de JavaScript: ela roda inteira no seu navegador.</p>
   </noscript>
   <SemJs corredor={corredor} />
-  <Texto />
+  <Texto {...dadosDoTexto(corredor)} />
 </Base>

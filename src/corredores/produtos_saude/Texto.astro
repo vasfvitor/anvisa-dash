@@ -2,6 +2,9 @@
 // O texto próprio do corredor, abaixo da busca na tela inicial (ver alimentos/Texto.astro). Só o que os dados
 // mostram: no arquivo de 2026-10-13, todo dispositivo de classe III ou IV tem vencimento e nenhum de I ou II tem.
 // Nada sobre cadastro e registro, que os dados não ligam ao risco (produtos_saude/consultas.ts).
+import type { DadosDoTexto } from "../tipos";
+
+export type Props = DadosDoTexto;
 ---
 
 <section class="texto-corredor" data-texto="produtos_saude">

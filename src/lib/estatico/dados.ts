@@ -77,6 +77,15 @@ export const sqlNumerosCosmeticos = (de = `"${TABELA_EMPRESAS}"`) =>
   `SELECT sum(cosmeticos)::INTEGER AS produtos, sum(cosmeticos_ativos)::INTEGER AS ativos,
     (count(*) FILTER (WHERE cosmeticos > 0))::INTEGER AS empresas FROM ${de}`;
 
+/**
+ * Liberated foods in one of ANVISA's supplement categories (the `categoria` that starts with "Suplemento": in
+ * 2026-11 "Suplementos alimentares" and "Suplementos Alimentares Contendo Probióticos e/ou Enzimas"), from `de`.
+ * Same rows as the corridor's `ativos` (sqlNumeros over sqlAlimentosDe), so the two counts compare.
+ */
+export const sqlSuplementos = (de = `"${TABELA_PRODUTOS}"`) =>
+  `SELECT (count(*) FILTER (WHERE ativo AND categoria ILIKE 'suplemento%'))::INTEGER AS n
+  FROM ${de} WHERE area = 'alimentos'`;
+
 /** Quem envasa ou fabrica os alimentos de cada empresa, uma linha por empresa e fabricante, de `de`. */
 export const sqlFabricacaoDe = (de = `"${TABELA_FABRICACAO}"`) =>
   `SELECT cnpj, empresa, fabricante_cnpj AS fabricanteCnpj, fabricante_codigo AS fabricanteCodigo, fabricante,
@@ -110,6 +119,8 @@ interface DoBuild {
   fabricantes: Map<string, Fabricante>;
   /** totais de cada corredor (os cosméticos só aqui: a ilha não baixa a tabela inteira) */
   totais: Partial<Record<IdCorredor, Numeros>>;
+  /** liberated foods in a supplement category (sqlSuplementos) */
+  suplementos: number;
 }
 
 let doBuild: Promise<DoBuild> | undefined;
@@ -123,6 +134,11 @@ export async function empresasDoBuild(): Promise<Map<string, Empresa>> {
 /** Os fabricantes de dispositivos médicos com página (/fabricante/<slug>/), por slug. */
 export async function fabricantesDoBuild(): Promise<Map<string, Fabricante>> {
   return (await umaVez()).fabricantes;
+}
+
+/** Liberated foods in one of ANVISA's supplement categories (sqlSuplementos), for the corridor's text. */
+export async function suplementosDoBuild(): Promise<number> {
+  return (await umaVez()).suplementos;
 }
 
 /** Liberados, total e empresas de cada corredor, como estavam os dados no build. */
@@ -176,12 +192,15 @@ async function carregar(): Promise<DoBuild> {
     for (const [id, sql] of consultas) {
       totais[id] = (await con.runAndReadAll(sql)).getRowObjectsJson()[0] as unknown as Numeros;
     }
+    const { n: suplementos } = (await con.runAndReadAll(sqlSuplementos())).getRowObjectsJson()[0] as unknown as {
+      n: number;
+    };
     const entrada = await ler(con, tem);
     // os fabricantes antes das empresas: o "Fabricado por" só liga a quem tem página
     const fabricantes = indexarFabricantes(entrada.fabricacaoDispositivos ?? []);
     const empresas = agrupar(entrada, new Set(fabricantes.keys()));
     comNomesDe(fabricantes, empresas);
-    return { empresas, fabricantes, totais };
+    return { empresas, fabricantes, totais, suplementos };
   } finally {
     con.closeSync();
     db.closeSync();

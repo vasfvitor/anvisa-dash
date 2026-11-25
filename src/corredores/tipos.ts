@@ -1,5 +1,7 @@
 // O que cada corredor declara sobre si: textos, exemplos, ícones e a tabela principal. Só dados, para as
 // páginas Astro gerarem tudo no build sem carregar o DuckDB.
+import type { Numeros } from "../lib/fonte";
+
 export type IdCorredor = "alimentos" | "saneantes" | "cosmeticos" | "medicamentos" | "produtos_saude";
 
 export interface Corredor {
@@ -59,3 +61,16 @@ export interface Corredor {
 
 // a tabela no dicionário de dados é declarada aqui, mas o formato é do Dataset (lib/dataset.ts)
 export type { InfoTabela } from "../lib/dataset";
+
+/**
+ * What [...corredor].astro passes to every corridor's Texto.astro, computed at build so the prose types no
+ * number or date. Each text uses the fields it needs.
+ */
+export interface DadosDoTexto {
+  /** the corridor's totals (the hero's numbers), absent when the build has none */
+  numeros?: Numeros | undefined;
+  /** liberated foods in a supplement category (only the food corridor) */
+  suplementos?: number | undefined;
+  /** ANVISA's files of the corridor, dated as dataDosArquivos says it ("arquivo gerado pela ANVISA em …") */
+  arquivos: string;
+}
