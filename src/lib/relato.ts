@@ -31,7 +31,8 @@ export function linksRelato({ pagina, item = "", titulo }: Relato): LinksRelato 
   ];
   if (item.trim()) campos.push(["item", item.trim()]);
   const consulta = campos.map(([k, v]) => `${k}=${enc(v)}`).join("&");
-  const corpo = `Página: ${pagina}\nItem: ${item.trim()}\n\nO que está errado:\n\nO que a fonte oficial mostra (link):\n`;
+  // CRLF between lines, as RFC 6068 asks of a mailto body (encoded %0D%0A)
+  const corpo = `Página: ${pagina}\r\nItem: ${item.trim()}\r\n\r\nO que está errado:\r\n\r\nO que a fonte oficial mostra (link):\r\n`;
   return {
     titulo: assunto,
     issue: `${REPO}/issues/new?${consulta}`,
@@ -49,7 +50,8 @@ const attr = (s: string): string => s.replace(/&/g, "&amp;").replace(/"/g, "&quo
 export function relatoHtml(r: Relato, curto = false): string {
   const { issue, email } = linksRelato(r);
   return curto
-    ? `Encontrou um erro? <a href="${attr(issue)}">Relato no GitHub</a> ou <a href="${attr(email)}">${RELATO_EMAIL}</a>.`
+    ? `Encontrou um erro? <a href="${attr(issue)}">Relato no GitHub</a> (público: não inclua dados pessoais) ou ` +
+        `<a href="${attr(email)}">${RELATO_EMAIL}</a>.`
     : `Encontrou um erro? <a href="${attr(issue)}">Abra um relato no GitHub</a> (precisa de conta) ou ` +
         `<a href="${attr(email)}">escreva para ${RELATO_EMAIL}</a>. O relato no GitHub é público: não inclua dados pessoais.`;
 }

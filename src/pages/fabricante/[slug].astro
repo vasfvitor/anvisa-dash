@@ -7,6 +7,7 @@ import Base from "../../layouts/Base.astro";
 import { fabricantesDoBuild } from "../../lib/estatico/dados";
 import { indexavelFabricante, type Fabricante } from "../../lib/estatico/fabricantes";
 import { fmtCnpj, plural, url } from "../../lib/format";
+import { relatoHtml } from "../../lib/relato";
 import { legivel } from "../../lib/texto";
 
 export async function getStaticPaths() {
@@ -26,6 +27,9 @@ const dispositivos = `${plural(f.registros, "dispositivo médico", "dispositivos
 const descricao = `${comPais} ${paraEmpresas} no Brasil: ${dispositivos} na ANVISA, com quantos cada empresa registra e o link para a página dela.`;
 
 const canonico = new URL(Astro.url.pathname, Astro.site).href;
+// "Encontrou um erro?" after the data: the report names the maker with its country, the key the page is built on
+// (ANVISA gives a device maker no CNPJ or code, and the same name in another country is another maker)
+const relato = relatoHtml({ pagina: canonico, item: comPais, titulo: comPais });
 const organizacao = {
   "@context": "https://schema.org",
   "@type": "Organization",
@@ -89,4 +93,5 @@ const organizacao = {
       o mesmo nome em outro país é outro fabricante. A ANVISA não publica CNPJ nem código do fabricante de dispositivos.
     </p>
   </section>
+  <p class="note relato" set:html={relato} />
 </Base>

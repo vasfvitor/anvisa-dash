@@ -49,20 +49,22 @@ describe("linksRelato", () => {
     const { issue, email, titulo } = linksRelato({ pagina: PAGINA, titulo: "Empresas na ANVISA" });
     expect(titulo).toBe("Problema em Empresas na ANVISA");
     expect(new URL(issue).searchParams.has("item")).toBe(false);
-    expect(decodeURIComponent(email.split("&body=")[1] ?? "")).toContain(`Página: ${PAGINA}\nItem: \n`);
+    expect(decodeURIComponent(email.split("&body=")[1] ?? "")).toContain(`Página: ${PAGINA}\r\nItem: \r\n`);
   });
 
-  it("writes the e-mail to the configured address, subject = title, body with the page, the item and newlines", () => {
+  it("writes the e-mail to the configured address, subject = title, body with the page, the item and CRLF line breaks", () => {
     expect(RELATO_EMAIL).toBe("ajuda@abelhaninja.de");
     const { email, titulo } = linksRelato({ pagina: PAGINA, item: "Novalgina, registro 1.0090.0029", titulo: "x" });
     expect(email.startsWith(`mailto:${RELATO_EMAIL}?subject=`)).toBe(true);
     expect(email).not.toContain("+");
     expect(email).not.toContain("\n");
-    expect(email).toContain("%0A");
+    // RFC 6068: a line break in a mailto body is CRLF, %0D%0A; never a bare %0A
+    expect(email).toContain("%0D%0A");
+    expect(email.replace(/%0D%0A/g, "")).not.toContain("%0A");
     const [, subject = "", body = ""] = /\?subject=([^&]*)&body=(.*)$/.exec(email) ?? [];
     expect(decodeURIComponent(subject)).toBe(titulo);
     expect(decodeURIComponent(body)).toBe(
-      `Página: ${PAGINA}\nItem: Novalgina, registro 1.0090.0029\n\nO que está errado:\n\nO que a fonte oficial mostra (link):\n`,
+      `Página: ${PAGINA}\r\nItem: Novalgina, registro 1.0090.0029\r\n\r\nO que está errado:\r\n\r\nO que a fonte oficial mostra (link):\r\n`,
     );
   });
 });
@@ -78,10 +80,12 @@ describe("relatoHtml", () => {
     expect(relatoHtml(r)).not.toContain("\n");
   });
 
-  it("renders the footer form", () => {
-    expect(texto(relatoHtml({ pagina: PAGINA, titulo: "Empresas" }, true))).toBe(
-      "Encontrou um erro? Relato no GitHub ou ajuda@abelhaninja.de.",
+  it("renders the footer form, saying the GitHub report is public, on one line", () => {
+    const html = relatoHtml({ pagina: PAGINA, titulo: "Empresas" }, true);
+    expect(texto(html)).toBe(
+      "Encontrou um erro? Relato no GitHub (público: não inclua dados pessoais) ou ajuda@abelhaninja.de.",
     );
+    expect(html).not.toContain("\n");
   });
 
   it("puts the two links in the hrefs, '&' escaped for HTML, the item never in the visible text", () => {
@@ -133,6 +137,12 @@ describe("onde a frase aparece", () => {
   it("the company page: the full sentence with the name and CNPJ, after the last section", () => {
     const pagina = ler("src/pages/empresa/[cnpj].astro");
     expect(pagina).toContain("item: e.nome ? `${nome} (CNPJ ${fmtCnpj(e.cnpj)})` : nome");
+    expect(pagina).toMatch(/<p class="note relato" set:html=\{relato\} \/>\s*<\/Base>/);
+  });
+
+  it("the device-maker page: the full sentence with the name and country, after the last section", () => {
+    const pagina = ler("src/pages/fabricante/[slug].astro");
+    expect(pagina).toContain("item: comPais");
     expect(pagina).toMatch(/<p class="note relato" set:html=\{relato\} \/>\s*<\/Base>/);
   });
 
