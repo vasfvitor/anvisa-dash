@@ -3,7 +3,7 @@
 // fora de ordem e a troca de corredor descartam o que ainda está a caminho.
 import { computed, ref, shallowRef } from "vue";
 import type { Consulta } from "../../lib/detect";
-import { buscarMedidas, MEDIDAS_POR_PAGINA, medidasPorEmpresa, type Medida } from "../../lib/medidas";
+import { ausencia, buscarMedidas, MEDIDAS_POR_PAGINA, medidasPorEmpresa, type Medida } from "../../lib/medidas";
 import { vezes } from "../../lib/vez";
 
 export function useMedidas() {
@@ -21,6 +21,8 @@ export function useMedidas() {
     const n = [...lista.value].filter((c) => falhas.value.has(c)).length;
     return !n ? null : n === lista.value.size ? "todas" : "algumas";
   });
+  /** the manifest has no measures table (faltaMedidas, "" when it has): the block says it in place of the measures */
+  const falta = ref("");
   /** some measures failed to load: said where they would be, never left looking like none */
   const erro = computed(() => erroBusca.value || !!erroMarcas.value);
   /** consulta que gerou as medidas atuais (para só mostrá-las junto da lista da mesma busca) */
@@ -76,10 +78,19 @@ export function useMedidas() {
     const distintos = [...new Set(cnpjs)].filter((c): c is string => !!c);
     lista.value = new Set(distintos);
     if (!tipoProduto) return;
+    const minha = geracao;
+    // every list shown (even an empty one) checks the manifest the island has now, which a deploy may replace
+    void ausencia().then(
+      (f) => {
+        if (minha === geracao) falta.value = f;
+      },
+      () => {
+        // the engine failed: the search shows that error
+      },
+    );
     const faltam = distintos.filter((c) => !perguntados.has(c));
     if (!faltam.length) return;
     for (const c of faltam) perguntados.add(c);
-    const minha = geracao;
     try {
       const n = await medidasPorEmpresa(tipoProduto, faltam);
       if (minha !== geracao) return;
@@ -101,6 +112,7 @@ export function useMedidas() {
     porEmpresa.value = new Map();
     falhas.value = new Set();
     lista.value = new Set();
+    falta.value = "";
   }
 
   /** Esquece as medidas e o que estiver a caminho (troca de corredor, busca sem medidas). */
@@ -144,6 +156,7 @@ export function useMedidas() {
     erro,
     erroBusca,
     erroMarcas,
+    falta,
     buscada,
     temMais,
     porEmpresa,

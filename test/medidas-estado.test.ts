@@ -13,7 +13,9 @@ interface Pedido {
   falhar: (e: Error) => void;
 }
 
-const { pedidos, contagens } = vi.hoisted(() => ({
+const { pedidos, contagens, manifest } = vi.hoisted(() => ({
+  /** what ausencia() answers: the island's manifest without the measures table, or "" */
+  manifest: { falta: "" },
   pedidos: [] as Pedido[],
   contagens: [] as {
     tipo: number;
@@ -25,6 +27,7 @@ const { pedidos, contagens } = vi.hoisted(() => ({
 
 vi.mock("../src/lib/medidas", () => ({
   MEDIDAS_POR_PAGINA: 20,
+  ausencia: () => Promise.resolve(manifest.falta),
   buscarMedidas: (tipo: number, q: Consulta, pagina: number, registros: string[] = []) =>
     new Promise<Medida[]>((responder, falhar) => {
       pedidos.push({ tipo, q, pagina, registros, responder, falhar });
@@ -63,6 +66,7 @@ afterEach(() => {
   escopo = effectScope();
   pedidos.length = 0;
   contagens.length = 0;
+  manifest.falta = "";
 });
 const montar = () => escopo.run(() => useMedidas())!;
 
@@ -278,5 +282,18 @@ describe("useMedidas", () => {
     const m = montar();
     await m.marcar(undefined, ["11111111000111"]);
     expect(contagens).toHaveLength(0);
+  });
+
+  it("a list shown with a manifest without the table carries what to say, until the corridor changes", async () => {
+    manifest.falta = "sem tabela";
+    const m = montar();
+    await m.marcar(3, []);
+    await Promise.resolve();
+    expect(m.falta.value).toBe("sem tabela");
+    m.limparMarcas();
+    expect(m.falta.value).toBe("");
+    await m.marcar(undefined, []);
+    await Promise.resolve();
+    expect(m.falta.value).toBe("");
   });
 });

@@ -4,7 +4,7 @@
 // produto quando isto aparece, então a tabela principal não disputa o download.
 import { onMounted, ref, shallowRef } from "vue";
 import { plural } from "../lib/format";
-import { avisoDoProduto, medidasPorEmpresa, porRegistro, type Medida } from "../lib/medidas";
+import { ausencia, avisoDoProduto, medidasPorEmpresa, porRegistro, type Medida } from "../lib/medidas";
 import Icone from "./Icone.vue";
 import MedidaCartao from "./MedidaCartao.vue";
 import { noApp, urlEmpresa } from "./composables/useUrlState";
@@ -18,9 +18,10 @@ const erro = ref("");
 
 onMounted(async () => {
   const produto = props.registro ? porRegistro(props.tipo, props.registro) : Promise.resolve([]);
-  // each lookup settles on its own: a failed company count never hides the product's own measures
-  const [p, e] = await Promise.allSettled([produto, medidasPorEmpresa(props.tipo, [props.cnpj])]);
-  const aviso = avisoDoProduto(p, e, props.cnpj);
+  // each lookup settles on its own: a failed company count never hides the product's own measures; a manifest
+  // without the table is said, not left looking like a product with no measures
+  const [p, e, f] = await Promise.allSettled([produto, medidasPorEmpresa(props.tipo, [props.cnpj]), ausencia()]);
+  const aviso = avisoDoProduto(p, e, props.cnpj, f.status === "fulfilled" ? f.value : "");
   doProduto.value = aviso.doProduto;
   daEmpresa.value = aviso.daEmpresa;
   erro.value = aviso.erro;

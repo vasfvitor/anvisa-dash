@@ -21,7 +21,10 @@ import {
   totalProdutos,
   type Empresa,
 } from "../../lib/estatico/empresas";
+import { MANIFEST_URL } from "../../lib/config";
+import { faltaMedidas } from "../../lib/consultas";
 import { fmtCnpj, fmtData, fmtInt, fmtProcesso, fmtRegistro, marcas, plural, url } from "../../lib/format";
+import { manifestDoBuild } from "../../lib/manifest";
 import { situacaoDe } from "../../lib/situacao";
 import { legivel } from "../../lib/texto";
 
@@ -131,6 +134,9 @@ const descricao = soEnvasa
       ? `${medidas} contra ${nome} (CNPJ ${fmtCnpj(e.cnpj)}). ${semProdutoFrase("da empresa")}`
       : `${produtos.join(", ").replace(/, ([^,]*)$/, " e $1")} de ${nome} (CNPJ ${fmtCnpj(e.cnpj)}) na ANVISA, com situação e números de processo.${r.envasaPara ? ` Também ${envasaFrase}.` : ""}${r.certificadosVigentes ? ` Com ${vigentes}.` : ""}`;
 const resumoLinha = [`CNPJ ${fmtCnpj(e.cnpj)}`, ...partes, r.medidas > 0 && medidas].filter(Boolean).join(" · ");
+
+// a build without the measures table says so where they would be, instead of a page that looks like it has none
+const semMedidas = faltaMedidas(await manifestDoBuild(MANIFEST_URL));
 
 const letra = letraDe(e.nome);
 
@@ -538,6 +544,12 @@ const organizacao = {
         </table>
       </div>
       <p class="note">Uma medida diz o que a ANVISA publicou, não se o produto ainda está à venda.</p>
+    </section>
+  )}
+  {semMedidas && (
+    <section>
+      <h2>Medidas da ANVISA</h2>
+      <p class="note">{semMedidas}</p>
     </section>
   )}
 </Base>

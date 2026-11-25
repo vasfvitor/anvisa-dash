@@ -3,7 +3,7 @@ import { computed, onMounted, ref, shallowRef, watch } from "vue";
 import type { Corredor } from "../corredores";
 import type { Fonte, ValorFaceta } from "../lib/fonte";
 import { fmtCnpj, fmtInt } from "../lib/format";
-import { ERRO_MEDIDAS, recentes, type Medida } from "../lib/medidas";
+import { ausencia, ERRO_MEDIDAS, recentes, type Medida } from "../lib/medidas";
 import { legivel } from "../lib/texto";
 import MedidaCartao from "./MedidaCartao.vue";
 
@@ -27,6 +27,8 @@ const principais = computed(() => grupos.value.slice(0, 12));
 // as últimas medidas de fiscalização do corredor, depois que ele fica pronto (não disputam o download)
 const medidas = shallowRef<Medida[]>([]);
 const erroMedidas = ref(false);
+/** the manifest has no measures table (faltaMedidas): said, so the corridor never looks like it has none */
+const falta = ref("");
 let pedidas = false;
 watch(
   () => props.pronto,
@@ -34,8 +36,11 @@ watch(
     const tipo = props.corredor.tipoProduto;
     if (!pronto || !tipo || pedidas) return;
     pedidas = true;
-    recentes(tipo).then(
-      (m) => (medidas.value = m),
+    Promise.all([recentes(tipo), ausencia()]).then(
+      ([m, f]) => {
+        medidas.value = m;
+        falta.value = f;
+      },
       () => {
         // the section says the measures failed to load, so it never looks like there are none
         erroMedidas.value = true;
@@ -65,9 +70,9 @@ watch(
       </div>
     </template>
 
-    <template v-if="medidas.length || erroMedidas">
+    <template v-if="medidas.length || erroMedidas || falta">
       <h2>Medidas recentes da ANVISA</h2>
-      <p v-if="erroMedidas" class="aviso" role="status">{{ ERRO_MEDIDAS }}</p>
+      <p v-if="erroMedidas || falta" class="aviso" role="status">{{ falta || ERRO_MEDIDAS }}</p>
       <div v-else class="medidas-lista">
         <MedidaCartao v-for="m in medidas" :key="m.id" :m="m" @empresa="(c: string) => emit('exemplo', fmtCnpj(c))" />
       </div>

@@ -86,7 +86,7 @@ useNavegacao(estado, { trocou: motor.trocou, subir: motor.subir, limpar, buscar 
 
 // the measures block, by blocoDaBusca: the search's measures only next to the list of the same search
 const mesmaBusca = computed(() => JSON.stringify(m.buscada) === JSON.stringify(b.buscada));
-const bloco = computed(() => blocoDaBusca(mesmaBusca.value, m.itens, m.erroBusca, m.erroMarcas));
+const bloco = computed(() => blocoDaBusca(mesmaBusca.value, m.itens, m.erroBusca, m.erroMarcas, m.falta));
 const medidasDaBusca = computed(() => bloco.value.itens.length > 0 || bloco.value.erros.length > 0);
 const semResultados = computed(() => !b.total && !b.carregando);
 // nenhum liberado, mas há encerrados: o vazio diz quantos e oferece mostrá-los antes das medidas

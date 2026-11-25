@@ -175,6 +175,12 @@ parênteses. Por exemplo:
   - `Não foi possível carregar as medidas de algumas empresas desta lista.`
   - `Não foi possível carregar as medidas contra este produto.`
   - `Não foi possível carregar as medidas contra a empresa deste produto.`
+- `As medidas de fiscalização da ANVISA não estão nos arquivos convertidos para Parquet em <data>, então o site não tem como mostrá-las.`
+  no lugar das medidas: o manifest não tem a tabela `medidas`. Na busca e na página do produto, é o manifest
+  que o navegador leu; nas páginas de empresa, na lista de A a Z, no "sobre" e no `llms.txt`, o do build (a
+  `<data>` é a do build do anvisa-api, no dia de Brasília). Ver o
+  [RUNBOOK do anvisa-api](https://github.com/vasfvitor/anvisa-api/blob/main/RUNBOOK.md); o build seguinte com a
+  tabela tira a frase. Se o anvisa-api tirou a tabela de propósito, pedir ajuda.
 
 ## Problemas conhecidos
 
@@ -183,17 +189,17 @@ Achados em 2026-11-03, ainda sem correção.
 - **"Liberado até" congelado no dia do build.** Nas páginas de empresa, "Em dia" ou "Vencida" é
   calculado no dia do build. Entre um build e outro, uma liberação que venceu continua aparecendo como
   "Liberado até <data>", em verde. A busca não tem esse problema, porque calcula na hora. Fase 3.
-- **O aviso de medidas some sem aviso.** Se a tabela `medidas` não carregar, a página do produto
-  simplesmente não mostra medidas da ANVISA, sem dizer que não conseguiu conferir. Fase 3.
 - **O build lê o manifest com cache.** Isso deixa mais provável o 404 de
   [Parquet não baixou](#parquet-não-baixou). Fase 3.
 - **Caminhos do `llms.txt` quebram por algumas horas depois de cada deploy do anvisa-api.** Os exemplos de
   `read_parquet` do `llms.txt` e a distribuição de cada tabela nos dados estruturados do dicionário apontam
   para os Parquet do build em que o site foi gerado, e dão 404 até o contém publicar de novo (até cerca de
-  3 horas por dia). O `llms.txt` avisa que o manifest lista os arquivos atuais. Desde 07/11/2026, o "Baixar
-  Parquet" do dicionário leva à tabela na página do próprio anvisa-api, que não quebra.
+  3 horas por dia). O `llms.txt` diz a data do build e que, num build novo, os endereços saem do ar e o
+  manifest passa a listar os novos. Desde 07/11/2026, o "Baixar Parquet" do dicionário leva à tabela na
+  página do próprio anvisa-api, que não quebra.
 - **Seções opcionais somem sem aviso.** Se uma tabela opcional faltar no manifest, as seções que dependem
-  dela somem das páginas e o build fica verde. O `Testes ao vivo` também não confere as tabelas
-  opcionais.
+  dela somem das páginas e o build fica verde. A exceção é a `medidas`: sem ela, as páginas dizem que as
+  medidas não estão nos arquivos (ver [Erro que um visitante relata](#erro-que-um-visitante-relata)). O
+  `Testes ao vivo` também não confere as tabelas opcionais.
 - **Ninguém vigia se o contém está em dia.** Se o cron parar ou o build falhar todo dia, nenhum outro
   workflow fica vermelho. Fase 5 (página de status).

@@ -1,6 +1,7 @@
 // O SQL das medidas sem DuckDB (como em fontes.test.ts): o banco só anota cada consulta, e o teste a
 // confere com os parâmetros no lugar dos `?`. O manifest de mentira diz se a tabela foi publicada.
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { faltaMedidas } from "../src/lib/consultas";
 import type { Medida } from "../src/lib/medidas";
 
 interface Chamada {
@@ -13,7 +14,7 @@ const estado = vi.hoisted(() => ({ chamadas: [] as Chamada[], publicada: true })
 vi.mock("../src/lib/db", () => ({
   carregar: () => Promise.resolve(),
   buildAtual: () => Promise.resolve("teste"),
-  iniciar: () => Promise.resolve({ tables: estado.publicada ? { medidas: {} } : {} }),
+  iniciar: () => Promise.resolve({ built_at: "2026-11-21T01:52:19Z", tables: estado.publicada ? { medidas: {} } : {} }),
   consultar: (_tabelas: string[], sql: string, params: unknown[] = []) => {
     estado.chamadas.push({ sql, params });
     return Promise.resolve([]);
@@ -21,6 +22,7 @@ vi.mock("../src/lib/db", () => ({
 }));
 
 const {
+  ausencia,
   avisoDoProduto,
   blocoDaBusca,
   buscarMedidas,
@@ -115,6 +117,17 @@ describe("medidas", () => {
     expect(await medidasPorEmpresa(3, ["43461789000190"])).toEqual(new Map());
     expect(estado.chamadas).toHaveLength(0);
   });
+
+  it("without the table, says so with the date of the build's files; with it, nothing", async () => {
+    // 01:52 UTC on the 21st is still the 20th in Brasília, the day the about page gives for the same build
+    const falta =
+      "As medidas de fiscalização da ANVISA não estão nos arquivos convertidos para Parquet em 20/11/2026, então o site não tem como mostrá-las.";
+    estado.publicada = false;
+    expect(await ausencia()).toBe(falta);
+    expect(faltaMedidas({ built_at: "2026-11-21T01:52:19Z", tables: {} })).toBe(falta);
+    estado.publicada = true;
+    expect(await ausencia()).toBe("");
+  });
 });
 
 describe("blocoDaBusca", () => {
@@ -128,6 +141,11 @@ describe("blocoDaBusca", () => {
   it("the same search shows its measures and says each failure in its own words", () => {
     expect(blocoDaBusca(true, [medida], false, null)).toEqual({ itens: [medida], erros: [] });
     expect(blocoDaBusca(true, [], true, "todas")).toEqual({ itens: [], erros: [ERRO_MEDIDAS, ERRO_MARCAS.todas] });
+  });
+
+  it("a manifest without the table is said in the block, for any search, in place of everything else", () => {
+    expect(blocoDaBusca(false, [], false, null, "sem tabela")).toEqual({ itens: [], erros: ["sem tabela"] });
+    expect(blocoDaBusca(true, [], true, "todas", "sem tabela")).toEqual({ itens: [], erros: ["sem tabela"] });
   });
 });
 
@@ -150,5 +168,13 @@ describe("avisoDoProduto", () => {
     expect(avisoDoProduto(ok([]), falhou, cnpj)).toEqual({ doProduto: [], daEmpresa: 0, erro: ERRO_EMPRESA });
     expect(avisoDoProduto(falhou, falhou, cnpj).erro).toBe(ERRO_MEDIDAS);
     expect(avisoDoProduto(ok([]), ok(new Map()), cnpj)).toEqual({ doProduto: [], daEmpresa: 0, erro: "" });
+  });
+
+  it("a manifest without the table is said, never left looking like a product with no measures", () => {
+    expect(avisoDoProduto(ok([]), ok(new Map()), cnpj, "sem tabela")).toEqual({
+      doProduto: [],
+      daEmpresa: 0,
+      erro: "sem tabela",
+    });
   });
 });

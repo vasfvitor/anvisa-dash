@@ -1,4 +1,6 @@
 // SQL sem dependências, para a ilha (DuckDB-WASM) e o build (DuckDB do Node) usarem a mesma definição.
+import { fmtDataLocal } from "./format";
+import type { Manifest } from "./manifest";
 import { sqlPalavras } from "./palavras";
 
 // datas saem como texto sem fuso: o tipo temporal do Arrow muda de unidade conforme a versão
@@ -12,8 +14,19 @@ export const TABELA_CERTIFICADOS = "certificados";
 
 /** A tabela de medidas de fiscalização do manifest: derivada de produtos_irregulares no repo `anvisa`. */
 export const TABELA_MEDIDAS = "medidas";
+
 /** A view sobre ela que a busca lê (SQL_MEDIDAS). */
 export const MEDIDAS_BUSCA = "medidas_busca";
+
+/**
+ * What to say where the measures would be when manifest `m` has no `medidas` table, so an absent table never reads
+ * as "no measures"; "" when it has the table. Here, not in lib/medidas.ts, because the build pages say it too and
+ * that module loads DuckDB-WASM.
+ */
+export const faltaMedidas = (m: Pick<Manifest, "tables" | "built_at">): string =>
+  TABELA_MEDIDAS in m.tables
+    ? ""
+    : `As medidas de fiscalização da ANVISA não estão nos arquivos convertidos para Parquet em ${fmtDataLocal(m.built_at)}, então o site não tem como mostrá-las.`;
 
 // o dia de hoje em Brasília, AAAA-MM-DD (o formato do en-CA)
 const HOJE = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" });

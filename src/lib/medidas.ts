@@ -4,7 +4,7 @@
 // áreas; cada corredor vê só as do seu tipoProduto (area_codigo), e toda consulta começa por ele. Cuidados
 // da origem: a empresa investigada nem sempre tem CNPJ (CPF é pessoa, e o nome não aparece); `registros`
 // só vem nos saneantes e cosméticos; `processo` é o da medida, não o de um produto.
-import { MEDIDAS_BUSCA, SQL_MEDIDAS, TABELA_MEDIDAS } from "./consultas";
+import { MEDIDAS_BUSCA, faltaMedidas, SQL_MEDIDAS, TABELA_MEDIDAS } from "./consultas";
 import { carregar, consultar, iniciar } from "./db";
 import type { Consulta } from "./detect";
 import { fatiar } from "./format";
@@ -53,6 +53,11 @@ function tabela(): Promise<void> {
 /** Se o build atual publicou a tabela; sem ela o site segue sem medidas, sem tentar de novo a cada busca. */
 async function disponivel(): Promise<boolean> {
   return TABELA in (await iniciar()).tables;
+}
+
+/** What to say in place of the measures when the island's manifest has no table (faltaMedidas), "" when it has. */
+export async function ausencia(): Promise<string> {
+  return faltaMedidas(await iniciar());
 }
 
 /** Baixa e monta em segundo plano, depois que o corredor fica pronto (a primeira busca não espera o download). */
@@ -158,19 +163,22 @@ export interface AvisoProduto {
   doProduto: Medida[];
   /** the company's count of measures in the corridor */
   daEmpresa: number;
-  /** the failure to say, "" when nothing that would be shown failed */
+  /** what to say in place of the measures (a failure, or the table's absence); "" when nothing is missing */
   erro: string;
 }
 
 /**
  * The product's own measures win (the red alert, which leaves the company count out); without them, a failed
- * lookup is said, naming which one, and the company count still shows when it loaded.
+ * lookup is said, naming which one, and the company count still shows when it loaded. With no `medidas` table in
+ * the manifest, `falta` (faltaMedidas) is said instead: both lookups came back empty without asking anything.
  */
 export function avisoDoProduto(
   produto: PromiseSettledResult<Medida[]>,
   empresa: PromiseSettledResult<Map<string, number>>,
   cnpj: string,
+  falta = "",
 ): AvisoProduto {
+  if (falta) return { doProduto: [], daEmpresa: 0, erro: falta };
   const doProduto = produto.status === "fulfilled" ? produto.value : [];
   const daEmpresa = empresa.status === "fulfilled" ? (empresa.value.get(cnpj) ?? 0) : 0;
   if (doProduto.length) return { doProduto, daEmpresa, erro: "" };
@@ -189,14 +197,17 @@ export function avisoDoProduto(
 /**
  * What the search's measures block shows. The measures, and their failure, only next to the list of the same
  * search (`mesmaBusca`), never an earlier search's under new results; a failed count for the cards is about the
- * list shown, so it is said on its own. An empty result means no block.
+ * list shown, so it is said on its own. With no `medidas` table in the manifest, `falta` (faltaMedidas) is all the
+ * block says. An empty result means no block.
  */
 export function blocoDaBusca(
   mesmaBusca: boolean,
   itens: Medida[],
   erroBusca: boolean,
   erroMarcas: keyof typeof ERRO_MARCAS | null,
+  falta = "",
 ): { itens: Medida[]; erros: string[] } {
+  if (falta) return { itens: [], erros: [falta] };
   return {
     itens: mesmaBusca ? itens : [],
     erros: [...(mesmaBusca && erroBusca ? [ERRO_MEDIDAS] : []), ...(erroMarcas ? [ERRO_MARCAS[erroMarcas]] : [])],

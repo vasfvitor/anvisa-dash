@@ -10,8 +10,8 @@ import { TABELA as PRODUTOS_SAUDE, TABELA_FABRICACAO_PS } from "../corredores/pr
 import { TABELA as SANEANTES } from "../corredores/saneantes/consultas";
 import { arquivosDaTabela, dataDosArquivos, separador, type ArquivoAnvisa } from "../lib/arquivos";
 import { MANIFEST_URL } from "../lib/config";
-import { TABELA_CERTIFICADOS, TABELA_MEDIDAS } from "../lib/consultas";
-import { fmtInt } from "../lib/format";
+import { faltaMedidas, TABELA_CERTIFICADOS, TABELA_MEDIDAS } from "../lib/consultas";
+import { fmtDataLocal, fmtInt } from "../lib/format";
 import { manifestDoBuild, tabelaUrl } from "../lib/manifest";
 import { DESCRICAO, NOME } from "../lib/marca";
 import { CONSULTAS, consultaProduto } from "../lib/semjs";
@@ -36,6 +36,8 @@ export const GET: APIRoute = async ({ site }) => {
   const tipo = (id: string) => CORREDORES.find((c) => c.id === id)?.tipoProduto;
   const temFabricantes = TABELA_FABRICACAO_PS in m.tables;
   const temCertificados = TABELA_CERTIFICADOS in m.tables;
+  // without the measures table the text says so where it would describe them (and no query points at a missing file)
+  const temMedidas = TABELA_MEDIDAS in m.tables;
   // ANVISA's files behind a table (a derived table's own source is the recipe), each with ANVISA's date
   const origem = (t: string) => {
     const arquivos = arquivosDaTabela(m.tables, t);
@@ -52,7 +54,7 @@ A busca do site roda em JavaScript no navegador. Sem JavaScript, use as páginas
 
 ## Páginas sem JavaScript
 
-- [Página de empresa](${raiz("/empresa/84684620000187/")}): ${raiz("/empresa/")}<CNPJ com 14 dígitos>/. Lista os alimentos e suplementos, os produtos de limpeza, os cosméticos (até 100, liberados primeiro), os remédios e os dispositivos médicos da empresa com situação (Liberado ou Encerrado), tipo (Registrado ou Notificado; nos cosméticos também Isento de registro e Descartável), datas, nº do processo e registro, quem envasa os alimentos da empresa e para quem ela envasa, com link para cada empresa (a envasadora sem produto próprio também tem página), os fabricantes no exterior${temFabricantes ? ", os fabricantes dos dispositivos médicos dela (com link para a página do fabricante)" : ""}${temCertificados ? ", os certificados de boas práticas de fabricação (CBPF e CBPDA) por fábrica inspecionada e os que outras empresas pediram para a fábrica dela (quem só tem certificado também tem página)" : ""} e as medidas de fiscalização da ANVISA contra a empresa. As que valem indexar estão no [sitemap](${raiz("/sitemap-index.xml")}).${temFabricantes ? `\n- Página de fabricante: ${raiz("/fabricante/")}<chave>-<país>/. Quem fabrica dispositivos médicos para duas empresas ou mais, com a lista delas e quantos dispositivos cada uma registra. <chave> é o nome em minúsculas, sem acento e só com [a-z0-9] (a coluna chave de ${TABELA_FABRICACAO_PS}); <país> é o país em minúsculas, sem acento, com hífen entre as palavras. A página de um dispositivo liga a ela.` : ""}
+- [Página de empresa](${raiz("/empresa/84684620000187/")}): ${raiz("/empresa/")}<CNPJ com 14 dígitos>/. Lista os alimentos e suplementos, os produtos de limpeza, os cosméticos (até 100, liberados primeiro), os remédios e os dispositivos médicos da empresa com situação (Liberado ou Encerrado), tipo (Registrado ou Notificado; nos cosméticos também Isento de registro e Descartável), datas, nº do processo e registro, quem envasa os alimentos da empresa e para quem ela envasa, com link para cada empresa (a envasadora sem produto próprio também tem página), os fabricantes no exterior${temFabricantes ? ", os fabricantes dos dispositivos médicos dela (com link para a página do fabricante)" : ""}${temCertificados ? ", os certificados de boas práticas de fabricação (CBPF e CBPDA) por fábrica inspecionada e os que outras empresas pediram para a fábrica dela (quem só tem certificado também tem página)" : ""}${temMedidas ? " e as medidas de fiscalização da ANVISA contra a empresa" : ""}. As que valem indexar estão no [sitemap](${raiz("/sitemap-index.xml")}).${temFabricantes ? `\n- Página de fabricante: ${raiz("/fabricante/")}<chave>-<país>/. Quem fabrica dispositivos médicos para duas empresas ou mais, com a lista delas e quantos dispositivos cada uma registra. <chave> é o nome em minúsculas, sem acento e só com [a-z0-9] (a coluna chave de ${TABELA_FABRICACAO_PS}); <país> é o país em minúsculas, sem acento, com hífen entre as palavras. A página de um dispositivo liga a ela.` : ""}
 - [Página inicial](${raiz("/")}): os cinco corredores com uma busca em cada um, que sem JavaScript só abre o corredor
 - [Empresas de A a Z](${raiz("/empresas/")}): o link da página de cada uma
 - [Sobre](${raiz("/sobre/")}): o site e os dados
@@ -62,7 +64,7 @@ A página de um produto (${raiz("/alimentos/")}?p=<id>, ${raiz("/limpeza/")}?p=<
 
 ## Dados
 
-Arquivos Parquet do build ${m.build_id}, com os dados abertos da ANVISA. O [manifest](${MANIFEST_URL}) lista os arquivos atuais.
+Arquivos Parquet do build ${m.build_id}, convertidos em ${fmtDataLocal(m.built_at)} a partir dos dados abertos da ANVISA; a data de cada arquivo da ANVISA vem ao lado da tabela. Quando o anvisa-api publica um build novo, estes endereços saem do ar e o [manifest](${MANIFEST_URL}) passa a listar os novos.
 
 ${tabelas.map((t) => `- [${t}](${arquivo(t)}): ${fmtInt(m.tables[t]!.rows)} linhas${origem(t)}`).join("\n")}
 
@@ -73,7 +75,7 @@ ${tabelas.map((t) => `- [${t}](${arquivo(t)}): ${fmtInt(m.tables[t]!.rows)} linh
 - ${MEDICAMENTOS}: remédios, uma linha por registro de 9 dígitos (registro_produto; os 13 dígitos da caixa são o registro mais a apresentação), com principio_ativo, classe_terapeutica, categoria_regulatoria (Genérico, Similar, Novo…), ativo e vencimento. A tabela como a ANVISA publica, com repetições, é medicamentos.
 - ${PRODUTOS_SAUDE}: dispositivos médicos (produtos para saúde), uma linha por registro ou cadastro, com nome_tecnico, classe_risco (I a IV), tipo (Cadastrado quando o número começa com 8, Registrado nos demais; não acompanha a classe nem o prazo), ativo, vencimento e a lista fabricantes. A tabela por fabricante é produtos_saude.
 ${temFabricantes ? `- ${TABELA_FABRICACAO_PS}: quem fabrica os dispositivos médicos de cada empresa, uma linha por detentora (cnpj, empresa), chave do fabricante e pais; fabricante é a grafia mais frequente do nome, vinculo é propria (a própria detentora), terceira (outro fabricante no Brasil) ou exterior; registros e registros_ativos contam os registros e cadastros da detentora com aquele fabricante. Em ${PRODUTOS_SAUDE}, fabricantes_chaves e fabricantes_paises trazem a chave e o país na ordem de fabricantes.\n` : ""}- ${TABELA_CMED}: a lista de preços da CMED, uma linha por apresentação (ggrem), preços em centavos por alíquota de ICMS (pf_18, pmc_18, pmvg_18…), junta aos remédios por registro_produto.
-- ${TABELA_MEDIDAS}: medidas de fiscalização (suspensão, proibição, recolhimento, interdição, apreensão, inutilização), uma linha por dossiê e produto, com acoes e atividades em lista e cnpj da empresa fiscalizada. area_codigo ${tipo("alimentos")} é alimento, ${tipo("saneantes")} é saneante, ${tipo("cosmeticos")} é cosmético, ${tipo("medicamentos")} é medicamento, ${tipo("produtos_saude")} é dispositivo médico.${temCertificados ? `\n- ${TABELA_CERTIFICADOS}: certificados de boas práticas de fabricação (CBPF) e de distribuição e armazenagem (CBPDA), um por linha: a empresa que pediu (cnpj, empresa), a fábrica inspecionada (inspecionada_cnpj no Brasil, inspecionada_codigo no exterior, inspecionada, pais; vinculo propria, grupo, terceira, exterior ou desconhecida, quando a ANVISA não informa a fábrica), area (produtos_saude, insumos, medicamentos, cosmeticos, saneantes, alimentos, outros), validade, vigente (dentro da validade em dados_de), cancelado e dados_de, a data dos dados (a lista de medicamentos parou em 2025-09-08).` : ""}
+- ${temMedidas ? `${TABELA_MEDIDAS}: medidas de fiscalização (suspensão, proibição, recolhimento, interdição, apreensão, inutilização), uma linha por dossiê e produto, com acoes e atividades em lista e cnpj da empresa fiscalizada. area_codigo ${tipo("alimentos")} é alimento, ${tipo("saneantes")} é saneante, ${tipo("cosmeticos")} é cosmético, ${tipo("medicamentos")} é medicamento, ${tipo("produtos_saude")} é dispositivo médico.` : faltaMedidas(m)}${temCertificados ? `\n- ${TABELA_CERTIFICADOS}: certificados de boas práticas de fabricação (CBPF) e de distribuição e armazenagem (CBPDA), um por linha: a empresa que pediu (cnpj, empresa), a fábrica inspecionada (inspecionada_cnpj no Brasil, inspecionada_codigo no exterior, inspecionada, pais; vinculo propria, grupo, terceira, exterior ou desconhecida, quando a ANVISA não informa a fábrica), area (produtos_saude, insumos, medicamentos, cosmeticos, saneantes, alimentos, outros), validade, vigente (dentro da validade em dados_de), cancelado e dados_de, a data dos dados (a lista de medicamentos parou em 2025-09-08).` : ""}
 
 ## Consultas (DuckDB)
 
@@ -150,7 +152,9 @@ FROM read_parquet('${m.tables[MEDICAMENTOS] ? arquivo(MEDICAMENTOS) : "<medicame
 JOIN read_parquet('${m.tables[TABELA_CMED] ? arquivo(TABELA_CMED) : "<cmed.parquet do manifest>"}') c USING (registro_produto)
 WHERE m.registro_produto = '186200018';
 \`\`\`
-
+${
+  temMedidas
+    ? `
 Medidas contra uma empresa:
 
 \`\`\`sql
@@ -159,6 +163,8 @@ FROM read_parquet('${arquivo(TABELA_MEDIDAS)}')
 WHERE cnpj = '29822523000103'
 ORDER BY ultima DESC;
 \`\`\`
-`;
+`
+    : ""
+}`;
   return new Response(texto, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 };

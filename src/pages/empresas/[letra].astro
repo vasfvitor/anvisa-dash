@@ -4,7 +4,10 @@ import Base from "../../layouts/Base.astro";
 import LetrasEmpresas from "../../components/LetrasEmpresas.astro";
 import { empresasDoBuild } from "../../lib/estatico/dados";
 import { porLetra, resumo, totalProdutos, type Empresa } from "../../lib/estatico/empresas";
+import { MANIFEST_URL } from "../../lib/config";
+import { faltaMedidas } from "../../lib/consultas";
 import { fmtCnpj, fmtInt, plural, url } from "../../lib/format";
+import { manifestDoBuild } from "../../lib/manifest";
 import { legivel } from "../../lib/texto";
 
 export async function getStaticPaths() {
@@ -22,6 +25,9 @@ interface Props {
 const { lista, contagem } = Astro.props;
 const { letra } = Astro.params;
 const rotulo = letra === "0-9" ? "0–9" : letra!.toUpperCase();
+
+// the rows count each company's measures: a build without the table says so instead of counting none
+const semMedidas = faltaMedidas(await manifestDoBuild(MANIFEST_URL));
 
 const detalhe = (e: Empresa) => {
   const r = resumo(e);
@@ -47,6 +53,7 @@ const detalhe = (e: Empresa) => {
     {fmtInt(lista.length)} {lista.length === 1 ? "empresa" : "empresas"} com produto, medida, envase de alimentos ou
     certificado de boas práticas na ANVISA.
   </p>
+  {semMedidas && <p class="note">{semMedidas}</p>}
   <LetrasEmpresas contagem={contagem} atual={letra} />
   <ul class="lista-empresas">
     {lista.map((e) => (
