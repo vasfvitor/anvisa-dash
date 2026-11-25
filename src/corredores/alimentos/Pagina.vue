@@ -79,7 +79,7 @@ const relato = computed(() =>
     ? itemProduto(
         titulo.value,
         [notificado.value ? "notificação" : "registro", fmtRegistro(p.value.nu_registro_notificacao_produto)],
-        ["processo", fmtProcesso(p.value.nu_processo)],
+        p.value.nu_processo,
       )
     : "",
 );

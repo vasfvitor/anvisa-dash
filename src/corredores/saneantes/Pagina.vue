@@ -42,13 +42,7 @@ const val = computed(() => (p.value ? validade(p.value.grupo, p.value.dt_vencime
 const titulo = computed(() => (p.value ? legivel(p.value.no_produto, "nome") : ""));
 // the product and its number, for the "Encontrou um erro?" sentence
 const relato = computed(() =>
-  p.value
-    ? itemProduto(
-        titulo.value,
-        ["registro", fmtRegistro(p.value.nu_registro_produto)],
-        ["processo", fmtProcesso(p.value.nu_processo)],
-      )
-    : "",
+  p.value ? itemProduto(titulo.value, ["registro", fmtRegistro(p.value.nu_registro_produto)], p.value.nu_processo) : "",
 );
 
 // a consulta da ANVISA separa os registrados ("produtos") dos isentos de registro ("notificados"). A página

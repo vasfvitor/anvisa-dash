@@ -62,9 +62,7 @@ const val = computed(() => (p.value ? validade(p.value.validade, p.value.dt_venc
 const titulo = computed(() => (p.value ? legivel(p.value.nome, "nome") : ""));
 // the product and its number, for the "Encontrou um erro?" sentence
 const relato = computed(() =>
-  p.value
-    ? itemProduto(titulo.value, ["nº na ANVISA", p.value.registro], ["processo", fmtProcesso(p.value.processo)])
-    : "",
+  p.value ? itemProduto(titulo.value, ["nº na ANVISA", p.value.registro], p.value.processo) : "",
 );
 // a consulta oficial de produtos para saúde, com o registro já preenchido
 const linkAnvisa = computed(() =>

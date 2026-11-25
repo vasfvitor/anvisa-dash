@@ -3,6 +3,7 @@
 // five health sites. The static pages (footer, company pages) get the HTML at build time; the Vue island builds it
 // in the browser for the product view, where the page URL is only known at runtime.
 import { RELATO_EMAIL, REPO } from "./config";
+import { fmtProcesso } from "./format";
 
 export interface Relato {
   /** canonical absolute URL of the page */
@@ -20,23 +21,20 @@ export interface LinksRelato {
 }
 
 const enc = encodeURIComponent;
+// the parts that are the same on every page, built once
+const ISSUE = `${REPO}/issues/new?template=problema.yml`;
+const MAILTO = `mailto:${RELATO_EMAIL}`;
 
 /** The issue and e-mail links for a page. encodeURIComponent: spaces as %20, never "+". */
 export function linksRelato({ pagina, item = "", titulo }: Relato): LinksRelato {
-  const assunto = `Problema em ${item.trim() || titulo}`;
-  const campos: [string, string][] = [
-    ["template", "problema.yml"],
-    ["title", assunto],
-    ["pagina", pagina],
-  ];
-  if (item.trim()) campos.push(["item", item.trim()]);
-  const consulta = campos.map(([k, v]) => `${k}=${enc(v)}`).join("&");
+  const it = item.trim();
+  const assunto = `Problema em ${it || titulo}`;
   // CRLF between lines, as RFC 6068 asks of a mailto body (encoded %0D%0A)
-  const corpo = `Página: ${pagina}\r\nItem: ${item.trim()}\r\n\r\nO que está errado:\r\n\r\nO que a fonte oficial mostra (link):\r\n`;
+  const corpo = `Página: ${pagina}\r\nItem: ${it}\r\n\r\nO que está errado:\r\n\r\nO que a fonte oficial mostra (link):\r\n`;
   return {
     titulo: assunto,
-    issue: `${REPO}/issues/new?${consulta}`,
-    email: `mailto:${RELATO_EMAIL}?subject=${enc(assunto)}&body=${enc(corpo)}`,
+    issue: `${ISSUE}&title=${enc(assunto)}&pagina=${enc(pagina)}${it ? `&item=${enc(it)}` : ""}`,
+    email: `${MAILTO}?subject=${enc(assunto)}&body=${enc(corpo)}`,
   };
 }
 
@@ -56,10 +54,17 @@ export function relatoHtml(r: Relato, curto = false): string {
         `<a href="${attr(email)}">escreva para ${RELATO_EMAIL}</a>. O relato no GitHub é público: não inclua dados pessoais.`;
 }
 
-/** "Nome, registro 1.0090.0029": the product name and its first number present, in the order given. */
-export function itemProduto(nome: string, ...numeros: [rotulo: string, valor: string | null | undefined][]): string {
-  const n = numeros.find(([, v]) => v);
-  return n ? `${nome}, ${n[0]} ${n[1]}` : nome;
+/**
+ * "Nome, registro 1.0090.0029": the product name and its number, already formatted with its label; without one,
+ * the process number (raw, formatted here); without either, the name alone.
+ */
+export function itemProduto(
+  nome: string,
+  [rotulo, numero]: [rotulo: string, numero: string | null | undefined],
+  processo: string | null | undefined,
+): string {
+  if (numero) return `${nome}, ${rotulo} ${numero}`;
+  return processo ? `${nome}, processo ${fmtProcesso(processo)}` : nome;
 }
 
 /** The product view's address without the search state or a hash: the corridor path and ?p= only. */

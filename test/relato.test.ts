@@ -99,14 +99,14 @@ describe("relatoHtml", () => {
 });
 
 describe("itemProduto", () => {
-  it("names the product with its first number present", () => {
-    expect(itemProduto("Novalgina", ["registro", "1.0090.0029"], ["processo", "25351.161029/2026-55"])).toBe(
+  it("names the product with its number, else its process number (formatted), else the name alone", () => {
+    expect(itemProduto("Novalgina", ["registro", "1.0090.0029"], "25351161029202655")).toBe(
       "Novalgina, registro 1.0090.0029",
     );
-    expect(itemProduto("Sabão X", ["registro", ""], ["processo", "25351.161029/2026-55"])).toBe(
+    expect(itemProduto("Sabão X", ["registro", ""], "25351161029202655")).toBe(
       "Sabão X, processo 25351.161029/2026-55",
     );
-    expect(itemProduto("Sem número", ["registro", null])).toBe("Sem número");
+    expect(itemProduto("Sem número", ["registro", null], null)).toBe("Sem número");
   });
 });
 

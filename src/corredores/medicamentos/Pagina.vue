@@ -48,13 +48,7 @@ const sit = computed(() => situacaoDe(ativo.value));
 const titulo = computed(() => (p.value ? legivel(p.value.nome, "nome") : ""));
 // the product and its number, for the "Encontrou um erro?" sentence
 const relato = computed(() =>
-  p.value
-    ? itemProduto(
-        titulo.value,
-        ["registro", fmtRegistro(p.value.registro_produto)],
-        ["processo", fmtProcesso(p.value.processo)],
-      )
-    : "",
+  p.value ? itemProduto(titulo.value, ["registro", fmtRegistro(p.value.registro_produto)], p.value.processo) : "",
 );
 const vencido = computed(() => {
   const v = p.value?.dt_vencimento;
